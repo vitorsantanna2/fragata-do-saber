@@ -52,6 +52,34 @@ const examChoices = [
     exam: 'CP-T',
     subject: 'Informática',
   },
+  {
+    id: 'prisoc',
+    title: 'Primeiros Socorros',
+    description: 'Curso Expedito de Primeiros Socorros',
+    exam: 'PRISOC',
+    subject: 'Primeiros Socorros',
+  },
+  {
+    id: 'opmicro',
+    title: 'Operador de Microcomputadores',
+    description: 'Curso Expedito de Operador de Microcomputadores',
+    exam: 'OPMICRO',
+    subject: 'OPMICRO',
+  },
+   {
+    id: 'manmicro',
+    title: 'Montagem e Manutenção de Microcomputadores',
+    description: 'Curso Expedito de Montagem e Manutenção de Microcomputadores',
+    exam: 'MANMICRO',
+    subject: 'MANMICRO',
+  },
+  {
+    id: 'opredes',
+    title: 'Operador de Redes',
+    description: 'Curso Expedito de Operador de Redes',
+    exam: 'OpRedes',
+    subject: 'OpRedes',
+  },
 ]
 
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path}`
@@ -448,6 +476,38 @@ function App() {
                       aria-hidden="true"
                       className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
                       src={publicAsset('qt-emblema.png')}
+                    />
+                  )}
+                  {choice.id === 'prisoc' && (
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
+                      src={publicAsset('PRISOC.jpg')}
+                    />
+                  )}
+                   {choice.id === 'opmicro' && (
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
+                      src={publicAsset('OPMICRO.jpg')}
+                    />
+                  )}
+                   {choice.id === 'manmicro' && (
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
+                      src={publicAsset('MANMICRO.jpeg')}
+                    />
+                  )}
+                   {choice.id === 'opredes' && (
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
+                      src={publicAsset('OpRedes.jpg')}
                     />
                   )}
                   <span className="relative z-10 block max-w-[62%]">
