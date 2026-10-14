@@ -63,8 +63,8 @@ const examChoices = [
     id: 'opmicro',
     title: 'Operador de Microcomputadores',
     description: 'Curso Expedito de Operador de Microcomputadores',
-    exam: 'OPMICRO',
-    subject: 'OPMICRO',
+    exam: 'Operador de Microcomputadores - CIAA',
+    subject: 'Informática',
   },
    {
     id: 'manmicro',
