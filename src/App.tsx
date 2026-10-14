@@ -40,48 +40,61 @@ type QuestionRow = {
 const examChoices = [
   {
     id: 'ea-hsg',
+    group: 'Concursos',
     title: 'EA-HSG',
     description: 'Questões e provas anteriores do concurso EA-HSG.',
     exam: 'EA-HSG',
     subject: null,
+    image: 'hsg-emblema.png',
   },
   {
     id: 'cp-t-informatica',
+    group: 'Concursos',
     title: 'Quadro Técnico - Informática',
     description: 'Conhecimentos profissionais de Informática do Quadro Técnico.',
     exam: 'CP-T',
     subject: 'Informática',
+    image: 'qt-emblema.png',
   },
   {
     id: 'prisoc',
+    group: 'Cursos expeditos',
     title: 'Primeiros Socorros',
     description: 'Curso Expedito de Primeiros Socorros',
     exam: 'PRISOC',
     subject: 'Primeiros Socorros',
+    image: 'PRISOC.jpg',
   },
   {
     id: 'opmicro',
+    group: 'Cursos expeditos',
     title: 'Operador de Microcomputadores',
     description: 'Curso Expedito de Operador de Microcomputadores',
     exam: 'Operador de Microcomputadores - CIAA',
     subject: 'Informática',
+    image: 'OPMICRO.jpg',
   },
-   {
+  {
     id: 'manmicro',
+    group: 'Cursos expeditos',
     title: 'Montagem e Manutenção de Microcomputadores',
     description: 'Curso Expedito de Montagem e Manutenção de Microcomputadores',
     exam: 'MANMICRO',
     subject: 'MANMICRO',
+    image: 'MANMICRO.jpeg',
   },
   {
     id: 'opredes',
+    group: 'Cursos expeditos',
     title: 'Operador de Redes',
     description: 'Curso Expedito de Operador de Redes',
     exam: 'OpRedes',
     subject: 'OpRedes',
+    image: 'OpRedes.jpg',
   },
 ]
 
+const examGroups = ['Concursos', 'Cursos expeditos']
 const SIMULATION_SIZE = 50
 
 // Fisher-Yates: sorteio realmente uniforme (evite sort(() => Math.random() - 0.5))
@@ -486,7 +499,10 @@ function changeYear(value: string) {
                   </>
                 ) : (
                   <>
-                    <div><p className="font-display text-2xl font-extrabold sm:text-3xl">02</p><p className="mt-1 text-xs text-white/60">concursos</p></div>
+                    <div>
+                      <p className="font-display text-2xl font-extrabold sm:text-3xl">{String(examChoices.length).padStart(2, '0')}</p>
+                      <p className="mt-1 text-xs text-white/60">cursos e concursos</p>
+                    </div>
                     <div className="self-center">
                       <p className="font-display text-base font-extrabold leading-5 sm:text-lg">Provas anteriores</p>
                       <p className="mt-1 text-xs leading-5 text-white/60">Questões organizadas por concurso</p>
@@ -499,76 +515,47 @@ function changeYear(value: string) {
         </section>
 
         {!selectedExamId ? (
-          <section className="mt-10" id="questoes">
-            <div className="mb-5">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Comece por aqui</p>
-              <h2 className="mt-1 font-display text-2xl font-extrabold">Qual concurso você vai estudar?</h2>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {examChoices.map((choice) => (
-                <button
-                  className="group relative flex min-h-40 items-center justify-between overflow-hidden rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5"
-                  key={choice.id}
-                  type="button"
-                  onClick={() => selectExam(choice.id)}
-                >
-                  {choice.id === 'ea-hsg' && (
-                    <img
-                      alt=""
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
-                      src={publicAsset('hsg-emblema.png')}
-                    />
-                  )}
-                  {choice.id === 'cp-t-informatica' && (
-                    <img
-                      alt=""
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
-                      src={publicAsset('qt-emblema.png')}
-                    />
-                  )}
-                  {choice.id === 'prisoc' && (
-                    <img
-                      alt=""
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
-                      src={publicAsset('PRISOC.jpg')}
-                    />
-                  )}
-                   {choice.id === 'opmicro' && (
-                    <img
-                      alt=""
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
-                      src={publicAsset('OPMICRO.jpg')}
-                    />
-                  )}
-                   {choice.id === 'manmicro' && (
-                    <img
-                      alt=""
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
-                      src={publicAsset('MANMICRO.jpeg')}
-                    />
-                  )}
-                   {choice.id === 'opredes' && (
-                    <img
-                      alt=""
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-contain object-center"
-                      src={publicAsset('OpRedes.jpg')}
-                    />
-                  )}
-                  <span className="relative z-10 block max-w-[62%]">
-                    <span className="block font-display text-xl font-extrabold text-ink">{choice.title}</span>
-                    <span className="mt-2 block text-sm leading-6 text-muted">{choice.description}</span>
-                  </span>
-                  <span aria-hidden="true" className="relative z-10 ml-4 grid size-10 shrink-0 place-items-center rounded-full bg-sea-light text-lg font-bold text-sea transition group-hover:bg-sea group-hover:text-white">→</span>
-                </button>
-              ))}
-            </div>
-          </section>
+         <section className="mt-10" id="questoes">
+  <div className="mb-2">
+    <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Comece por aqui</p>
+    <h2 className="mt-1 font-display text-2xl font-extrabold">O que você vai estudar?</h2>
+  </div>
+
+  {examGroups.map((group) => (
+    <div className="mt-8" key={group}>
+      <h3 className="mb-3 font-display text-lg font-extrabold text-ink">{group}</h3>
+      <div className="grid gap-4 md:grid-cols-2">
+        {examChoices
+          .filter((choice) => choice.group === group)
+          .map((choice) => (
+            <button
+              className="group flex items-center gap-4 rounded-xl border border-line bg-white p-5 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5"
+              key={choice.id}
+              type="button"
+              onClick={() => selectExam(choice.id)}
+            >
+              <span className="block min-w-0 flex-1">
+                <span className="block font-display text-xl font-extrabold text-ink">{choice.title}</span>
+                <span className="mt-2 block text-sm leading-6 text-muted">{choice.description}</span>
+              </span>
+              <img
+                alt=""
+                aria-hidden="true"
+                className="size-24 shrink-0 object-contain mix-blend-multiply sm:size-28"
+                src={publicAsset(choice.image)}
+              />
+              <span
+                aria-hidden="true"
+                className="grid size-10 shrink-0 place-items-center rounded-full bg-sea-light text-lg font-bold text-sea transition group-hover:bg-sea group-hover:text-white"
+              >
+                →
+              </span>
+            </button>
+          ))}
+      </div>
+    </div>
+  ))}
+</section>
         ) : (
         <>
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
