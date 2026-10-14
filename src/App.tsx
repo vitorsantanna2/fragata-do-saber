@@ -82,6 +82,18 @@ const examChoices = [
   },
 ]
 
+const SIMULATION_SIZE = 50
+
+// Fisher-Yates: sorteio realmente uniforme (evite sort(() => Math.random() - 0.5))
+function shuffle<T>(items: T[]): T[] {
+  const copy = [...items]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path}`
 
 const mathSegmentPattern = /(\$\$[\s\S]+?\$\$|\$[^$\n]+\$)/g
@@ -135,6 +147,7 @@ function App() {
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [revealed, setRevealed] = useState<string[]>([])
   const [favorites, setFavorites] = useState<string[]>([])
+  const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
 
   useEffect(() => {
     let active = true
@@ -307,18 +320,27 @@ function App() {
     [questions, topic, year],
   )
 
-  const simulationAnsweredCount = filteredQuestions.filter(
-    (question) => answers[question.id] !== undefined,
-  ).length
-  const simulationCorrectCount = filteredQuestions.filter(
-    (question) => answers[question.id] === question.answer,
-  ).length
+  const visibleQuestions = useMemo(() => {
+    if (!simulationIds) return filteredQuestions
+    const byId = new Map(questions.map((q) => [q.id, q]))
+    return simulationIds.flatMap((id) => {
+      const q = byId.get(id)
+      return q ? [q] : []
+    })
+  }, [simulationIds, filteredQuestions, questions])
+
+  const simulationAnsweredCount = visibleQuestions.filter(
+  (question) => answers[question.id] !== undefined,
+).length
+  const simulationCorrectCount = visibleQuestions.filter(
+  (question) => answers[question.id] === question.answer,
+).length
   const simulationComplete =
-    filteredQuestions.length > 0 && simulationAnsweredCount === filteredQuestions.length
-  const pointsPerQuestion = filteredQuestions.length ? 100 / filteredQuestions.length : 0
+  visibleQuestions.length > 0 && simulationAnsweredCount === visibleQuestions.length
+  const pointsPerQuestion = visibleQuestions.length ? 100 / visibleQuestions.length : 0
   const simulationScore = simulationComplete
-    ? (simulationCorrectCount / filteredQuestions.length) * 100
-    : 0
+  ? (simulationCorrectCount / visibleQuestions.length) * 100
+  : 0
 
   const correctCount = questions.filter(
     (question) => answers[question.id] === question.answer,
@@ -327,6 +349,32 @@ function App() {
   const examCount = new Set(questions.map((question) => question.exam)).size
   const topicCount = new Set(questions.map((question) => question.topic).filter(Boolean)).size
 
+  function startSimulation() {
+  // Sorteia entre as questões que passam pelos filtros atuais.
+  // Para ignorar os filtros e sortear de toda a prova, use `questions` no lugar de `filteredQuestions`.
+  const picked = shuffle(filteredQuestions).slice(0, SIMULATION_SIZE)
+  setAnswers({})
+  setRevealed([])
+  setSimulationIds(picked.map((q) => q.id))
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function exitSimulation() {
+  setSimulationIds(null)
+  setAnswers({})
+  setRevealed([])
+}
+
+function changeTopic(value: string) {
+  setTopic(value)
+  setSimulationIds(null)
+}
+
+function changeYear(value: string) {
+  setYear(value)
+  setSimulationIds(null)
+}
+
   function selectExam(examId: string) {
     setQuestions([])
     setAnswers({})
@@ -334,6 +382,7 @@ function App() {
     setTopic('Todos')
     setYear('Todos')
     setSelectedExamId(examId)
+    setSimulationIds(null)
   }
 
   function returnToHome() {
@@ -344,6 +393,7 @@ function App() {
     setYear('Todos')
     setLoadError('')
     setSelectedExamId(null)
+    setSimulationIds(null)
   }
 
   function toggleInList(list: string[], id: string, update: (value: string[]) => void) {
@@ -533,8 +583,27 @@ function App() {
               <h2 className="font-display text-base font-extrabold">Filtrar questões</h2>
             </div>
             <div className="space-y-4">
-              <FilterSelect label="Tópico" value={topic} options={topics} onChange={setTopic} />
-              <FilterSelect label="Ano da prova" value={year} options={years} onChange={setYear} />
+              <FilterSelect label="Tópico" value={topic} options={topics} onChange={changeTopic} />
+              <FilterSelect label="Ano da prova" value={year} options={years} onChange={changeYear} />
+            <div className="mt-5 space-y-2">
+              <button
+                className="w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white transition hover:bg-ink disabled:opacity-50"
+                type="button"
+                disabled={filteredQuestions.length === 0}
+                onClick={startSimulation}
+              >
+                {simulationIds ? 'Gerar novo simulado' : `Gerar simulado (${Math.min(SIMULATION_SIZE, filteredQuestions.length)} questões)`}
+              </button>
+              {simulationIds && (
+              <button
+                  className="w-full rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-bold transition hover:border-sea hover:text-sea"
+                  type="button"
+                  onClick={exitSimulation}
+                >
+                  Sair do simulado
+              </button>
+            )}
+          </div>
             </div>
             <div className="mt-6 rounded-lg bg-sea-light p-4" id="desempenho">
               <p className="text-xs font-bold uppercase tracking-[0.1em] text-sea">Seu desempenho</p>
@@ -554,7 +623,7 @@ function App() {
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Banco de questões</p>
                 <h2 className="mt-1 font-display text-2xl font-extrabold">Continue sua preparação</h2>
               </div>
-              <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-line">{filteredQuestions.length} disponíveis</span>
+              <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-line">{visibleQuestions.length} {simulationIds ? 'no simulado' : 'disponíveis'}</span>
             </div>
 
             <div className="space-y-4">
@@ -568,7 +637,7 @@ function App() {
                         <span className="ml-1 text-base font-bold text-muted">/ 100 pontos</span>
                       </p>
                       <p className="mt-1 text-sm text-muted">
-                        {simulationCorrectCount} de {filteredQuestions.length} questões corretas
+                        {simulationCorrectCount} de {visibleQuestions.length} questões corretas
                       </p>
                     </div>
                     <p className="text-xs font-medium text-muted">
@@ -579,7 +648,7 @@ function App() {
               )}
               {loading && <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando questões...</p>}
               {!loading && loadError && <p className="rounded-xl border border-red-200 bg-white p-5 text-sm leading-6 text-red-800">{loadError}</p>}
-              {!loading && !loadError && filteredQuestions.map((question) => {
+              {!loading && !loadError && visibleQuestions.map((question) => {
                 const isRevealed = revealed.includes(question.id)
                 const selectedAnswer = answers[question.id]
                 const hasAnswered = selectedAnswer !== undefined
@@ -639,7 +708,7 @@ function App() {
                   </article>
                 )
               })}
-              {!loading && !loadError && filteredQuestions.length === 0 && <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>}
+              {!loading && !loadError && visibleQuestions.length === 0 && <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>}
             </div>
           </div>
         </section>
