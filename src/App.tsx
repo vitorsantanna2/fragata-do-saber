@@ -92,6 +92,15 @@ const examChoices = [
     subject: 'OpRedes',
     image: 'OpRedes.jpg',
   },
+    {
+    id: 'cbinc',
+    group: 'Cursos expeditos',
+    title: 'Combate a Incêndio',
+    description: 'Curso Expedito de Combate a Incêndio',
+    exam: 'cbinc',
+    subject: 'Combate a Incêndio',
+    image: 'cbinc.jpg',
+  },
 ]
 
 const examGroups = ['Concursos', 'Cursos expeditos']
