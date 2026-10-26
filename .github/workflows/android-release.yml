@@ -1,0 +1,92 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-24.04
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Check Supabase configuration
+        run: |
+          test -n "$VITE_SUPABASE_URL" || (echo "::error::Configure VITE_SUPABASE_URL in repository Actions variables." && exit 1)
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || (echo "::error::Configure VITE_SUPABASE_PUBLISHABLE_KEY in repository Actions variables." && exit 1)
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Build web app and sync Android
+        run: npm run android:sync
+
+      - name: Build Android APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Create GitHub release and upload APK
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs');
+            const tag = context.ref_name;
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: `Fragata do Saber ${tag}`,
+              body: [
+                'APK beta do Fragata do Saber para Android.',
+                '',
+                '- Inclui questões do Supabase e cache local SQLite.',
+                '- É um APK de depuração para instalação direta; não está assinado para publicação na Play Store.',
+                '- Se já houver uma instalação de depuração assinada por outra chave, desinstale-a antes. Isso apaga o banco local e o cache daquele app.',
+              ].join('\n'),
+              draft: true,
+              prerelease: true,
+            });
+
+            const apkPath = 'android/app/build/outputs/apk/debug/app-debug.apk';
+            const apk = fs.readFileSync(apkPath);
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              name: `fragata-do-saber-${tag}.apk`,
+              data: apk,
+              headers: {
+                'content-type': 'application/vnd.android.package-archive',
+                'content-length': apk.length,
+              },
+            });
+
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              draft: false,
+            });
