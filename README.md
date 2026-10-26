@@ -119,7 +119,7 @@ cd android
 
 O APK fica em `android/app/build/outputs/apk/debug/app-debug.apk`. Instale o APK recém-gerado no aparelho para conferir as alterações.
 
-Para publicar uma versão de teste no GitHub Releases, crie e envie uma tag no formato `v*` (por exemplo, `v1.0.0-beta.2`). O workflow `.github/workflows/android-release.yml` compila o APK e o anexa a uma pré-release. Esse APK de depuração é para instalação direta e não está assinado para a Play Store. Ao preparar outra versão, atualize também o `versionCode` em `android/app/build.gradle`.
+Para publicar uma versão de teste no GitHub Releases, crie e envie uma tag no formato `v*` (por exemplo, `v1.0.0-beta.3`). O workflow `.github/workflows/android-release.yml` compila o APK e o anexa a uma pré-release. Esse APK de depuração é para instalação direta e não está assinado para a Play Store. Ao preparar outra versão, atualize também o `versionCode` em `android/app/build.gradle`.
 
 As artes originais e os arquivos derivados ficam em `android/assets/`. Os recursos nativos do ícone e da abertura estão em `android/app/src/main/res/`. Durante a checagem inicial de acesso, `public/splash-screen.jpg` aparece por pelo menos 0,9 segundo. A imagem cabe inteira na tela, sem cortar as laterais; o fundo azul preenche o espaço restante. No Android 12 ou superior, a tela nativa do sistema aparece primeiro com o ícone do app.
 
