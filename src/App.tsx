@@ -2,6 +2,16 @@ import { Fragment, useEffect, useMemo, useState, type FormEvent } from 'react'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 import { supabase } from './lib/supabase'
+import {
+  cacheQuestions,
+  getLocalDatabase,
+  getLocalMetadata,
+  hasCachedQuestions,
+  isNativeApp,
+  readCachedQuestions,
+  setLocalMetadata,
+  type CachedQuestionRow,
+} from './lib/localDatabase'
 
 type Question = {
   id: string
@@ -20,22 +30,7 @@ type Question = {
   explanation: string | null
 }
 
-type QuestionRow = {
-  id: string
-  year: number
-  question_number: number
-  subject: string
-  topic: string | null
-  difficulty: string | null
-  exam: string
-  statement: string
-  statement_after_image: string | null
-  image_url: string | null
-  image_alt: string | null
-  options: string[]
-  correct_option: number
-  explanation: string | null
-}
+type QuestionRow = CachedQuestionRow
 
 const examChoices = [
   {
@@ -105,6 +100,40 @@ const examChoices = [
 
 const examGroups = ['Concursos', 'Cursos expeditos']
 const SIMULATION_SIZE = 50
+const OFFLINE_ACCESS_GRACE_MS = 30 * 24 * 60 * 60 * 1000
+
+async function canContinueOffline() {
+  if (!isNativeApp()) return false
+
+  try {
+    const lastValidatedAt = await getLocalMetadata('access_last_validated_at')
+    if (!lastValidatedAt || !(await hasCachedQuestions())) return false
+
+    const elapsed = Date.now() - Date.parse(lastValidatedAt)
+    return elapsed >= 0 && elapsed <= OFFLINE_ACCESS_GRACE_MS
+  } catch {
+    return false
+  }
+}
+
+function toQuestion(row: QuestionRow): Question {
+  return {
+    id: row.id,
+    year: String(row.year),
+    questionNumber: row.question_number,
+    subject: row.subject,
+    topic: row.topic,
+    difficulty: row.difficulty,
+    exam: row.exam,
+    prompt: row.statement,
+    promptAfterImage: row.statement_after_image,
+    imageUrl: row.image_url,
+    imageAlt: row.image_alt,
+    options: row.options,
+    answer: row.correct_option,
+    explanation: row.explanation,
+  }
+}
 
 // Fisher-Yates: sorteio realmente uniforme (evite sort(() => Math.random() - 0.5))
 function shuffle<T>(items: T[]): T[] {
@@ -157,13 +186,16 @@ function RichText({ text, className }: RichTextProps) {
 
 function App() {
   const [accessState, setAccessState] = useState<'checking' | 'locked' | 'granted'>('checking')
+  const [splashElapsed, setSplashElapsed] = useState(false)
   const [accessCode, setAccessCode] = useState('')
   const [accessError, setAccessError] = useState('')
   const [checkingCode, setCheckingCode] = useState(false)
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [usingOfflineCache, setUsingOfflineCache] = useState(false)
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null)
+  const [selectedStudyMode, setSelectedStudyMode] = useState<'exam-questions' | 'bibliography-questions' | 'mind-maps' | null>(null)
   const [topic, setTopic] = useState('Todos')
   const [year, setYear] = useState('Todos')
   const [answers, setAnswers] = useState<Record<string, number>>({})
@@ -172,10 +204,25 @@ function App() {
   const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => setSplashElapsed(true), 900)
+    return () => window.clearTimeout(timeout)
+  }, [])
+
+  useEffect(() => {
     let active = true
 
     async function checkAccess() {
+      try {
+        await getLocalDatabase()
+      } catch (error) {
+        console.warn('Não foi possível iniciar o banco local.', error)
+      }
+
       if (!supabase) {
+        if (await canContinueOffline()) {
+          setAccessState('granted')
+          return
+        }
         setAccessError('Configure as variáveis do Supabase no arquivo .env.local.')
         setAccessState('locked')
         return
@@ -186,12 +233,20 @@ function App() {
       if (!active) return
 
       if (sessionError) {
+        if (await canContinueOffline()) {
+          setAccessState('granted')
+          return
+        }
         setAccessError('Não foi possível verificar sua sessão. Tente recarregar a página.')
         setAccessState('locked')
         return
       }
 
       if (!sessionData.session) {
+        if (await canContinueOffline()) {
+          setAccessState('granted')
+          return
+        }
         setAccessState('locked')
         return
       }
@@ -201,12 +256,21 @@ function App() {
       if (!active) return
 
       if (error) {
+        if (await canContinueOffline()) {
+          setAccessState('granted')
+          return
+        }
         setAccessError('Não foi possível validar o acesso. Confira se o script de acesso foi executado no Supabase e se o login anônimo está habilitado.')
         setAccessState('locked')
         return
       }
 
-      setAccessState(data ? 'granted' : 'locked')
+      if (data) {
+        void setLocalMetadata('access_last_validated_at', new Date().toISOString())
+        setAccessState('granted')
+      } else {
+        setAccessState('locked')
+      }
     }
 
     void checkAccess()
@@ -248,6 +312,7 @@ function App() {
         return
       }
 
+      void setLocalMetadata('access_last_validated_at', new Date().toISOString())
       setAccessCode('')
       setAccessState('granted')
     } catch {
@@ -271,6 +336,20 @@ function App() {
 
       setLoading(true)
       setLoadError('')
+      setUsingOfflineCache(false)
+
+      let cachedRows: QuestionRow[] = []
+      try {
+        cachedRows = await readCachedQuestions(selectedExam.exam, selectedExam.subject)
+        if (!active) return
+        if (cachedRows.length > 0) {
+          setQuestions(cachedRows.map(toQuestion))
+          setUsingOfflineCache(true)
+          setLoading(false)
+        }
+      } catch (error) {
+        console.warn('Não foi possível ler as questões salvas no aparelho.', error)
+      }
 
       if (!supabase) {
         setLoadError('Configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY no arquivo .env.local.')
@@ -293,8 +372,18 @@ function App() {
       if (!active) return
 
       if (error) {
+        if (cachedRows.length > 0) {
+          setLoadError('')
+          setLoading(false)
+          return
+        }
         setLoadError(`Não foi possível carregar as questões. Confira se a tabela public.questions e a política de leitura estão configuradas. (${error.message})`)
       } else {
+        const questionRows = data as QuestionRow[]
+        setUsingOfflineCache(false)
+        void cacheQuestions(questionRows, selectedExam.exam, selectedExam.subject).catch((cacheError) => {
+          console.warn('Não foi possível atualizar o cache local de questões.', cacheError)
+        })
         setQuestions((data as QuestionRow[]).map((row) => ({
           id: row.id,
           year: String(row.year),
@@ -404,6 +493,7 @@ function changeYear(value: string) {
     setTopic('Todos')
     setYear('Todos')
     setSelectedExamId(examId)
+    setSelectedStudyMode(examId === 'cp-t-informatica' ? null : 'exam-questions')
     setSimulationIds(null)
   }
 
@@ -415,6 +505,7 @@ function changeYear(value: string) {
     setYear('Todos')
     setLoadError('')
     setSelectedExamId(null)
+    setSelectedStudyMode(null)
     setSimulationIds(null)
   }
 
@@ -422,10 +513,16 @@ function changeYear(value: string) {
     update(list.includes(id) ? list.filter((item) => item !== id) : [...list, id])
   }
 
-  if (accessState === 'checking') {
+  if (accessState === 'checking' || !splashElapsed) {
     return (
-      <main className="grid min-h-screen place-items-center bg-paper px-5 text-sm font-semibold text-muted">
-        Verificando acesso...
+      <main className="fixed inset-0 z-50 overflow-hidden bg-[#011a32]">
+        <img
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full object-contain"
+          src={publicAsset('splash-screen.jpg')}
+        />
+        <span className="sr-only">Carregando o Fragata do Saber...</span>
       </main>
     )
   }
@@ -565,13 +662,86 @@ function changeYear(value: string) {
     </div>
   ))}
 </section>
+        ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === null ? (
+          <section className="mt-10" id="questoes">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Quadro Técnico - Informática</p>
+                <h2 className="mt-1 font-display text-2xl font-extrabold">Como você quer estudar?</h2>
+              </div>
+              <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={returnToHome}>
+                Trocar concurso
+              </button>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('mind-maps')}>
+                <span className="grid size-12 place-items-center rounded-xl bg-[#fff2e8] text-2xl" aria-hidden="true">✦</span>
+                <span className="mt-5 block font-display text-xl font-extrabold text-ink">Mapas mentais</span>
+                <span className="mt-2 block text-sm leading-6 text-muted">Revise os conteúdos do Quadro Técnico com mapas mentais.</span>
+                <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar mapas <span aria-hidden="true">→</span></span>
+              </button>
+              <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('exam-questions')}>
+                <span className="grid size-12 place-items-center rounded-xl bg-sea-light text-2xl" aria-hidden="true">✓</span>
+                <span className="mt-5 block font-display text-xl font-extrabold text-ink">Questões de provas</span>
+                <span className="mt-2 block text-sm leading-6 text-muted">Pratique com questões de provas anteriores e simulados.</span>
+                <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar questões de provas <span aria-hidden="true">→</span></span>
+              </button>
+              <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('bibliography-questions')}>
+                <span className="grid size-12 place-items-center rounded-xl bg-[#eef3f5] text-2xl" aria-hidden="true">▤</span>
+                <span className="mt-5 block font-display text-xl font-extrabold text-ink">Questões de apostilas e livros</span>
+                <span className="mt-2 block text-sm leading-6 text-muted">Estude com questões elaboradas a partir das apostilas e livros do edital.</span>
+                <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar questões de bibliografia <span aria-hidden="true">→</span></span>
+              </button>
+            </div>
+          </section>
+        ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === 'bibliography-questions' ? (
+          <section className="mt-10" id="questoes-bibliografia">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Quadro Técnico - Informática</p>
+                <h2 className="mt-1 font-display text-2xl font-extrabold">Questões de apostilas e bibliografia</h2>
+              </div>
+              <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={() => setSelectedStudyMode(null)}>
+                Voltar às opções
+              </button>
+            </div>
+            <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center sm:p-12">
+              <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#eef3f5] text-2xl" aria-hidden="true">▤</span>
+              <h3 className="mt-4 font-display text-xl font-extrabold">As questões de bibliografia aparecerão aqui</h3>
+              <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">Esta área reunirá questões baseadas nas apostilas e nos livros da bibliografia do concurso.</p>
+            </div>
+          </section>
+        ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === 'mind-maps' ? (
+          <section className="mt-10" id="mapas-mentais">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Quadro Técnico - Informática</p>
+                <h2 className="mt-1 font-display text-2xl font-extrabold">Mapas mentais</h2>
+              </div>
+              <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={() => setSelectedStudyMode(null)}>
+                Voltar às opções
+              </button>
+            </div>
+            <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center sm:p-12">
+              <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#fff2e8] text-2xl" aria-hidden="true">✦</span>
+              <h3 className="mt-4 font-display text-xl font-extrabold">Seus mapas mentais aparecerão aqui</h3>
+              <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">Esta área está pronta para receber os mapas mentais do Quadro Técnico. Assim que você enviar os arquivos, eles poderão ser organizados aqui.</p>
+            </div>
+          </section>
         ) : (
         <>
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-xl font-extrabold">{examChoices.find((choice) => choice.id === selectedExamId)?.title}</h2>
-          <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={returnToHome}>
-            Trocar concurso
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {selectedExamId === 'cp-t-informatica' && (
+              <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={() => setSelectedStudyMode(null)}>
+                Voltar às opções
+              </button>
+            )}
+            <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={returnToHome}>
+              Trocar concurso
+            </button>
+          </div>
         </div>
         <section className="mt-4 grid gap-8 lg:grid-cols-[250px_minmax(0,1fr)]" id="questoes">
           <aside className="h-fit rounded-xl border border-line bg-white p-5" aria-label="Filtros de questões">
@@ -643,6 +813,7 @@ function changeYear(value: string) {
                 </section>
               )}
               {loading && <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando questões...</p>}
+              {!loading && usingOfflineCache && <p className="rounded-xl border border-[#ead7be] bg-[#fff8ed] p-4 text-sm leading-6 text-[#805b2d]">Sem conexão: estas questões foram carregadas do aparelho. O conteúdo será atualizado quando a internet voltar.</p>}
               {!loading && loadError && <p className="rounded-xl border border-red-200 bg-white p-5 text-sm leading-6 text-red-800">{loadError}</p>}
               {!loading && !loadError && visibleQuestions.map((question) => {
                 const isRevealed = revealed.includes(question.id)
