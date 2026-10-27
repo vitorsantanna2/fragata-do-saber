@@ -49,6 +49,29 @@ export type StudyProgress = {
   year: string
   bibliographySource: string
   questionSearch: string
+  questionSnapshots: Record<string, StudyQuestionSnapshot>
+  progressUpdatedAt: Record<string, string>
+  savedSimulation: SavedSimulation | null
+}
+
+export type SavedSimulation = {
+  ids: string[]
+  answers: Record<string, number>
+  revealed: string[]
+  examId: string
+  studyMode: 'exam-questions' | 'bibliography-questions'
+  lastQuestionId: string | null
+  updatedAt: string
+}
+
+export type StudyQuestionSnapshot = {
+  exam: string
+  subject: string
+  topic: string | null
+  year: string
+  questionType: 'exam' | 'bibliography'
+  prompt: string
+  correctOption: number
 }
 
 const STUDY_PROGRESS_KEY = 'study_progress_v1'
@@ -77,6 +100,9 @@ export async function loadStudyProgress(): Promise<StudyProgress | null> {
       year: progress.year ?? 'Todos',
       bibliographySource: progress.bibliographySource ?? 'Todos',
       questionSearch: progress.questionSearch ?? '',
+      questionSnapshots: progress.questionSnapshots ?? {},
+      progressUpdatedAt: progress.progressUpdatedAt ?? {},
+      savedSimulation: progress.savedSimulation ?? null,
     }
   } catch {
     return null

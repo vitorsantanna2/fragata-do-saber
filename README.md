@@ -17,9 +17,9 @@ O Fragata do Saber ajuda na preparação para concursos navais. O projeto oferec
 - Mapas mentais em PDF e imagem, com zoom para imagens.
 - Painel administrativo para revisar, cadastrar e publicar questões e mapas.
 - App Android com SQLite, download de mapas para acesso offline.
-- Salvamento local de respostas, questões reveladas, favoritos, filtros e último concurso/modo acessado.
+- Progresso local de respostas, questões reveladas e favoritos, com sincronização opcional por conta.
 
-O progresso salvo é local ao aparelho e ainda não sincroniza entre dispositivos.
+Sem criar conta, o progresso fica somente no aparelho. Vinculando um e-mail e uma senha, o app pode sincronizar o progresso entre dispositivos.
 
 ## Tecnologias
 
@@ -66,10 +66,11 @@ Execute os scripts pelo **SQL Editor** do Supabase nesta ordem:
 
 1. `supabase_questions_setup.sql` — tabela de questões e políticas de leitura.
 2. `supabase_access_gate.sql` — validação por código de acesso.
-3. `supabase_mind_maps_setup.sql` — catálogo de mapas e bucket privado `mind-maps`.
-4. `supabase_admin_questions_setup.sql` — painel administrativo, bucket de imagens de questões e permissões administrativas para questões e mapas.
+3. `supabase_user_progress_setup.sql` — tabela de progresso sincronizado e políticas RLS.
+4. `supabase_mind_maps_setup.sql` — catálogo de mapas e bucket privado `mind-maps`.
+5. `supabase_admin_questions_setup.sql` — painel administrativo, bucket de imagens de questões e permissões administrativas para questões e mapas.
 
-Habilite **Anonymous Sign-Ins** em **Authentication → Providers**. Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` em `.env.local` para desenvolvimento. No GitHub Pages, configure os mesmos valores em **Settings → Secrets and variables → Actions → Variables**.
+Habilite **Anonymous Sign-Ins**, o provedor **Email** e **Manual Linking** nas configurações de Auth do Supabase. Manual Linking é necessário para converter a sessão anônima existente em uma conta com e-mail. Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` em `.env.local` para desenvolvimento. No GitHub Pages, configure os mesmos valores em **Settings → Secrets and variables → Actions → Variables**.
 
 ### Conta administrativa
 
@@ -118,9 +119,19 @@ As artes originais e os arquivos derivados ficam em `android/assets/`. Os recurs
 
 No Android, questões consultadas enquanto há conexão são armazenadas em SQLite. Para preparar o estudo offline, acesse online as questões que pretende revisar e use **Baixar para offline** nos mapas mentais. Os arquivos dos mapas são guardados no armazenamento privado do app; PDFs abrem em um leitor instalado e imagens abrem no próprio app.
 
-O acesso offline pode continuar por até 30 dias após a última validação online, desde que haja questões ou mapas baixados no aparelho. Respostas, questões reveladas, favoritos, filtros e o concurso/modo de estudo atual são salvos localmente. Esse progresso não sincroniza entre dispositivos. Imagens de questões carregadas por URL ainda precisam de conexão.
+O acesso offline pode continuar por até 30 dias após a última validação online, desde que haja questões ou mapas baixados no aparelho. Respostas, questões reveladas, favoritos, filtros e o concurso/modo de estudo atual são salvos localmente. O último simulado também preserva a lista de questões sorteadas, as respostas e os gabaritos vistos para continuar no mesmo aparelho; ao gerar outro, o contador do simulado começa em zero. Para contas vinculadas, respostas e favoritos são sincronizados quando a internet volta; sem conta, permanecem somente no aparelho. Imagens de questões carregadas por URL ainda precisam de conexão.
 
 O banco local `fragata_saber` e suas tabelas são criados automaticamente na primeira inicialização do app.
+
+### Painel de desempenho
+
+Use **Meu desempenho** no cabeçalho para consultar questões respondidas, acertos, erros e aproveitamento, com filtros por concurso e matéria. A tela também lista questões erradas para abrir e revisar. O painel usa o progresso e as questões já carregadas neste aparelho, portanto funciona offline para o conteúdo estudado ou baixado anteriormente.
+
+### Sincronizar entre dispositivos
+
+Depois de entrar com o código de acesso, abra **Sincronizar** no cabeçalho e informe um e-mail. Confirme o endereço pelo e-mail recebido e crie uma senha. A conta é vinculada à sessão atual, preservando o UUID usado pela autorização do código. Em outro aparelho, escolha **Já tenho conta · entrar e sincronizar** na tela de acesso. Se o código de acesso não estiver mais válido, informe um novo código; a conta não substitui essa validação.
+
+O app mantém o progresso no aparelho e envia as alterações quando fica online. A sincronização mescla por questão e usa a alteração mais recente; as políticas RLS permitem que cada conta permanente acesse apenas o próprio progresso. Execute `supabase_user_progress_setup.sql` no projeto antes de ativar esse recurso.
 
 ## Gerenciar mapas mentais
 
