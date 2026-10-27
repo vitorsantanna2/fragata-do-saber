@@ -16,7 +16,7 @@ O Fragata do Saber ajuda na preparação para concursos navais. O projeto oferec
 - Correção imediata, explicações, favoritos e simulados com pontuação.
 - Mapas mentais em PDF e imagem, com zoom para imagens.
 - Painel administrativo para revisar, cadastrar e publicar questões e mapas.
-- App Android com SQLite, download de mapas para acesso offline e botão Voltar com navegação entre telas.
+- App Android com SQLite, download de mapas para acesso offline.
 - Salvamento local de respostas, questões reveladas, favoritos, filtros e último concurso/modo acessado.
 
 O progresso salvo é local ao aparelho e ainda não sincroniza entre dispositivos.
@@ -109,8 +109,6 @@ cd android
 ```
 
 O APK fica em `android/app/build/outputs/apk/debug/app-debug.apk`. Instale o APK recém-gerado no aparelho para conferir as alterações.
-
-O botão Voltar do Android fecha o visualizador de mapas, sai do simulado ou retorna à tela anterior do fluxo de estudo. Na tela inicial, ele encerra o app.
 
 Para publicar uma versão de teste no GitHub Releases, crie e envie uma tag no formato `v*`, por exemplo `v1.0.0-beta.3`. O workflow `.github/workflows/android-release.yml` compila o APK e o anexa a uma pré-release. O APK de depuração não está assinado para a Play Store. Atualize também o `versionCode` em `android/app/build.gradle` ao preparar outra versão.
 
