@@ -1,218 +1,38 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type TouchEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type TouchEvent } from 'react'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
-import katex from 'katex'
-import 'katex/dist/katex.min.css'
-import AdminQuestionsPanel from './components/AdminQuestionsPanel'
 import { supabase } from './lib/supabase'
-import { syncStudyProgress } from './lib/progressSync'
-import { downloadMindMap, getMindMapUrl, loadMindMaps, openMindMapPdf, type MindMap } from './lib/mindMaps'
 import {
-  cacheQuestions,
+  downloadMindMap,
+  getMindMapUrl,
+  loadMindMaps,
+  openMindMapPdf,
+  type MindMap,
+} from './lib/mindMaps'
+import {
   getLocalDatabase,
   getLocalMetadata,
   hasCachedMindMaps,
   hasCachedQuestions,
   isNativeApp,
-  loadStudyProgress,
-  readCachedQuestions,
-  saveStudyProgress,
   setLocalMetadata,
-  type CachedQuestionRow,
   type SavedSimulation,
   type StudyQuestionSnapshot,
 } from './lib/localDatabase'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { ExamChoiceGrid, examChoices } from './components/ExamChoiceGrid'
+import { QuestionFilters } from './components/QuestionFilters'
+import { QuestionCard } from './components/QuestionCard'
+import { Simulation } from './components/Simulation'
+import AdminQuestionsPanel from './components/AdminQuestionsPanel'
+import { shuffle, conciseSource } from './lib/utils'
+import { useQuestions } from './hooks/useQuestions'
+import { useProgress } from './hooks/useProgress'
 
-type Question = {
-  id: string
-  year: string
-  questionNumber: number | null
-  questionType: 'exam' | 'bibliography'
-  subject: string
-  topic: string | null
-  difficulty: string | null
-  exam: string
-  prompt: string
-  promptAfterImage: string | null
-  imageUrl: string | null
-  imageAlt: string | null
-  options: string[]
-  answer: number
-  explanation: string | null
-  source: string | null
-}
-
-type QuestionRow = CachedQuestionRow
-
-const examChoices = [
-  {
-    id: 'ea-hsg',
-    group: 'Concursos',
-    title: 'EA-HSG',
-    description: 'Questões e provas anteriores do concurso EA-HSG.',
-    exam: 'EA-HSG',
-    subject: null,
-    image: 'hsg-emblema.png',
-  },
-  {
-    id: 'cp-t-informatica',
-    group: 'Concursos',
-    title: 'Quadro Técnico - Informática',
-    description: 'Conhecimentos profissionais de Informática do Quadro Técnico.',
-    exam: 'CP-T',
-    subject: 'Informática',
-    image: 'qt-emblema.png',
-  },
-  {
-    id: 'prisoc',
-    group: 'Cursos expeditos',
-    title: 'Primeiros Socorros',
-    description: 'Curso Expedito de Primeiros Socorros',
-    exam: 'PRISOC',
-    subject: 'Primeiros Socorros',
-    image: 'PRISOC.jpg',
-  },
-  {
-    id: 'opmicro',
-    group: 'Cursos expeditos',
-    title: 'Operador de Microcomputadores',
-    description: 'Curso Expedito de Operador de Microcomputadores',
-    exam: 'Operador de Microcomputadores - CIAA',
-    subject: 'Informática',
-    image: 'OPMICRO.jpg',
-  },
-  {
-    id: 'manmicro',
-    group: 'Cursos expeditos',
-    title: 'Montagem e Manutenção de Microcomputadores',
-    description: 'Curso Expedito de Montagem e Manutenção de Microcomputadores',
-    exam: 'MANMICRO',
-    subject: 'MANMICRO',
-    image: 'MANMICRO.jpeg',
-  },
-  {
-    id: 'opredes',
-    group: 'Cursos expeditos',
-    title: 'Operador de Redes',
-    description: 'Curso Expedito de Operador de Redes',
-    exam: 'OpRedes',
-    subject: 'OpRedes',
-    image: 'OpRedes.jpg',
-  },
-    {
-    id: 'cbinc',
-    group: 'Cursos expeditos',
-    title: 'Combate a Incêndio',
-    description: 'Curso Expedito de Combate a Incêndio',
-    exam: 'cbinc',
-    subject: 'Combate a Incêndio',
-    image: 'cbinc.jpg',
-  },
-]
-
-const examGroups = ['Concursos', 'Cursos expeditos']
 const SIMULATION_SIZE = 50
 const OFFLINE_ACCESS_GRACE_MS = 30 * 24 * 60 * 60 * 1000
 
-async function canContinueOffline() {
-  if (!isNativeApp()) return false
-
-  try {
-    const lastValidatedAt = await getLocalMetadata('access_last_validated_at')
-    if (!lastValidatedAt || (!(await hasCachedQuestions()) && !(await hasCachedMindMaps()))) return false
-
-    const elapsed = Date.now() - Date.parse(lastValidatedAt)
-    return elapsed >= 0 && elapsed <= OFFLINE_ACCESS_GRACE_MS
-  } catch {
-    return false
-  }
-}
-
-function toQuestion(row: QuestionRow): Question {
-  return {
-    id: row.id,
-    year: row.question_type === 'bibliography' ? 'Bibliografia' : String(row.year ?? ''),
-    questionNumber: row.question_type === 'bibliography' || row.question_number === 0 ? null : row.question_number,
-    questionType: row.question_type,
-    subject: row.subject,
-    topic: row.topic,
-    difficulty: row.difficulty,
-    exam: row.exam,
-    prompt: row.statement,
-    promptAfterImage: row.statement_after_image,
-    imageUrl: row.image_url,
-    imageAlt: row.image_alt,
-    options: row.options,
-    answer: row.correct_option,
-    explanation: row.explanation,
-    source: row.source,
-  }
-}
-
-function conciseSource(source: string) {
-  const normalized = source.replace(/\s+/g, ' ').trim()
-  const edition = /\b\d+\s*(?:[ªaºo])?\s*\.?\s*(?:ed\.?|edição)(?![\p{L}])/iu.exec(normalized)
-  if (!edition || edition.index === undefined) return normalized
-
-  const end = edition.index + edition[0].length
-  return `${normalized.slice(0, end).replace(/[\s.,;:]+$/, '')}.`
-}
-
-function normalizeSearchText(value: string) {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase('pt-BR')
-}
-
-// Fisher-Yates: sorteio realmente uniforme (evite sort(() => Math.random() - 0.5))
-function shuffle<T>(items: T[]): T[] {
-  const copy = [...items]
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[copy[i], copy[j]] = [copy[j], copy[i]]
-  }
-  return copy
-}
-
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path}`
-
-const mathSegmentPattern = /(\$\$[\s\S]+?\$\$|\$[^$\n]+\$)/g
-
-type RichTextProps = {
-  text: string
-  className?: string
-}
-
-function RichText({ text, className }: RichTextProps) {
-  return (
-    <span className={className}>
-      {text.split(mathSegmentPattern).map((segment, index) => {
-        const isBlockMath = segment.startsWith('$$') && segment.endsWith('$$')
-        const isInlineMath = segment.startsWith('$') && segment.endsWith('$')
-
-        if (!isBlockMath && !isInlineMath) {
-          return <Fragment key={index}>{segment}</Fragment>
-        }
-
-        const delimiters = isBlockMath ? 2 : 1
-        const math = segment.slice(delimiters, -delimiters)
-
-        return (
-          <span
-            key={index}
-            dangerouslySetInnerHTML={{
-              __html: katex.renderToString(math, {
-                displayMode: isBlockMath,
-                throwOnError: false,
-              }),
-            }}
-          />
-        )
-      })}
-    </span>
-  )
-}
 
 function ZoomableImage({ src, alt }: { src: string; alt: string }) {
   const [scale, setScale] = useState(1)
@@ -260,12 +80,8 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
     }
   }
 
-  function onTouchEnd(event: TouchEvent<HTMLDivElement>) {
+  function onTouchEnd() {
     gesture.current = null
-    if (event.touches.length === 1) {
-      const touch = event.touches[0]
-      gesture.current = { distance: 0, scale, x: offset.x, y: offset.y, touchX: touch.clientX, touchY: touch.clientY }
-    }
   }
 
   return (
@@ -337,32 +153,37 @@ function PerformanceDashboard({
 
   const groupings = examFilter === 'Todos' ? makeGroups('exam') : makeGroups('subject')
 
-  return <section className="mt-8" aria-labelledby="performance-title">
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Seu progresso no aparelho</p><h2 id="performance-title" className="mt-1 font-display text-2xl font-extrabold">Painel de desempenho</h2></div>
-      <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold hover:border-sea hover:text-sea" type="button" onClick={onClose}>Voltar aos concursos</button>
-    </div>
-    <div className="mt-5 grid gap-3 sm:grid-cols-2">
-      <label className="text-xs font-bold text-muted">Concurso<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={examFilter} onChange={(event) => { setExamFilter(event.target.value); setSubjectFilter('Todos') }}><option>Todos</option>{exams.map((exam) => <option key={exam}>{exam}</option>)}</select></label>
-      <label className="text-xs font-bold text-muted">Matéria<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value)}><option>Todos</option>{subjects.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
-    </div>
-    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {[
-        { label: 'Respondidas', value: answered.length },
-        { label: 'Acertos', value: correct.length },
-        { label: 'Erros', value: wrong.length },
-        { label: 'Aproveitamento', value: `${accuracy}%` },
-      ].map((item) => <article key={item.label} className="rounded-xl border border-line bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-muted">{item.label}</p><p className="mt-2 font-display text-3xl font-extrabold text-ink">{item.value}</p></article>)}
-    </div>
-    <div className="mt-5 grid gap-5 lg:grid-cols-2">
-      <section className="rounded-xl border border-line bg-white p-4 sm:p-5"><h3 className="font-display text-lg font-extrabold">{examFilter === 'Todos' ? 'Por concurso' : 'Por matéria'}</h3>
-        {groupings.length ? <div className="mt-3 space-y-3">{groupings.map(([label, values]) => { const percent = values.answered ? Math.round(values.correct / values.answered * 100) : 0; return <div key={label}><div className="flex justify-between gap-3 text-sm"><span className="font-semibold">{label}</span><span className="shrink-0 text-muted">{values.correct}/{values.answered} · {percent}%</span></div><div className="mt-1.5 h-2 overflow-hidden rounded-full bg-paper"><div className="h-full rounded-full bg-sea" style={{ width: `${percent}%` }} /></div></div> })}</div> : <p className="mt-3 text-sm leading-6 text-muted">Responda algumas questões para ver seu desempenho por grupo.</p>}
-      </section>
-      <section className="rounded-xl border border-line bg-white p-4 sm:p-5"><div className="flex items-center justify-between gap-2"><h3 className="font-display text-lg font-extrabold">Questões para revisar</h3><span className="rounded-full bg-[#fff2e8] px-2.5 py-1 text-xs font-bold text-[#9b5734]">{wrong.length} erradas</span></div>
-        {wrong.length ? <div className="mt-3 max-h-80 space-y-2 overflow-y-auto">{wrong.slice(0, 30).map(([id, question]) => <button key={id} type="button" className="w-full rounded-lg border border-line p-3 text-left hover:border-sea" onClick={() => onReview(id, question)}><span className="block text-xs font-bold text-sea">{question.exam} · {question.subject}{question.topic ? ` · ${question.topic}` : ''}</span><span className="mt-1 line-clamp-2 block text-sm leading-5">{question.prompt}</span><span className="mt-1 block text-xs font-bold text-muted">Toque para revisar</span></button>)}</div> : <p className="mt-3 text-sm leading-6 text-muted">Nenhuma questão errada neste filtro. Questões respondidas são guardadas neste aparelho.</p>}
-      </section>
-    </div>
-  </section>
+  return (
+    <section className="mt-8" aria-labelledby="performance-title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Seu progresso no aparelho</p>
+          <h2 id="performance-title" className="mt-1 font-display text-2xl font-extrabold">Painel de desempenho</h2>
+        </div>
+        <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold hover:border-sea hover:text-sea" type="button" onClick={onClose}>Voltar aos concursos</button>
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <label className="text-xs font-bold text-muted">Concurso<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={examFilter} onChange={(event) => { setExamFilter(event.target.value); setSubjectFilter('Todos') }}><option>Todos</option>{exams.map((exam) => <option key={exam}>{exam}</option>)}</select></label>
+        <label className="text-xs font-bold text-muted">Matéria<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value)}><option>Todos</option>{subjects.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: 'Respondidas', value: answered.length },
+          { label: 'Acertos', value: correct.length },
+          { label: 'Erros', value: wrong.length },
+          { label: 'Aproveitamento', value: `${accuracy}%` },
+        ].map((item) => <article key={item.label} className="rounded-xl border border-line bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-muted">{item.label}</p><p className="mt-2 font-display text-3xl font-extrabold text-ink">{item.value}</p></article>)}
+      </div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <section className="rounded-xl border border-line bg-white p-4 sm:p-5"><h3 className="font-display text-lg font-extrabold">{examFilter === 'Todos' ? 'Por concurso' : 'Por matéria'}</h3>
+          {groupings.length ? <div className="mt-3 space-y-3">{groupings.map(([label, values]) => { const percent = values.answered ? Math.round(values.correct / values.answered * 100) : 0; return <div key={label}><div className="flex justify-between gap-3 text-sm"><span className="font-semibold">{label}</span><span className="shrink-0 text-muted">{values.correct}/{values.answered} · {percent}%</span></div><div className="mt-1.5 h-2 overflow-hidden rounded-full bg-paper"><div className="h-full rounded-full bg-sea" style={{ width: `${percent}%` }} /></div></div> })}</div> : <p className="mt-3 text-sm leading-6 text-muted">Responda algumas questões para ver seu desempenho por grupo.</p>}
+        </section>
+        <section className="rounded-xl border border-line bg-white p-4 sm:p-5"><div className="flex items-center justify-between gap-2"><h3 className="font-display text-lg font-extrabold">Questões para revisar</h3><span className="rounded-full bg-[#fff2e8] px-2.5 py-1 text-xs font-bold text-[#9b5734]">{wrong.length} erradas</span></div>
+          {wrong.length ? <div className="mt-3 max-h-80 space-y-2 overflow-y-auto">{wrong.slice(0, 30).map(([id, question]) => <button key={id} type="button" className="w-full rounded-lg border border-line p-3 text-left hover:border-sea" onClick={() => onReview(id, question)}><span className="block text-xs font-bold text-sea">{question.exam} · {question.subject}{question.topic ? ` · ${question.topic}` : ''}</span><span className="mt-1 line-clamp-2 block text-sm leading-5">{question.prompt}</span><span className="mt-1 block text-xs font-bold text-muted">Toque para revisar</span></button>)}</div> : <p className="mt-3 text-sm leading-6 text-muted">Nenhuma questão errada neste filtro. Questões respondidas são guardadas neste aparelho.</p>}
+        </section>
+      </div>
+    </section>
+  )
 }
 
 function AccountSyncPanel({
@@ -474,20 +295,22 @@ function AccountSyncPanel({
 
   const permanentUser = user !== null && !user.is_anonymous && !passwordSetupRequired && step === 'complete'
 
-  return <div className="fixed inset-0 z-[60] grid place-items-center bg-ink/60 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-    <section className="w-full max-w-lg rounded-2xl bg-white p-6 text-ink shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="account-sync-title">
-      <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Conta opcional</p><h2 id="account-sync-title" className="mt-1 font-display text-2xl font-extrabold">Sincronizar progresso</h2></div><button className="rounded-lg border border-line px-3 py-2 text-sm font-bold" type="button" onClick={onClose}>Fechar</button></div>
-      <p className="mt-3 text-sm leading-6 text-muted">Seu acesso por código continua funcionando sem conta. Vincule um e-mail e uma senha para levar respostas e favoritos a outros aparelhos.</p>
-      {permanentUser ? <div className="mt-5 rounded-xl bg-sea-light p-4"><p className="text-sm font-bold">Conta vinculada: {user.email}</p><p className="mt-1 text-xs leading-5 text-muted">O progresso é salvo localmente e sincronizado quando há conexão.</p><button className="mt-3 rounded-lg bg-sea px-4 py-2.5 text-sm font-extrabold text-white disabled:opacity-60" type="button" disabled={syncStatus === 'syncing' || syncStatus === 'offline'} onClick={onSync}>{syncStatus === 'syncing' ? 'Sincronizando…' : 'Sincronizar agora'}</button><p className="mt-2 text-xs text-muted" aria-live="polite">{syncStatus === 'synced' ? 'Tudo sincronizado.' : syncStatus === 'offline' ? 'Sem conexão. O progresso será enviado quando a internet voltar.' : syncStatus === 'error' ? 'Falha na sincronização. Tente novamente.' : ''}</p></div>
-        : step === 'email' ? <form className="mt-5 space-y-3" onSubmit={(event) => void sendConfirmation(event)}><label className="block text-sm font-bold">Seu e-mail<input autoComplete="email" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><button className="w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white disabled:opacity-60" type="submit" disabled={busy}>{busy ? 'Enviando…' : 'Enviar confirmação do e-mail'}</button></form>
-        : step === 'confirm' ? <div className="mt-5"><p className="rounded-lg bg-sea-light p-3 text-sm leading-6">{notice}</p><button className="mt-3 w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white disabled:opacity-60" type="button" disabled={busy} onClick={() => void confirmEmail()}>{busy ? 'Conferindo…' : 'Já confirmei o e-mail'}</button><button className="mt-3 w-full text-sm font-bold text-muted underline" type="button" onClick={() => setStep('email')}>Usar outro e-mail</button></div>
-        : <form className="mt-5 space-y-3" onSubmit={(event) => void createPassword(event)}><p className="text-sm text-muted">E-mail confirmado: <strong>{user?.email ?? email}</strong></p><label className="block text-sm font-bold">Crie uma senha<input autoComplete="new-password" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required /></label><button className="w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white disabled:opacity-60" type="submit" disabled={busy}>{busy ? 'Salvando…' : 'Criar senha e ativar sincronização'}</button></form>}
-      {error && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm leading-5 text-red-800" role="alert">{error}</p>}
-      {notice && step !== 'confirm' && <p className="mt-3 rounded-lg bg-green-50 p-3 text-sm leading-5 text-green-800" role="status">{notice}</p>}
-      {user?.is_anonymous && <button className="mt-3 text-sm font-bold text-sea underline disabled:opacity-60" type="button" disabled={busy} onClick={() => void switchToExistingAccount()}>Já tenho uma conta: sair e entrar nela</button>}
-      <p className="mt-5 text-xs leading-5 text-muted">Se você entrar numa conta já existente, o progresso local e o da conta serão mesclados por questão, priorizando a alteração mais recente.</p>
-    </section>
-  </div>
+  return (
+    <div className="fixed inset-0 z-[60] grid place-items-center bg-ink/60 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+      <section className="w-full max-w-lg rounded-2xl bg-white p-6 text-ink shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="account-sync-title">
+        <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Conta opcional</p><h2 id="account-sync-title" className="mt-1 font-display text-2xl font-extrabold">Sincronizar progresso</h2></div><button className="rounded-lg border border-line px-3 py-2 text-sm font-bold" type="button" onClick={onClose}>Fechar</button></div>
+        <p className="mt-3 text-sm leading-6 text-muted">Seu acesso por código continua funcionando sem conta. Vincule um e-mail e uma senha para levar respostas e favoritos a outros aparelhos.</p>
+        {permanentUser ? <div className="mt-5 rounded-xl bg-sea-light p-4"><p className="text-sm font-bold">Conta vinculada: {user.email}</p><p className="mt-1 text-xs leading-5 text-muted">O progresso é salvo localmente e sincronizado quando há conexão.</p><button className="mt-3 rounded-lg bg-sea px-4 py-2.5 text-sm font-extrabold text-white disabled:opacity-60" type="button" disabled={syncStatus === 'syncing' || syncStatus === 'offline'} onClick={onSync}>{syncStatus === 'syncing' ? 'Sincronizando…' : 'Sincronizar agora'}</button><p className="mt-2 text-xs text-muted" aria-live="polite">{syncStatus === 'synced' ? 'Tudo sincronizado.' : syncStatus === 'offline' ? 'Sem conexão. O progresso será enviado quando a internet voltar.' : syncStatus === 'error' ? 'Falha na sincronização. Tente novamente.' : ''}</p></div>
+          : step === 'email' ? <form className="mt-5 space-y-3" onSubmit={(event) => void sendConfirmation(event)}><label className="block text-sm font-bold">Seu e-mail<input autoComplete="email" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><button className="w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white disabled:opacity-60" type="submit" disabled={busy}>{busy ? 'Enviando…' : 'Enviar confirmação do e-mail'}</button></form>
+          : step === 'confirm' ? <div className="mt-5"><p className="rounded-lg bg-sea-light p-3 text-sm leading-6">{notice}</p><button className="mt-3 w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white disabled:opacity-60" type="button" disabled={busy} onClick={() => void confirmEmail()}>{busy ? 'Conferindo…' : 'Já confirmei o e-mail'}</button><button className="mt-3 w-full text-sm font-bold text-muted underline" type="button" onClick={() => setStep('email')}>Usar outro e-mail</button></div>
+          : <form className="mt-5 space-y-3" onSubmit={(event) => void createPassword(event)}><p className="text-sm text-muted">E-mail confirmado: <strong>{user?.email ?? email}</strong></p><label className="block text-sm font-bold">Crie uma senha<input autoComplete="new-password" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required /></label><button className="w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white disabled:opacity-60" type="submit" disabled={busy}>{busy ? 'Salvando…' : 'Criar senha e ativar sincronização'}</button></form>}
+        {error && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm leading-5 text-red-800" role="alert">{error}</p>}
+        {notice && step !== 'confirm' && <p className="mt-3 rounded-lg bg-green-50 p-3 text-sm leading-5 text-green-800" role="status">{notice}</p>}
+        {user?.is_anonymous && <button className="mt-3 text-sm font-bold text-sea underline disabled:opacity-60" type="button" disabled={busy} onClick={() => void switchToExistingAccount()}>Já tenho uma conta: sair e entrar nela</button>}
+        <p className="mt-5 text-xs leading-5 text-muted">Se você entrar numa conta já existente, o progresso local e o da conta serão mesclados por questão, priorizando a alteração mais recente.</p>
+      </section>
+    </div>
+  )
 }
 
 function App() {
@@ -500,44 +323,72 @@ function App() {
   const [showAccountLogin, setShowAccountLogin] = useState(false)
   const [accountLoginEmail, setAccountLoginEmail] = useState('')
   const [accountLoginPassword, setAccountLoginPassword] = useState('')
-  const [accountUser, setAccountUser] = useState<{ id: string; email: string | null; is_anonymous: boolean } | null>(null)
   const [showAccountSync, setShowAccountSync] = useState(false)
-  const [syncStatus, setSyncStatus] = useState<'local' | 'offline' | 'syncing' | 'synced' | 'error'>('local')
-  const [manualSyncRevision, setManualSyncRevision] = useState(0)
   const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine)
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
-  const [usingOfflineCache, setUsingOfflineCache] = useState(false)
+  const [showPerformance, setShowPerformance] = useState(false)
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null)
   const [selectedStudyMode, setSelectedStudyMode] = useState<'exam-questions' | 'bibliography-questions' | 'mind-maps' | null>(null)
-  const [topic, setTopic] = useState('Todos')
-  const [year, setYear] = useState('Todos')
-  const [bibliographySource, setBibliographySource] = useState('Todos')
-  const [questionSearch, setQuestionSearch] = useState('')
-  const [answers, setAnswers] = useState<Record<string, number>>({})
-  const [revealed, setRevealed] = useState<string[]>([])
-  const [favorites, setFavorites] = useState<string[]>([])
-  const [progressUpdatedAt, setProgressUpdatedAt] = useState<Record<string, string>>({})
-  const [questionSnapshots, setQuestionSnapshots] = useState<Record<string, StudyQuestionSnapshot>>({})
-  const [showPerformance, setShowPerformance] = useState(false)
-  const [reviewQuestionId, setReviewQuestionId] = useState<string | null>(null)
   const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
   const [simulationAnswers, setSimulationAnswers] = useState<Record<string, number>>({})
-  const [simulationRevealed, setSimulationRevealed] = useState<string[]>([])
-  const [savedSimulation, setSavedSimulation] = useState<SavedSimulation | null>(null)
+  const reviewQuestionIdRef = useRef<string | null>(null)
   const [mindMaps, setMindMaps] = useState<MindMap[]>([])
   const [mindMapsLoading, setMindMapsLoading] = useState(false)
   const [mindMapsError, setMindMapsError] = useState('')
   const [mindMapAction, setMindMapAction] = useState<string | null>(null)
   const [showDownloadedMindMapsOnly, setShowDownloadedMindMapsOnly] = useState(false)
   const [openImageMap, setOpenImageMap] = useState<{ map: MindMap; url: string } | null>(null)
-  const [progressRestored, setProgressRestored] = useState(false)
-  const skipSelectionReset = useRef(false)
-  const suppressProgressTimestamp = useRef(false)
-  const previousQuestionProgress = useRef({ answers: {} as Record<string, number>, revealed: [] as string[], favorites: [] as string[] })
-  const lastSyncedProgressFingerprint = useRef<string | null>(null)
-  const lastManualSyncRevision = useRef(0)
+  const [accountUser, setAccountUser] = useState<{ id: string; email: string | null; is_anonymous: boolean } | null>(null)
+
+  const {
+    questions,
+    loading,
+    loadError,
+    usingOfflineCache,
+    topics,
+    years,
+    bibliographySources,
+    filteredQuestions,
+    setTopic,
+    setYear,
+    setBibliographySource,
+    setQuestionSearch,
+    topic,
+    year,
+    bibliographySource,
+    questionSearch,
+  } = useQuestions({
+    selectedExamId,
+    selectedStudyMode: selectedStudyMode === 'mind-maps' ? null : selectedStudyMode,
+    examChoices,
+  })
+
+  const filteredQuestionsRef = useRef(filteredQuestions)
+
+  useEffect(() => {
+    filteredQuestionsRef.current = filteredQuestions
+  }, [filteredQuestions])
+
+  const {
+    answers,
+    revealed,
+    favorites,
+    progressUpdatedAt,
+    questionSnapshots,
+    savedSimulation,
+    setSavedSimulation,
+    simulationRevealed,
+    setSimulationRevealed,
+    syncStatus,
+    setAnswers,
+    setRevealed,
+    setFavorites,
+    setManualSyncRevision,
+    skipSelectionReset,
+  } = useProgress({
+    questions,
+    accountUser,
+    isOnline,
+  })
 
   useEffect(() => {
     if (!supabase) return
@@ -560,127 +411,136 @@ function App() {
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline) }
   }, [])
 
-  useEffect(() => {
-    let active = true
-    void loadStudyProgress().then((progress) => {
-      if (!active) return
-      if (progress) {
-        skipSelectionReset.current = true
-        suppressProgressTimestamp.current = true
-        setAnswers(progress.answers)
-        setRevealed(progress.revealed)
-        setFavorites(progress.favorites)
-        setProgressUpdatedAt(progress.progressUpdatedAt)
-        setQuestionSnapshots(progress.questionSnapshots)
-        setSavedSimulation(progress.savedSimulation)
-        setSelectedExamId(progress.selectedExamId)
-        setSelectedStudyMode(progress.selectedStudyMode)
-        setTopic(progress.topic)
-        setYear(progress.year)
-        setBibliographySource(progress.bibliographySource)
-        setQuestionSearch(progress.questionSearch)
+  async function canContinueOffline() {
+    if (!isNativeApp()) return false
+    try {
+      const lastValidatedAt = await getLocalMetadata('access_last_validated_at')
+      if (!lastValidatedAt || (!(await hasCachedQuestions()) && !(await hasCachedMindMaps()))) return false
+      const elapsed = Date.now() - Date.parse(lastValidatedAt)
+      return elapsed >= 0 && elapsed <= OFFLINE_ACCESS_GRACE_MS
+    } catch {
+      return false
+    }
+  }
+
+  async function checkAccess() {
+    try {
+      await getLocalDatabase()
+    } catch (error) {
+      console.warn('Não foi possível iniciar o banco local.', error)
+    }
+
+    if (!supabase) {
+      if (await canContinueOffline()) {
+        setAccessState('granted')
+        return
       }
-      setProgressRestored(true)
-    })
-    return () => { active = false }
+      setAccessError('Configure as variáveis do Supabase no arquivo .env.local.')
+      setAccessState('locked')
+      return
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError) {
+      if (await canContinueOffline()) {
+        setAccessState('granted')
+        return
+      }
+      setAccessError('Não foi possível verificar sua sessão. Tente recarregar a página.')
+      setAccessState('locked')
+      return
+    }
+
+    if (!sessionData.session) {
+      if (await canContinueOffline()) {
+        setAccessState('granted')
+        return
+      }
+      setAccessState('locked')
+      return
+    }
+
+    const { data, error } = await supabase.rpc('has_active_access')
+    if (error) {
+      if (await canContinueOffline()) {
+        setAccessState('granted')
+        return
+      }
+      setAccessError('Não foi possível validar o acesso. Confira se o script de acesso foi executado no Supabase e se o login anônimo está habilitado.')
+      setAccessState('locked')
+      return
+    }
+
+    if (data) {
+      void setLocalMetadata('access_last_validated_at', new Date().toISOString())
+      setAccessState('granted')
+    } else {
+      setAccessState('locked')
+    }
+  }
+
+  useEffect(() => {
+    void checkAccess()
   }, [])
 
-  useEffect(() => {
-    if (!progressRestored) return
-    const timeout = window.setTimeout(() => {
-      void saveStudyProgress({
-        answers, revealed, favorites, selectedExamId, selectedStudyMode,
-        topic, year, bibliographySource, questionSearch, questionSnapshots, progressUpdatedAt,
-        savedSimulation,
-      })
-    }, 200)
-    return () => window.clearTimeout(timeout)
-  }, [progressRestored, answers, revealed, favorites, selectedExamId, selectedStudyMode, topic, year, bibliographySource, questionSearch, questionSnapshots, progressUpdatedAt, savedSimulation])
-
-  useEffect(() => {
-    if (!progressRestored) return
-    const current = { answers, revealed, favorites }
-    if (suppressProgressTimestamp.current) {
-      suppressProgressTimestamp.current = false
-      previousQuestionProgress.current = current
+  async function handleAccessSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setAccessError('')
+    if (!supabase) {
+      setAccessError('Configure as variáveis do Supabase no arquivo .env.local.')
       return
     }
-    const previous = previousQuestionProgress.current
-    const ids = new Set([...Object.keys(previous.answers), ...Object.keys(answers), ...previous.revealed, ...revealed, ...previous.favorites, ...favorites])
-    const changed = [...ids].filter((id) =>
-      previous.answers[id] !== answers[id] ||
-      previous.revealed.includes(id) !== revealed.includes(id) ||
-      previous.favorites.includes(id) !== favorites.includes(id))
-    previousQuestionProgress.current = current
-    if (changed.length) {
-      const updatedAt = new Date().toISOString()
-      setProgressUpdatedAt((existing) => ({ ...existing, ...Object.fromEntries(changed.map((id) => [id, updatedAt])) }))
-    }
-  }, [progressRestored, answers, revealed, favorites])
-
-  useEffect(() => {
-    if (!progressRestored || !accountUser || accountUser.is_anonymous) {
-      setSyncStatus('local')
-      return
-    }
-    if (!isOnline) {
-      setSyncStatus('offline')
-      return
-    }
-
-    const fingerprint = JSON.stringify({ userId: accountUser.id, answers, favorites: [...favorites].sort(), revealed: [...revealed].sort(), progressUpdatedAt })
-    const isManualSync = manualSyncRevision > lastManualSyncRevision.current
-    if (!isManualSync && fingerprint === lastSyncedProgressFingerprint.current) return
-    let active = true
-    const timer = window.setTimeout(() => {
-      setSyncStatus('syncing')
-      void syncStudyProgress({ answers, favorites, revealed, progressUpdatedAt, questionSnapshots })
-        .then((merged) => {
-          if (!active) return
-          lastManualSyncRevision.current = manualSyncRevision
-          if (!merged) { setSyncStatus('offline'); return }
-          const mergedFingerprint = JSON.stringify({ userId: accountUser.id, answers: merged.answers, favorites: [...merged.favorites].sort(), revealed: [...merged.revealed].sort(), progressUpdatedAt: merged.progressUpdatedAt })
-          lastSyncedProgressFingerprint.current = mergedFingerprint
-          suppressProgressTimestamp.current = true
-          setAnswers(merged.answers)
-          setFavorites(merged.favorites)
-          setRevealed(merged.revealed)
-          setProgressUpdatedAt(merged.progressUpdatedAt)
-          setQuestionSnapshots(merged.questionSnapshots)
-          setSyncStatus('synced')
-        })
-        .catch((error: unknown) => {
-          if (!active) return
-          lastSyncedProgressFingerprint.current = null
-          setSyncStatus('error')
-          console.warn('Falha ao sincronizar progresso.', error)
-        })
-    }, 450)
-    return () => { active = false; window.clearTimeout(timer) }
-  }, [progressRestored, accountUser, isOnline, answers, favorites, revealed, progressUpdatedAt, questionSnapshots, manualSyncRevision])
-
-  useEffect(() => {
-    if (!questions.length) return
-    setQuestionSnapshots((current) => {
-      const next = { ...current }
-      for (const question of questions) {
-        next[question.id] = {
-          exam: question.exam,
-          subject: question.subject,
-          topic: question.topic,
-          year: question.year,
-          questionType: question.questionType,
-          prompt: question.prompt.slice(0, 400),
-          correctOption: question.answer,
-        }
+    setCheckingCode(true)
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      if (!sessionData.session) {
+        const { error } = await supabase.auth.signInAnonymously()
+        if (error) throw error
       }
-      return next
-    })
-  }, [questions])
+      const { data, error } = await supabase.rpc('redeem_access_code', { p_code: accessCode.trim() })
+      if (error) throw error
+      if (!data) {
+        setAccessError('Código inválido ou expirado. Confira o código recebido e tente novamente.')
+        return
+      }
+      void setLocalMetadata('access_last_validated_at', new Date().toISOString())
+      setAccessCode('')
+      setAccessState('granted')
+    } catch {
+      setAccessError('Não foi possível validar o código. Confira se o login anônimo está habilitado e tente novamente.')
+    } finally {
+      setCheckingCode(false)
+    }
+  }
+
+  async function handleAccountLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!supabase) return
+    setCheckingCode(true)
+    setAccessError('')
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: accountLoginEmail.trim(), password: accountLoginPassword })
+      if (signInError) throw signInError
+      const { data, error } = await supabase.rpc('has_active_access')
+      if (error) throw error
+      if (data) {
+        void setLocalMetadata('access_last_validated_at', new Date().toISOString())
+        setAccessState('granted')
+        setAccessError('')
+      } else {
+        setAccessError('Conta conectada. Para liberar os estudos, informe um código de acesso válido acima.')
+      }
+      setAccountLoginPassword('')
+    } catch (error) {
+      setAccessError(`Não foi possível entrar: ${error instanceof Error ? error.message : 'Confira o e-mail e a senha.'}`)
+    } finally {
+      setCheckingCode(false)
+    }
+  }
 
   useEffect(() => {
     if (Capacitor.getPlatform() !== 'android') return
-
     const listener = CapacitorApp.addListener('backButton', () => {
       if (adminMode) {
         setAdminMode(false)
@@ -691,7 +551,7 @@ function App() {
       } else if (openImageMap) {
         setOpenImageMap(null)
       } else if (simulationIds !== null) {
-        exitSimulation()
+        setSimulationIds(null)
       } else if (selectedExamId === 'cp-t-informatica' && selectedStudyMode !== null) {
         setSelectedStudyMode(null)
       } else if (selectedExamId !== null) {
@@ -700,7 +560,6 @@ function App() {
         void CapacitorApp.exitApp()
       }
     })
-
     return () => { void listener.then((handle) => handle.remove()) }
   }, [adminMode, showAccountSync, showPerformance, openImageMap, simulationIds, selectedExamId, selectedStudyMode])
 
@@ -759,333 +618,20 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    let active = true
-
-    async function checkAccess() {
-      try {
-        await getLocalDatabase()
-      } catch (error) {
-        console.warn('Não foi possível iniciar o banco local.', error)
-      }
-
-      if (!supabase) {
-        if (await canContinueOffline()) {
-          setAccessState('granted')
-          return
-        }
-        setAccessError('Configure as variáveis do Supabase no arquivo .env.local.')
-        setAccessState('locked')
-        return
-      }
-
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-
-      if (!active) return
-
-      if (sessionError) {
-        if (await canContinueOffline()) {
-          setAccessState('granted')
-          return
-        }
-        setAccessError('Não foi possível verificar sua sessão. Tente recarregar a página.')
-        setAccessState('locked')
-        return
-      }
-
-      if (!sessionData.session) {
-        if (await canContinueOffline()) {
-          setAccessState('granted')
-          return
-        }
-        setAccessState('locked')
-        return
-      }
-
-      const { data, error } = await supabase.rpc('has_active_access')
-
-      if (!active) return
-
-      if (error) {
-        if (await canContinueOffline()) {
-          setAccessState('granted')
-          return
-        }
-        setAccessError('Não foi possível validar o acesso. Confira se o script de acesso foi executado no Supabase e se o login anônimo está habilitado.')
-        setAccessState('locked')
-        return
-      }
-
-      if (data) {
-        void setLocalMetadata('access_last_validated_at', new Date().toISOString())
-        setAccessState('granted')
-      } else {
-        setAccessState('locked')
-      }
-    }
-
-    void checkAccess()
-
-    return () => {
-      active = false
-    }
-  }, [])
-
-  async function handleAccessSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setAccessError('')
-
-    if (!supabase) {
-      setAccessError('Configure as variáveis do Supabase no arquivo .env.local.')
-      return
-    }
-
-    setCheckingCode(true)
-
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-
-      if (sessionError) throw sessionError
-
-      if (!sessionData.session) {
-        const { error } = await supabase.auth.signInAnonymously()
-        if (error) throw error
-      }
-
-      const { data, error } = await supabase.rpc('redeem_access_code', {
-        p_code: accessCode.trim(),
-      })
-
-      if (error) throw error
-
-      if (!data) {
-        setAccessError('Código inválido ou expirado. Confira o código recebido e tente novamente.')
-        return
-      }
-
-      void setLocalMetadata('access_last_validated_at', new Date().toISOString())
-      setAccessCode('')
-      setAccessState('granted')
-    } catch {
-      setAccessError('Não foi possível validar o código. Confira se o login anônimo está habilitado e tente novamente.')
-    } finally {
-      setCheckingCode(false)
-    }
-  }
-
-  async function handleAccountLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!supabase) return
-    setCheckingCode(true)
-    setAccessError('')
-    try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email: accountLoginEmail.trim(), password: accountLoginPassword })
-      if (signInError) throw signInError
-      const { data, error } = await supabase.rpc('has_active_access')
-      if (error) throw error
-      if (data) {
-        void setLocalMetadata('access_last_validated_at', new Date().toISOString())
-        setAccessState('granted')
-        setAccessError('')
-      } else {
-        setAccessError('Conta conectada. Para liberar os estudos, informe um código de acesso válido acima.')
-      }
-      setAccountLoginPassword('')
-    } catch (error) {
-      setAccessError(`Não foi possível entrar: ${error instanceof Error ? error.message : 'Confira o e-mail e a senha.'}`)
-    } finally {
-      setCheckingCode(false)
-    }
-  }
-
-  useEffect(() => {
-    let active = true
-
-    async function loadQuestions() {
-      const selectedExam = examChoices.find((choice) => choice.id === selectedExamId)
-
-      if (!selectedExam) {
-        setQuestions([])
-        setLoading(false)
-        return
-      }
-
-      if (selectedExam.id === 'cp-t-informatica' && selectedStudyMode !== 'exam-questions' && selectedStudyMode !== 'bibliography-questions') {
-        setQuestions([])
-        setLoading(false)
-        setLoadError('')
-        return
-      }
-
-      const questionType: 'exam' | 'bibliography' = selectedExam.id === 'cp-t-informatica' && selectedStudyMode === 'bibliography-questions'
-        ? 'bibliography'
-        : 'exam'
-
-      setLoading(true)
-      setLoadError('')
-      setUsingOfflineCache(false)
-
-      let cachedRows: QuestionRow[] = []
-      try {
-        cachedRows = await readCachedQuestions(selectedExam.exam, selectedExam.subject, questionType)
-        if (!active) return
-        if (cachedRows.length > 0) {
-          setQuestions(cachedRows.map(toQuestion))
-          setUsingOfflineCache(true)
-          setLoading(false)
-        }
-      } catch (error) {
-        console.warn('Não foi possível ler as questões salvas no aparelho.', error)
-      }
-
-      if (!supabase) {
-        setLoadError('Configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY no arquivo .env.local.')
-        setLoading(false)
-        return
-      }
-
-      let query = supabase
-        .from('questions')
-        .select('id, year, question_number, question_type, subject, topic, difficulty, exam, statement, statement_after_image, image_url, image_alt, options, correct_option, explanation, source')
-        .eq('is_published', true)
-        .eq('is_annulled', false)
-        .eq('exam', selectedExam.exam)
-        .eq('question_type', questionType)
-
-      if (selectedExam.subject) {
-        query = query.eq('subject', selectedExam.subject)
-      }
-
-      const { data, error } = await query.order('year', { ascending: false })
-
-      if (!active) return
-
-      if (error) {
-        if (cachedRows.length > 0) {
-          setLoadError('')
-          setLoading(false)
-          return
-        }
-        setLoadError(`Não foi possível carregar as questões. Confira se a tabela public.questions e a política de leitura estão configuradas. (${error.message})`)
-      } else {
-        const questionRows = data as QuestionRow[]
-        setUsingOfflineCache(false)
-        void cacheQuestions(questionRows, selectedExam.exam, selectedExam.subject, questionType).catch((cacheError) => {
-          console.warn('Não foi possível atualizar o cache local de questões.', cacheError)
-        })
-        setQuestions((data as QuestionRow[]).map((row) => ({
-          id: row.id,
-          year: row.question_type === 'bibliography' ? 'Bibliografia' : String(row.year ?? ''),
-          questionNumber: row.question_number,
-          questionType: row.question_type,
-          subject: row.subject,
-          topic: row.topic,
-          difficulty: row.difficulty,
-          exam: row.exam,
-          prompt: row.statement,
-          promptAfterImage: row.statement_after_image,
-          imageUrl: row.image_url,
-          imageAlt: row.image_alt,
-          options: row.options,
-          answer: row.correct_option,
-          explanation: row.explanation,
-          source: row.source,
-        })))
-      }
-
-      setLoading(false)
-    }
-
-    void loadQuestions()
-
-    return () => {
-      active = false
-    }
-  }, [selectedExamId, selectedStudyMode])
-
-  useEffect(() => {
-    if (!reviewQuestionId || loading) return
-    const target = document.getElementById(`question-${reviewQuestionId}`)
-    if (!target) return
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    setReviewQuestionId(null)
-  }, [reviewQuestionId, loading, questions])
-
-  useEffect(() => {
-    if (!progressRestored) return
-    if (skipSelectionReset.current) {
-      skipSelectionReset.current = false
-      return
-    }
-    setTopic('Todos')
-    setYear('Todos')
-    setBibliographySource('Todos')
-    setQuestionSearch('')
-    setSimulationIds(null)
-  }, [progressRestored, selectedExamId, selectedStudyMode])
-
-  const topics = useMemo(
-    () => ['Todos', ...new Set(questions.flatMap((question) => question.topic ? [question.topic] : []))],
-    [questions],
-  )
-  const years = useMemo(
-    () => ['Todos', ...new Set(questions.map((question) => question.year).filter(Boolean))],
-    [questions],
-  )
-  const bibliographySources = useMemo(
-    () => ['Todos', ...new Set(questions.flatMap((question) => question.source ? [conciseSource(question.source)] : []))],
-    [questions],
-  )
-
-  const filteredQuestions = useMemo(() => {
-    const normalizedSearch = normalizeSearchText(questionSearch.trim())
-    return questions.filter((question) => {
-      const searchableText = [
-        question.prompt,
-        question.promptAfterImage,
-        question.options.join(' '),
-        question.explanation,
-        question.source,
-        question.subject,
-        question.topic,
-        question.exam,
-        question.year,
-      ].filter(Boolean).join(' ')
-      const matchesSearch = !normalizedSearch || normalizeSearchText(searchableText).includes(normalizedSearch)
-
-      return matchesSearch &&
-        (topic === 'Todos' || question.topic === topic) &&
-        (selectedStudyMode !== 'bibliography-questions' || bibliographySource === 'Todos' || (question.source !== null && conciseSource(question.source) === bibliographySource)) &&
-        (year === 'Todos' || question.year === year)
-    })
-  }, [questions, topic, year, bibliographySource, selectedStudyMode, questionSearch])
-
-  const visibleQuestions = useMemo(() => {
-    if (!simulationIds) return filteredQuestions
-    const byId = new Map(questions.map((q) => [q.id, q]))
-    return simulationIds.flatMap((id) => {
-      const q = byId.get(id)
-      return q ? [q] : []
-    })
-  }, [simulationIds, filteredQuestions, questions])
-
   const downloadedMindMapsCount = mindMaps.filter((map) => map.local_path).length
   const visibleMindMaps = showDownloadedMindMapsOnly
     ? mindMaps.filter((map) => map.local_path)
     : mindMaps
 
-  const simulationAnsweredCount = visibleQuestions.filter(
-  (question) => simulationAnswers[question.id] !== undefined,
-).length
-  const simulationCorrectCount = visibleQuestions.filter(
-  (question) => simulationAnswers[question.id] === question.answer,
-).length
-  const simulationComplete =
-  visibleQuestions.length > 0 && simulationAnsweredCount === visibleQuestions.length
-  const pointsPerQuestion = visibleQuestions.length ? 100 / visibleQuestions.length : 0
-  const simulationScore = simulationComplete
-  ? (simulationCorrectCount / visibleQuestions.length) * 100
-  : 0
+  const simulationAnsweredCount = filteredQuestions.filter(
+    (question) => simulationAnswers[question.id] !== undefined,
+  ).length
+  const simulationCorrectCount = filteredQuestions.filter(
+    (question) => simulationAnswers[question.id] === question.answer,
+  ).length
+  const simulationComplete = filteredQuestions.length > 0 && simulationAnsweredCount === filteredQuestions.length
+  const pointsPerQuestion = filteredQuestions.length ? 100 / filteredQuestions.length : 0
+  const simulationScore = simulationComplete ? (simulationCorrectCount / filteredQuestions.length) * 100 : 0
 
   const correctCount = questions.filter(
     (question) => answers[question.id] === question.answer,
@@ -1095,6 +641,7 @@ function App() {
 
   const examCount = new Set(questions.map((question) => question.exam)).size
   const topicCount = new Set(questions.map((question) => question.topic).filter(Boolean)).size
+
   const lastStudiedQuestion = useMemo(() => {
     const latest = Object.entries(progressUpdatedAt)
       .filter(([questionId]) => questionSnapshots[questionId])
@@ -1105,63 +652,12 @@ function App() {
     const examChoice = examChoices.find((choice) => choice.exam === snapshot.exam)
     return examChoice ? { questionId, snapshot, examChoice } : null
   }, [progressUpdatedAt, questionSnapshots])
+
   const resumeSavedSimulation = Boolean(savedSimulation && (
     !lastStudiedQuestion || Date.parse(savedSimulation.updatedAt) >= Date.parse(progressUpdatedAt[lastStudiedQuestion.questionId] ?? '')
   ))
 
-  function startSimulation() {
-  // Sorteia entre as questões que passam pelos filtros atuais.
-  // Para ignorar os filtros e sortear de toda a prova, use `questions` no lugar de `filteredQuestions`.
-  const picked = shuffle(filteredQuestions).slice(0, SIMULATION_SIZE)
-  const ids = picked.map((question) => question.id)
-  const simulation: SavedSimulation = {
-    ids,
-    answers: {},
-    revealed: [],
-    examId: selectedExamId ?? '',
-    studyMode: selectedStudyMode === 'bibliography-questions' ? 'bibliography-questions' : 'exam-questions',
-    lastQuestionId: ids[0] ?? null,
-    updatedAt: new Date().toISOString(),
-  }
-  setSimulationAnswers(simulation.answers)
-  setSimulationRevealed(simulation.revealed)
-  setSimulationIds(ids)
-  setSavedSimulation(simulation)
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-function recordSimulationAnswer(questionId: string, optionIndex: number) {
-  const nextAnswers = { ...simulationAnswers, [questionId]: optionIndex }
-  const updatedAt = new Date().toISOString()
-  setSimulationAnswers(nextAnswers)
-  setSavedSimulation((current) => current ? { ...current, answers: nextAnswers, lastQuestionId: questionId, updatedAt } : current)
-}
-
-function recordSimulationReveal(questionId: string) {
-  const nextRevealed = simulationRevealed.includes(questionId)
-    ? simulationRevealed.filter((id) => id !== questionId)
-    : [...simulationRevealed, questionId]
-  const updatedAt = new Date().toISOString()
-  setSimulationRevealed(nextRevealed)
-  setSavedSimulation((current) => current ? { ...current, revealed: nextRevealed, lastQuestionId: questionId, updatedAt } : current)
-}
-
-function exitSimulation() {
-  setSimulationIds(null)
-}
-
-function changeTopic(value: string) {
-  setTopic(value)
-  setSimulationIds(null)
-}
-
-function changeYear(value: string) {
-  setYear(value)
-  setSimulationIds(null)
-}
-
   function selectExam(examId: string) {
-    setQuestions([])
     setTopic('Todos')
     setYear('Todos')
     setSelectedExamId(examId)
@@ -1170,10 +666,8 @@ function changeYear(value: string) {
   }
 
   function returnToHome() {
-    setQuestions([])
     setTopic('Todos')
     setYear('Todos')
-    setLoadError('')
     setSelectedExamId(null)
     setSelectedStudyMode(null)
     setSimulationIds(null)
@@ -1185,7 +679,6 @@ function changeYear(value: string) {
       const examChoice = examChoices.find((choice) => choice.id === savedSimulation.examId)
       if (examChoice) {
         skipSelectionReset.current = true
-        setQuestions([])
         setTopic('Todos')
         setYear('Todos')
         setBibliographySource('Todos')
@@ -1195,13 +688,13 @@ function changeYear(value: string) {
         setSimulationIds(savedSimulation.ids)
         setSimulationAnswers(savedSimulation.answers)
         setSimulationRevealed(savedSimulation.revealed)
-        setReviewQuestionId(savedSimulation.lastQuestionId ?? savedSimulation.ids[0] ?? null)
+        setSimulationIds(savedSimulation.ids)
+        reviewQuestionIdRef.current = savedSimulation.lastQuestionId ?? savedSimulation.ids[0] ?? null
         return
       }
     }
     if (!lastStudiedQuestion) return
     const { questionId, snapshot, examChoice } = lastStudiedQuestion
-    setQuestions([])
     setTopic('Todos')
     setYear('Todos')
     setBibliographySource('Todos')
@@ -1211,7 +704,7 @@ function changeYear(value: string) {
       ? 'bibliography-questions'
       : 'exam-questions')
     setSimulationIds(null)
-    setReviewQuestionId(questionId)
+    reviewQuestionIdRef.current = questionId
   }
 
   function reviewQuestion(questionId: string, snapshot: StudyQuestionSnapshot) {
@@ -1222,32 +715,61 @@ function changeYear(value: string) {
       : 'exam-questions'
     const sameSection = selectedExamId === examChoice.id && selectedStudyMode === nextMode
     if (!sameSection) {
-      setQuestions([])
       setSelectedExamId(examChoice.id)
       setSelectedStudyMode(nextMode)
     }
     setSimulationIds(null)
-    setReviewQuestionId(questionId)
+    reviewQuestionIdRef.current = questionId
     setShowPerformance(false)
   }
 
-  function toggleInList(list: string[], id: string, update: (value: string[]) => void) {
-    update(list.includes(id) ? list.filter((item) => item !== id) : [...list, id])
+  function startSimulation() {
+    const picked = shuffle(filteredQuestionsRef.current).slice(0, SIMULATION_SIZE)
+    const ids = picked.map((question) => question.id)
+    const simulation: SavedSimulation = {
+      ids,
+      answers: {},
+      revealed: [],
+      examId: selectedExamId ?? '',
+      studyMode: selectedStudyMode === 'bibliography-questions' ? 'bibliography-questions' : 'exam-questions',
+      lastQuestionId: ids[0] ?? null,
+      updatedAt: new Date().toISOString(),
+    }
+    setSimulationAnswers(simulation.answers)
+    setSimulationRevealed(simulation.revealed)
+    setSimulationIds(ids)
+    setSavedSimulation(simulation)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function recordSimulationAnswer(questionId: string, optionIndex: number) {
+    const nextAnswers = { ...simulationAnswers, [questionId]: optionIndex }
+    const updatedAt = new Date().toISOString()
+    setSimulationAnswers(nextAnswers)
+    setSavedSimulation((current) => current ? { ...current, answers: nextAnswers, lastQuestionId: questionId, updatedAt } : current)
+  }
+
+  function recordSimulationReveal(questionId: string) {
+    const nextRevealed = simulationRevealed.includes(questionId)
+      ? simulationRevealed.filter((id) => id !== questionId)
+      : [...simulationRevealed, questionId]
+    const updatedAt = new Date().toISOString()
+    setSimulationRevealed(nextRevealed)
+    setSavedSimulation((current) => current ? { ...current, revealed: nextRevealed, lastQuestionId: questionId, updatedAt } : current)
   }
 
   if (adminMode) {
-    return <AdminQuestionsPanel onClose={() => setAdminMode(false)} />
+    return (
+      <ErrorBoundary>
+        <AdminQuestionsPanel onClose={() => setAdminMode(false)} />
+      </ErrorBoundary>
+    )
   }
 
   if (accessState === 'checking' || !splashElapsed) {
     return (
       <main className="fixed inset-0 z-50 overflow-hidden bg-[#011a32]">
-        <img
-          alt=""
-          aria-hidden="true"
-          className="h-full w-full object-contain"
-          src={publicAsset('splash-screen.jpg')}
-        />
+        <img alt="" aria-hidden="true" className="h-full w-full object-contain" src={publicAsset('splash-screen.jpg')} />
         <span className="sr-only">Carregando o Fragata do Saber...</span>
       </main>
     )
@@ -1301,442 +823,312 @@ function changeYear(value: string) {
   }
 
   return (
-    <div className="min-h-screen text-ink">
-      <header className="border-b border-line bg-paper/95">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-8">
-          <a className="flex items-center gap-3" href="#inicio" aria-label="Fragata do Saber, início" onClick={returnToHome}>
-            <img className="h-12 w-[72px] rounded-md object-contain" src={publicAsset('logo.png')} alt="" />
-            <span>
-              <span className="block font-display text-base font-extrabold tracking-normal">Fragata do Saber</span>
-              <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Rumo à aprovação</span>
-            </span>
-          </a>
-          <div className="flex w-full gap-2 sm:w-auto"><button className="flex-1 whitespace-nowrap rounded-lg border border-sea bg-white px-2 py-2 text-xs font-bold text-sea transition hover:bg-sea hover:text-white sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowPerformance(true)}>Meu desempenho</button><button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold transition hover:border-sea hover:text-sea sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowAccountSync(true)}>{accountUser && !accountUser.is_anonymous ? 'Conta' : 'Sincronizar'}</button></div>
-        </div>
-      </header>
-
-      <main id="inicio" className="mx-auto max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
-        <section className="relative overflow-hidden rounded-2xl bg-ink px-5 py-5 text-white shadow-lg shadow-ink/10 sm:px-8 sm:py-6" id="simulados">
-          <div className="relative grid gap-5 lg:grid-cols-[1fr_260px] lg:items-center">
-            <div className="max-w-2xl">
-              <p className="mb-2 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-200">
-                <span className="size-2 rounded-full bg-coral" /> Preparação para concursos navais
-              </p>
-              <h1 className="max-w-xl font-display text-2xl font-extrabold leading-tight sm:text-3xl">Conhecimento é o seu melhor rumo.</h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">Treine com questões de provas anteriores, acompanhe sua evolução e chegue mais preparado para o próximo desafio.</p>
-              <a className="mt-4 inline-flex items-center gap-3 rounded-lg bg-[#d7815e] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#c76e4c]" href="#questoes">
-                Escolher concurso <span aria-hidden="true">→</span>
-              </a>
-            </div>
-            <div className="grid gap-3 border-t border-white/15 pt-4 sm:grid-cols-[minmax(0,140px)_minmax(0,1fr)] sm:items-center lg:grid-cols-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-              <img
-                className="mx-auto w-full max-w-[140px] rounded-lg border border-white/10 shadow-md shadow-black/20"
-                src={publicAsset('logo.png')}
-                alt="Logo Fragata do Saber"
-              />
-              <div className={`grid gap-4 ${selectedExamId ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                {selectedExamId ? (
-                  <>
-                    <div><p className="font-display text-2xl font-extrabold sm:text-3xl">{questions.length}</p><p className="mt-1 text-xs text-white/60">questões</p></div>
-                    <div><p className="font-display text-2xl font-extrabold sm:text-3xl">{examCount}</p><p className="mt-1 text-xs text-white/60">provas</p></div>
-                    <div><p className="font-display text-2xl font-extrabold sm:text-3xl">{topicCount}</p><p className="mt-1 text-xs text-white/60">assuntos</p></div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <p className="font-display text-2xl font-extrabold sm:text-3xl">{String(examChoices.length).padStart(2, '0')}</p>
-                      <p className="mt-1 text-xs text-white/60">cursos e concursos</p>
-                    </div>
-                    <div className="self-center">
-                      <p className="font-display text-base font-extrabold leading-5 sm:text-lg">Provas anteriores</p>
-                      <p className="mt-1 text-xs leading-5 text-white/60">Questões organizadas por concurso</p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+    <ErrorBoundary>
+      <div className="min-h-screen text-ink">
+        <header className="border-b border-line bg-paper/95">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-8">
+            <a className="flex items-center gap-3" href="#inicio" aria-label="Fragata do Saber, início" onClick={returnToHome}>
+              <img className="h-12 w-[72px] rounded-md object-contain" src={publicAsset('logo.png')} alt="" />
+              <span>
+                <span className="block font-display text-base font-extrabold tracking-normal">Fragata do Saber</span>
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Rumo à aprovação</span>
+              </span>
+            </a>
+            <div className="flex w-full gap-2 sm:w-auto"><button className="flex-1 whitespace-nowrap rounded-lg border border-sea bg-white px-2 py-2 text-xs font-bold text-sea transition hover:bg-sea hover:text-white sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowPerformance(true)}>Meu desempenho</button><button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold transition hover:border-sea hover:text-sea sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowAccountSync(true)}>{accountUser && !accountUser.is_anonymous ? 'Conta' : 'Sincronizar'}</button></div>
           </div>
-        </section>
+        </header>
 
-        {showPerformance ? (
-          <PerformanceDashboard
-            snapshots={questionSnapshots}
-            answers={answers}
-            onClose={() => setShowPerformance(false)}
-            onReview={reviewQuestion}
-          />
-        ) : !selectedExamId ? (
-         <section className="mt-7" id="questoes">
-  {((resumeSavedSimulation && savedSimulation?.ids.length) || lastStudiedQuestion) && (
-    <button
-      className="mb-7 flex w-full items-center gap-4 rounded-2xl border border-sea/20 bg-sea-light/60 p-4 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5 sm:p-5"
-      type="button"
-      onClick={continueStudying}
-    >
-      <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-sea text-xl text-white" aria-hidden="true">▶</span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-xs font-bold uppercase tracking-[0.12em] text-sea">Continue estudando</span>
-        <span className="mt-1 block truncate font-display text-lg font-extrabold text-ink">{resumeSavedSimulation && savedSimulation ? examChoices.find((choice) => choice.id === savedSimulation.examId)?.title ?? 'Seu simulado' : lastStudiedQuestion?.examChoice.title}</span>
-        <span className="mt-1 block truncate text-sm text-muted">{resumeSavedSimulation && savedSimulation ? `${savedSimulation.ids.length} questões no último simulado · retome de onde parou` : `${lastStudiedQuestion?.snapshot.subject} · ${lastStudiedQuestion?.snapshot.topic || 'Última questão estudada'}`}</span>
-      </span>
-      <span className="hidden shrink-0 rounded-lg bg-white px-4 py-2 text-sm font-bold text-sea sm:block">Retomar →</span>
-    </button>
-  )}
-  <div className="mb-2">
-    <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Comece por aqui</p>
-    <h2 className="mt-1 font-display text-3xl font-extrabold">Escolha seu concurso</h2>
-  </div>
-
-  {examGroups.map((group) => (
-    <div className="mt-5" key={group}>
-      <h3 className="mb-3 font-display text-sm font-extrabold uppercase tracking-[0.12em] text-muted">{group}</h3>
-      <div className="grid gap-5 md:grid-cols-2">
-        {examChoices
-          .filter((choice) => choice.group === group)
-          .map((choice) => (
-            <button
-              className="group flex items-center gap-4 rounded-2xl border-2 border-line bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-sea hover:shadow-xl hover:shadow-ink/10"
-              key={choice.id}
-              type="button"
-              onClick={() => selectExam(choice.id)}
-            >
-              <span className="block min-w-0 flex-1">
-                <span className="block font-display text-xl font-extrabold text-ink">{choice.title}</span>
-                <span className="mt-2 block text-sm leading-6 text-muted">{choice.description}</span>
-              </span>
-              <img
-                alt=""
-                aria-hidden="true"
-                className="size-28 shrink-0 object-contain mix-blend-multiply sm:size-32"
-                src={publicAsset(choice.image)}
-              />
-              <span
-                aria-hidden="true"
-                className="grid size-10 shrink-0 place-items-center rounded-full bg-sea-light text-lg font-bold text-sea transition group-hover:bg-sea group-hover:text-white"
-              >
-                →
-              </span>
-            </button>
-          ))}
-      </div>
-    </div>
-  ))}
-</section>
-        ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === null ? (
-          <section className="mt-10" id="questoes">
-            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Quadro Técnico - Informática</p>
-                <h2 className="mt-1 font-display text-2xl font-extrabold">Como você quer estudar?</h2>
+        <main id="inicio" className="mx-auto max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
+          <section className="relative overflow-hidden rounded-2xl bg-ink px-5 py-5 text-white shadow-lg shadow-ink/10 sm:px-8 sm:py-6" id="simulados">
+            <div className="relative grid gap-5 lg:grid-cols-[1fr_260px] lg:items-center">
+              <div className="max-w-2xl">
+                <p className="mb-2 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-200">
+                  <span className="size-2 rounded-full bg-coral" /> Preparação para concursos navais
+                </p>
+                <h1 className="max-w-xl font-display text-2xl font-extrabold leading-tight sm:text-3xl">Conhecimento é o seu melhor rumo.</h1>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">Treine com questões de provas anteriores, acompanhe sua evolução e chegue mais preparado para o próximo desafio.</p>
+                <a className="mt-4 inline-flex items-center gap-3 rounded-lg bg-[#d7815e] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#c76e4c]" href="#questoes">
+                  Escolher concurso <span aria-hidden="true">→</span>
+                </a>
               </div>
-              <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={returnToHome}>
-                Trocar concurso
-              </button>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('mind-maps')}>
-                <span className="grid size-12 place-items-center rounded-xl bg-[#fff2e8] text-2xl" aria-hidden="true">✦</span>
-                <span className="mt-5 block font-display text-xl font-extrabold text-ink">Mapas mentais</span>
-                <span className="mt-2 block text-sm leading-6 text-muted">Revise os conteúdos do Quadro Técnico com mapas mentais.</span>
-                <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar mapas <span aria-hidden="true">→</span></span>
-              </button>
-              <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('exam-questions')}>
-                <span className="grid size-12 place-items-center rounded-xl bg-sea-light text-2xl" aria-hidden="true">✓</span>
-                <span className="mt-5 block font-display text-xl font-extrabold text-ink">Questões de provas</span>
-                <span className="mt-2 block text-sm leading-6 text-muted">Pratique com questões de provas anteriores e simulados.</span>
-                <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar questões de provas <span aria-hidden="true">→</span></span>
-              </button>
-              <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('bibliography-questions')}>
-                <span className="grid size-12 place-items-center rounded-xl bg-[#eef3f5] text-2xl" aria-hidden="true">▤</span>
-                <span className="mt-5 block font-display text-xl font-extrabold text-ink">Questões de apostilas e livros</span>
-                <span className="mt-2 block text-sm leading-6 text-muted">Estude com questões elaboradas a partir das apostilas e livros do edital.</span>
-                <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar questões de bibliografia <span aria-hidden="true">→</span></span>
-              </button>
+              <div className="grid gap-3 border-t border-white/15 pt-4 sm:grid-cols-[minmax(0,140px)_minmax(0,1fr)] sm:items-center lg:grid-cols-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                <img className="mx-auto w-full max-w-[140px] rounded-lg border border-white/10 shadow-md shadow-black/20" src={publicAsset('logo.png')} alt="Logo Fragata do Saber" />
+                <div className={`grid gap-4 ${selectedExamId ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                  {selectedExamId ? (
+                    <>
+                      <div><p className="font-display text-2xl font-extrabold sm:text-3xl">{questions.length}</p><p className="mt-1 text-xs text-white/60">questões</p></div>
+                      <div><p className="font-display text-2xl font-extrabold sm:text-3xl">{examCount}</p><p className="mt-1 text-xs text-white/60">provas</p></div>
+                      <div><p className="font-display text-2xl font-extrabold sm:text-3xl">{topicCount}</p><p className="mt-1 text-xs text-white/60">assuntos</p></div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <p className="font-display text-2xl font-extrabold sm:text-3xl">{String(examChoices.length).padStart(2, '0')}</p>
+                        <p className="mt-1 text-xs text-white/60">cursos e concursos</p>
+                      </div>
+                      <div className="self-center">
+                        <p className="font-display text-base font-extrabold leading-5 sm:text-lg">Provas anteriores</p>
+                        <p className="mt-1 text-xs leading-5 text-white/60">Questões organizadas por concurso</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </section>
-        ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === 'mind-maps' ? (
-          <section className="mt-10" id="mapas-mentais">
-            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Quadro Técnico - Informática</p>
-                <h2 className="mt-1 font-display text-2xl font-extrabold">Mapas mentais</h2>
-              </div>
-              <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={() => setSelectedStudyMode(null)}>
-                Voltar às opções
-              </button>
-            </div>
-            {mindMaps.length > 0 && (
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-white p-4 sm:p-5">
-                <div className="min-w-52 flex-1">
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="font-bold text-ink">Disponibilidade offline</span>
-                    <span className="font-extrabold text-sea">{downloadedMindMapsCount}/{mindMaps.length}</span>
-                  </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-paper" role="progressbar" aria-label="Mapas disponíveis offline" aria-valuemin={0} aria-valuemax={mindMaps.length} aria-valuenow={downloadedMindMapsCount}>
-                    <div className="h-full rounded-full bg-sea transition-all" style={{ width: `${mindMaps.length ? downloadedMindMapsCount / mindMaps.length * 100 : 0}%` }} />
-                  </div>
-                  <p className="mt-2 text-xs text-muted">{downloadedMindMapsCount === 0 ? 'Nenhum mapa baixado neste aparelho.' : `${downloadedMindMapsCount} ${downloadedMindMapsCount === 1 ? 'mapa pronto' : 'mapas prontos'} para estudar sem internet.`}</p>
-                </div>
+
+          {showPerformance ? (
+            <PerformanceDashboard
+              snapshots={questionSnapshots}
+              answers={answers}
+              onClose={() => setShowPerformance(false)}
+              onReview={reviewQuestion}
+            />
+          ) : !selectedExamId ? (
+            <section className="mt-7" id="questoes">
+              {((resumeSavedSimulation && savedSimulation?.ids.length) || lastStudiedQuestion) && (
                 <button
-                  className={`rounded-lg border px-4 py-2.5 text-sm font-bold transition ${showDownloadedMindMapsOnly ? 'border-sea bg-sea-light text-sea' : 'border-line bg-white text-ink hover:border-sea hover:text-sea'}`}
+                  className="mb-7 flex w-full items-center gap-4 rounded-2xl border border-sea/20 bg-sea-light/60 p-4 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5 sm:p-5"
                   type="button"
-                  aria-pressed={showDownloadedMindMapsOnly}
-                  onClick={() => setShowDownloadedMindMapsOnly((show) => !show)}
+                  onClick={continueStudying}
                 >
-                  {showDownloadedMindMapsOnly ? 'Mostrar todos os mapas' : `Ver mapas baixados (${downloadedMindMapsCount})`}
+                  <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-sea text-xl text-white" aria-hidden="true">▶</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-bold uppercase tracking-[0.12em] text-sea">Continue estudando</span>
+                    <span className="mt-1 block truncate font-display text-lg font-extrabold text-ink">{resumeSavedSimulation && savedSimulation ? examChoices.find((choice) => choice.id === savedSimulation.examId)?.title ?? 'Seu simulado' : lastStudiedQuestion?.examChoice.title}</span>
+                    <span className="mt-1 block truncate text-sm text-muted">{resumeSavedSimulation && savedSimulation ? `${savedSimulation.ids.length} questões no último simulado · retome de onde parou` : `${lastStudiedQuestion?.snapshot.subject} · ${lastStudiedQuestion?.snapshot.topic || 'Última questão estudada'}`}</span>
+                  </span>
+                  <span className="hidden shrink-0 rounded-lg bg-white px-4 py-2 text-sm font-bold text-sea sm:block">Retomar →</span>
+                </button>
+              )}
+              <div className="mb-2">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Comece por aqui</p>
+                <h2 className="mt-1 font-display text-3xl font-extrabold">Escolha seu concurso</h2>
+              </div>
+              <ExamChoiceGrid onSelect={selectExam} publicAsset={publicAsset} />
+            </section>
+          ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === null ? (
+            <section className="mt-10" id="questoes">
+              <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Quadro Técnico - Informática</p>
+                  <h2 className="mt-1 font-display text-2xl font-extrabold">Como você quer estudar?</h2>
+                </div>
+                <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={returnToHome}>
+                  Trocar concurso
                 </button>
               </div>
-            )}
-            {mindMapsError && <p className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800" role="alert">{mindMapsError}</p>}
-            {mindMapsLoading ? (
-              <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando mapas mentais…</p>
-            ) : mindMaps.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center sm:p-12">
-                <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#fff2e8] text-2xl" aria-hidden="true">✦</span>
-                <h3 className="mt-4 font-display text-xl font-extrabold">Nenhum mapa publicado ainda</h3>
-                <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">Os mapas publicados para o Quadro Técnico aparecerão aqui. Quando estiver online, baixe cada mapa para consultá-lo sem internet.</p>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('mind-maps')}>
+                  <span className="grid size-12 place-items-center rounded-xl bg-[#fff2e8] text-2xl" aria-hidden="true">✦</span>
+                  <span className="mt-5 block font-display text-xl font-extrabold text-ink">Mapas mentais</span>
+                  <span className="mt-2 block text-sm leading-6 text-muted">Revise os conteúdos do Quadro Técnico com mapas mentais.</span>
+                  <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar mapas <span aria-hidden="true">→</span></span>
+                </button>
+                <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('exam-questions')}>
+                  <span className="grid size-12 place-items-center rounded-xl bg-sea-light text-2xl" aria-hidden="true">✓</span>
+                  <span className="mt-5 block font-display text-xl font-extrabold text-ink">Questões de provas</span>
+                  <span className="mt-2 block text-sm leading-6 text-muted">Pratique com questões de provas anteriores e simulados.</span>
+                  <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar questões de provas <span aria-hidden="true">→</span></span>
+                </button>
+                <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('bibliography-questions')}>
+                  <span className="grid size-12 place-items-center rounded-xl bg-[#eef3f5] text-2xl" aria-hidden="true">▤</span>
+                  <span className="mt-5 block font-display text-xl font-extrabold text-ink">Questões de apostilas e livros</span>
+                  <span className="mt-2 block text-sm leading-6 text-muted">Estude com questões elaboradas a partir das apostilas e livros do edital.</span>
+                  <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar questões de bibliografia <span aria-hidden="true">→</span></span>
+                </button>
               </div>
-            ) : visibleMindMaps.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">Nenhum mapa foi baixado neste aparelho ainda. Volte a mostrar todos e baixe mapas quando estiver online.</p>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {visibleMindMaps.map((map) => (
-                  <article key={map.id} className="rounded-xl border border-line bg-white p-5">
-                    <p className="text-xs font-bold uppercase tracking-[0.1em] text-sea">{map.subject}</p>
-                    <h3 className="mt-2 font-display font-extrabold">{map.title}</h3>
-                    {map.description && <p className="mt-2 text-sm leading-6 text-muted">{map.description}</p>}
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold text-muted">{map.content_type === 'application/pdf' ? 'PDF' : 'Imagem'}</span>
-                      {map.local_path ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-sea-light px-2.5 py-1 text-xs font-bold text-sea"><span aria-hidden="true">✓</span> Disponível offline</span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-paper px-2.5 py-1 text-xs font-bold text-muted"><span aria-hidden="true">⇩</span> Ainda não baixado</span>
-                      )}
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button className="rounded-lg bg-sea px-4 py-2 text-sm font-bold text-white transition hover:bg-ink disabled:opacity-60" type="button" disabled={mindMapAction === map.id} onClick={() => void handleMindMapAction(map)}>
-                        {mindMapAction === map.id ? 'Preparando…' : 'Abrir mapa'}
-                      </button>
-                      {isNativeApp() && !map.local_path && (
-                        <button className="rounded-lg border border-line px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea disabled:opacity-60" type="button" disabled={mindMapAction === map.id} onClick={() => void handleMindMapDownload(map)}>
-                          Baixar para offline
-                        </button>
-                      )}
-                    </div>
-                  </article>
-                ))}
+            </section>
+          ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === 'mind-maps' ? (
+            <section className="mt-10" id="mapas-mentais">
+              <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Quadro Técnico - Informática</p>
+                  <h2 className="mt-1 font-display text-2xl font-extrabold">Mapas mentais</h2>
+                </div>
+                <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={() => setSelectedStudyMode(null)}>
+                  Voltar às opções
+                </button>
               </div>
-            )}
-            {openImageMap && (
-              <div className="fixed inset-0 z-50 grid place-items-center bg-ink/90 p-3 sm:p-8" role="dialog" aria-modal="true" aria-label={openImageMap.map.title}>
-                <div className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white">
-                  <div className="flex items-center justify-between gap-3 border-b border-line p-4">
-                    <h3 className="font-display font-extrabold">{openImageMap.map.title}</h3>
-                    <button className="rounded-lg border border-line px-3 py-2 text-sm font-bold" type="button" onClick={() => setOpenImageMap(null)}>Fechar</button>
+              {mindMaps.length > 0 && (
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-white p-4 sm:p-5">
+                  <div className="min-w-52 flex-1">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="font-bold text-ink">Disponibilidade offline</span>
+                      <span className="font-extrabold text-sea">{downloadedMindMapsCount}/{mindMaps.length}</span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-paper" role="progressbar" aria-label="Mapas disponíveis offline" aria-valuemin={0} aria-valuemax={mindMaps.length} aria-valuenow={downloadedMindMapsCount}>
+                      <div className="h-full rounded-full bg-sea transition-all" style={{ width: `${mindMaps.length ? downloadedMindMapsCount / mindMaps.length * 100 : 0}%` }} />
+                    </div>
+                    <p className="mt-2 text-xs text-muted">{downloadedMindMapsCount === 0 ? 'Nenhum mapa baixado neste aparelho.' : `${downloadedMindMapsCount} ${downloadedMindMapsCount === 1 ? 'mapa pronto' : 'mapas prontos'} para estudar sem internet.`}</p>
                   </div>
-                  <ZoomableImage key={openImageMap.map.id} src={openImageMap.url} alt={openImageMap.map.title} />
+                  <button
+                    className={`rounded-lg border px-4 py-2.5 text-sm font-bold transition ${showDownloadedMindMapsOnly ? 'border-sea bg-sea-light text-sea' : 'border-line bg-white text-ink hover:border-sea hover:text-sea'}`}
+                    type="button"
+                    aria-pressed={showDownloadedMindMapsOnly}
+                    onClick={() => setShowDownloadedMindMapsOnly((show) => !show)}
+                  >
+                    {showDownloadedMindMapsOnly ? 'Mostrar todos os mapas' : `Ver mapas baixados (${downloadedMindMapsCount})`}
+                  </button>
+                </div>
+              )}
+              {mindMapsError && <p className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800" role="alert">{mindMapsError}</p>}
+              {mindMapsLoading ? (
+                <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando mapas mentais…</p>
+              ) : mindMaps.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center sm:p-12">
+                  <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#fff2e8] text-2xl" aria-hidden="true">✦</span>
+                  <h3 className="mt-4 font-display text-xl font-extrabold">Nenhum mapa publicado ainda</h3>
+                  <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">Os mapas publicados para o Quadro Técnico aparecerão aqui. Quando estiver online, baixe cada mapa para consultá-lo sem internet.</p>
+                </div>
+              ) : visibleMindMaps.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">Nenhum mapa foi baixado neste aparelho ainda. Volte a mostrar todos e baixe mapas quando estiver online.</p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {visibleMindMaps.map((map) => (
+                    <article key={map.id} className="rounded-xl border border-line bg-white p-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.1em] text-sea">{map.subject}</p>
+                      <h3 className="mt-2 font-display font-extrabold">{map.title}</h3>
+                      {map.description && <p className="mt-2 text-sm leading-6 text-muted">{map.description}</p>}
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold text-muted">{map.content_type === 'application/pdf' ? 'PDF' : 'Imagem'}</span>
+                        {map.local_path ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-sea-light px-2.5 py-1 text-xs font-bold text-sea"><span aria-hidden="true">✓</span> Disponível offline</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-paper px-2.5 py-1 text-xs font-bold text-muted"><span aria-hidden="true">⇩</span> Ainda não baixado</span>
+                        )}
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button className="rounded-lg bg-sea px-4 py-2 text-sm font-bold text-white transition hover:bg-ink disabled:opacity-60" type="button" disabled={mindMapAction === map.id} onClick={() => void handleMindMapAction(map)}>
+                          {mindMapAction === map.id ? 'Preparando…' : 'Abrir mapa'}
+                        </button>
+                        {isNativeApp() && !map.local_path && (
+                          <button className="rounded-lg border border-line px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea disabled:opacity-60" type="button" disabled={mindMapAction === map.id} onClick={() => void handleMindMapDownload(map)}>
+                            Baixar para offline
+                          </button>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+              {openImageMap && (
+                <div className="fixed inset-0 z-50 grid place-items-center bg-ink/90 p-3 sm:p-8" role="dialog" aria-modal="true" aria-label={openImageMap.map.title}>
+                  <div className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white">
+                    <div className="flex items-center justify-between gap-3 border-b border-line p-4">
+                      <h3 className="font-display font-extrabold">{openImageMap.map.title}</h3>
+                      <button className="rounded-lg border border-line px-3 py-2 text-sm font-bold" type="button" onClick={() => setOpenImageMap(null)}>Fechar</button>
+                    </div>
+                    <ZoomableImage key={openImageMap.map.id} src={openImageMap.url} alt={openImageMap.map.title} />
+                  </div>
+                </div>
+              )}
+            </section>
+          ) : (
+            <>
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-display text-xl font-extrabold">{examChoices.find((choice) => choice.id === selectedExamId)?.title}</h2>
+                <div className="flex flex-wrap gap-2">
+                  {selectedExamId === 'cp-t-informatica' && (
+                    <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={() => setSelectedStudyMode(null)}>
+                      Voltar às opções
+                    </button>
+                  )}
+                  <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={returnToHome}>
+                    Trocar concurso
+                  </button>
                 </div>
               </div>
-            )}
-          </section>
-        ) : (
-        <>
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-display text-xl font-extrabold">{examChoices.find((choice) => choice.id === selectedExamId)?.title}</h2>
-          <div className="flex flex-wrap gap-2">
-            {selectedExamId === 'cp-t-informatica' && (
-              <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={() => setSelectedStudyMode(null)}>
-                Voltar às opções
-              </button>
-            )}
-            <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={returnToHome}>
-              Trocar concurso
-            </button>
-          </div>
-        </div>
-        <section className="mt-4 grid gap-8 lg:grid-cols-[250px_minmax(0,1fr)]" id="questoes">
-          <aside className="h-fit rounded-xl border border-line bg-white p-5" aria-label="Filtros de questões">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="font-display text-base font-extrabold">Filtrar questões</h2>
-            </div>
-            <label className="mb-4 block rounded-xl border border-line bg-white p-4">
-              <span className="mb-2 block text-xs font-bold text-ink">Buscar questões</span>
-              <input
-                className="block min-h-11 w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-muted focus:border-sea focus:ring-2 focus:ring-sea/10 disabled:cursor-not-allowed disabled:opacity-60"
-                type="search"
-                value={questionSearch}
-                onChange={(event) => setQuestionSearch(event.target.value)}
-                placeholder="Enunciado, alternativa, tópico, livro ou explicação"
-                aria-label="Buscar questões por texto"
-                disabled={simulationIds !== null}
-              />
-              {simulationIds !== null && <span className="mt-2 block text-xs text-muted">Saia do simulado para buscar na lista de questões.</span>}
-            </label>
-
-            <div className="space-y-4">
-              <FilterSelect label="Tópico" value={topic} options={topics} onChange={changeTopic} />
-              {selectedStudyMode === 'bibliography-questions' && <FilterSelect label="Apostila ou livro" value={bibliographySource} options={bibliographySources} onChange={setBibliographySource} />}
-              {selectedStudyMode !== 'bibliography-questions' && <FilterSelect label="Ano da prova" value={year} options={years} onChange={changeYear} />}
-            <div className="mt-5 space-y-2">
-              <button
-                className="w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white transition hover:bg-ink disabled:opacity-50"
-                type="button"
-                disabled={filteredQuestions.length === 0}
-                onClick={startSimulation}
-              >
-                {simulationIds ? 'Gerar novo simulado' : `Gerar simulado (${Math.min(SIMULATION_SIZE, filteredQuestions.length)} questões)`}
-              </button>
-              {simulationIds && (
-              <button
-                  className="w-full rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-bold transition hover:border-sea hover:text-sea"
-                  type="button"
-                  onClick={exitSimulation}
-                >
-                  Sair do simulado
-              </button>
-            )}
-          </div>
-            </div>
-            <div className="mt-6 rounded-lg bg-sea-light p-4" id="desempenho">
-              <p className="text-xs font-bold uppercase tracking-[0.1em] text-sea">Seu desempenho</p>
-              <div className="mt-3 flex items-end justify-between">
-                <p className="font-display text-2xl font-extrabold">{performanceCorrectCount}<span className="text-base font-semibold text-muted">/{performanceAnsweredCount}</span></p>
-                <p className="pb-1 text-xs font-semibold text-muted">{simulationIds !== null ? 'neste simulado' : 'acertos'}</p>
-              </div>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white">
-                <div className="h-full rounded-full bg-sea transition-all" style={{ width: `${performanceAnsweredCount ? (performanceCorrectCount / performanceAnsweredCount) * 100 : 0}%` }} />
-              </div>
-            </div>
-          </aside>
-
-          <div>
-            <div className="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Banco de questões</p>
-                <h2 className="mt-1 font-display text-2xl font-extrabold">{selectedStudyMode === 'bibliography-questions' ? 'Questões baseadas na bibliografia' : 'Continue sua preparação'}</h2>
-              </div>
-              <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-line">{visibleQuestions.length} {simulationIds ? 'no simulado' : 'disponíveis'}</span>
-            </div>
-
-            <div className="space-y-4">
-              {simulationComplete && (
-                <section className="rounded-xl border border-sea/20 bg-sea-light p-5" aria-live="polite">
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Simulado concluído</p>
-                  <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+              <section className="mt-4 grid gap-8 lg:grid-cols-[250px_minmax(0,1fr)]" id="questoes">
+                <QuestionFilters
+                  questionSearch={questionSearch}
+                  setQuestionSearch={setQuestionSearch}
+                  topic={topic}
+                  setTopic={setTopic}
+                  year={year}
+                  setYear={setYear}
+                  bibliographySource={bibliographySource}
+                  setBibliographySource={setBibliographySource}
+                  topics={topics}
+                  years={years}
+                  bibliographySources={bibliographySources}
+                  selectedStudyMode={selectedStudyMode === 'bibliography-questions' ? 'bibliography-questions' : null}
+                  filteredQuestionsLength={filteredQuestions.length}
+                  simulationIds={simulationIds}
+                  startSimulation={startSimulation}
+                  exitSimulation={() => setSimulationIds(null)}
+                  simulationSize={SIMULATION_SIZE}
+                  performanceCorrectCount={performanceCorrectCount}
+                  performanceAnsweredCount={performanceAnsweredCount}
+                />
+                <div>
+                  <div className="mb-4 flex items-end justify-between gap-4">
                     <div>
-                      <p className="font-display text-3xl font-extrabold text-ink">
-                        {simulationScore.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
-                        <span className="ml-1 text-base font-bold text-muted">/ 100 pontos</span>
-                      </p>
-                      <p className="mt-1 text-sm text-muted">
-                        {simulationCorrectCount} de {visibleQuestions.length} questões corretas
-                      </p>
+                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Banco de questões</p>
+                      <h2 className="mt-1 font-display text-2xl font-extrabold">{selectedStudyMode === 'bibliography-questions' ? 'Questões baseadas na bibliografia' : 'Continue sua preparação'}</h2>
                     </div>
-                    <p className="text-xs font-medium text-muted">
-                      Cada questão vale {pointsPerQuestion.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} pontos
-                    </p>
+                    <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-line">{simulationIds ? simulationIds.length : filteredQuestions.length} {simulationIds ? 'no simulado' : 'disponíveis'}</span>
                   </div>
-                </section>
-              )}
-              {loading && <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando questões...</p>}
-              {!loading && usingOfflineCache && <p className="rounded-xl border border-[#ead7be] bg-[#fff8ed] p-4 text-sm leading-6 text-[#805b2d]">Sem conexão: estas questões foram carregadas do aparelho. O conteúdo será atualizado quando a internet voltar.</p>}
-              {!loading && loadError && <p className="rounded-xl border border-red-200 bg-white p-5 text-sm leading-6 text-red-800">{loadError}</p>}
-              {!loading && !loadError && visibleQuestions.map((question) => {
-                const answerState = simulationIds !== null ? simulationAnswers : answers
-                const revealedState = simulationIds !== null ? simulationRevealed : revealed
-                const isRevealed = revealedState.includes(question.id)
-                const selectedAnswer = answerState[question.id]
-                const hasAnswered = selectedAnswer !== undefined
-                const answerIsCorrect = selectedAnswer === question.answer
-
-                return (
-                  <article id={`question-${question.id}`} className="scroll-mt-6 rounded-xl border border-line bg-white p-5 sm:p-6" key={question.id}>
-                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-                      {question.questionType === 'bibliography' ? (
-                        <span className="rounded-md bg-sea-light px-2.5 py-1 text-sea">Bibliografia</span>
-                      ) : (
-                        <>
-                          <span className="rounded-md bg-sea-light px-2.5 py-1 text-sea">{question.questionNumber === null ? 'Questão' : `Q${String(question.questionNumber).padStart(2, '0')}`}</span>
-                          {question.year && <span className="text-muted">{question.year}</span>}
-                        </>
-                      )}
-                      <span className="text-muted">{question.subject}</span>
-                      {question.topic && <span className="rounded-full bg-sea-light px-2.5 py-1 text-sea">{question.topic}</span>}
-                      {question.difficulty && <span className="rounded-full bg-[#fff2e8] px-2.5 py-1 text-[#9b5734]">{question.difficulty}</span>}
-                      <button className={`ml-1 grid size-8 place-items-center rounded-md transition hover:bg-paper ${favorites.includes(question.id) ? 'text-coral' : 'text-muted'}`} type="button" aria-label={favorites.includes(question.id) ? 'Remover dos favoritos' : 'Salvar nos favoritos'} onClick={() => toggleInList(favorites, question.id, setFavorites)}>
-                        {favorites.includes(question.id) ? '★' : '☆'}
-                      </button>
-                    </div>
-                    <p className="mt-4 text-xs font-semibold text-muted">{question.exam}</p>
-                    {question.source && <p className="mt-2 text-sm text-muted" title={question.source}><strong>Referência:</strong> {conciseSource(question.source)}</p>}
-                    <RichText className="mt-2 block whitespace-pre-wrap font-semibold leading-6 text-ink" text={question.prompt} />
-                    {question.imageUrl && (
-                      <img
-                        className="mt-4 max-h-[28rem] w-full rounded-lg border border-line bg-white object-contain"
-                        src={question.imageUrl}
-                        alt={question.imageAlt || `Imagem da questão ${question.questionNumber}`}
-                        loading="lazy"
+                  <div className="space-y-4">
+                    {simulationIds !== null && (
+                      <Simulation
+                        questions={filteredQuestions}
+                        simulationIds={simulationIds}
+                        simulationAnswers={simulationAnswers}
+                        simulationRevealed={simulationRevealed}
+                        recordSimulationAnswer={recordSimulationAnswer}
+                        recordSimulationReveal={recordSimulationReveal}
                       />
                     )}
-                    {question.promptAfterImage && (
-                      <RichText className="mt-4 block whitespace-pre-wrap leading-6 text-ink" text={question.promptAfterImage} />
+                    {simulationComplete && (
+                      <section className="rounded-xl border border-sea/20 bg-sea-light p-5" aria-live="polite">
+                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Simulado concluído</p>
+                        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+                          <div>
+                            <p className="font-display text-3xl font-extrabold text-ink">
+                              {simulationScore.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
+                              <span className="ml-1 text-base font-bold text-muted">/ 100 pontos</span>
+                            </p>
+                            <p className="mt-1 text-sm text-muted">
+                              {simulationCorrectCount} de {filteredQuestions.length} questões corretas
+                            </p>
+                          </div>
+                          <p className="text-xs font-medium text-muted">
+                            Cada questão vale {pointsPerQuestion.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} pontos
+                          </p>
+                        </div>
+                      </section>
                     )}
-                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                      {question.options.map((option, optionIndex) => {
-                        const isSelected = selectedAnswer === optionIndex
-                        const isCorrect = question.answer === optionIndex
-                        const optionStyle = hasAnswered && isCorrect
-                          ? 'border-sea bg-sea-light text-sea'
-                          : hasAnswered && isSelected
-                            ? 'border-red-300 bg-red-50 text-red-700'
-                            : 'border-line bg-white text-ink'
-
-                        return (
-                          <button className={`flex min-h-12 items-start gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition ${optionStyle} ${hasAnswered ? 'cursor-default' : 'hover:border-sea/50 hover:bg-paper'}`} key={option} type="button" disabled={hasAnswered} aria-pressed={isSelected} onClick={() => simulationIds !== null ? recordSimulationAnswer(question.id, optionIndex) : setAnswers({ ...answers, [question.id]: optionIndex })}>
-                            <span className="grid size-5 shrink-0 place-items-center rounded-full border border-current text-[10px] font-extrabold">{String.fromCharCode(65 + optionIndex)}</span>
-                            <RichText className="whitespace-pre-wrap leading-5" text={option} />
-                          </button>
-                        )
-                      })}
-                    </div>
-                    {isRevealed && <p className="mt-4 rounded-lg bg-sea-light/70 p-3 text-sm leading-6 text-ink"><strong className="text-sea">Comentário: </strong>{question.explanation}</p>}
-                    <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
-                      <span className={`text-xs font-bold ${hasAnswered ? answerIsCorrect ? 'text-sea' : 'text-red-700' : 'text-muted'}`}>{!hasAnswered ? 'Escolha uma alternativa' : answerIsCorrect ? 'Resposta correta' : 'Resposta incorreta'}</span>
-                      <button className="text-sm font-bold text-sea transition hover:text-ink disabled:cursor-not-allowed disabled:text-muted/60" type="button" disabled={selectedAnswer === undefined && !isRevealed} onClick={() => simulationIds !== null ? recordSimulationReveal(question.id) : toggleInList(revealed, question.id, setRevealed)}>
-                        {isRevealed ? 'Ocultar gabarito' : 'Ver gabarito'}
-                      </button>
-                    </div>
-                  </article>
-                )
-              })}
-              {!loading && !loadError && visibleQuestions.length === 0 && <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>}
-            </div>
-          </div>
-        </section>
-        </>
-        )}
-      </main>
-      {showAccountSync && <AccountSyncPanel onClose={() => setShowAccountSync(false)} onSync={() => setManualSyncRevision((revision) => revision + 1)} onUseExistingAccount={(email) => { setAccountLoginEmail(email); setShowAccountLogin(true); setAccessState('locked'); setShowAccountSync(false) }} syncStatus={syncStatus} />}
-      <footer className="flex flex-wrap items-center justify-center gap-2 border-t border-line bg-white/70 px-5 py-6 text-xs text-muted"><span>Fragata do Saber <span className="px-1 text-coral">·</span> Preparação feita com propósito</span><button className="font-semibold transition hover:text-sea" type="button" onClick={() => setAdminMode(true)}>Painel administrativo</button></footer>
-    </div>
-  )
-}
-
-type FilterSelectProps = {
-  label: string
-  value: string
-  options: string[]
-  onChange: (value: string) => void
-}
-
-function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
-  return (
-    <label className="block text-xs font-bold text-ink">
-      {label}
-      <select className="mt-2 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-medium text-muted outline-none transition focus:border-sea focus:ring-2 focus:ring-sea/10" value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => <option key={option} value={option}>{option}</option>)}
-      </select>
-    </label>
+                    {loading && <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando questões...</p>}
+                    {!loading && usingOfflineCache && <p className="rounded-xl border border-[#ead7be] bg-[#fff8ed] p-4 text-sm leading-6 text-[#805b2d]">Sem conexão: estas questões foram carregadas do aparelho. O conteúdo será atualizado quando a internet voltar.</p>}
+                    {!loading && loadError && <p className="rounded-xl border border-red-200 bg-white p-5 text-sm leading-6 text-red-800">{loadError}</p>}
+                    {simulationIds === null && !loading && !loadError && filteredQuestions.map((question) => (
+                      <QuestionCard
+                        key={question.id}
+                        question={question}
+                        answerState={answers}
+                        revealedState={revealed}
+                        favorites={favorites}
+                        setAnswers={(value) => setAnswers(value)}
+                        setRevealed={(value) => setRevealed(value)}
+                        setFavorites={(value) => setFavorites(value)}
+                        simulationIds={null}
+                        recordSimulationAnswer={recordSimulationAnswer}
+                        recordSimulationReveal={recordSimulationReveal}
+                        conciseSource={conciseSource}
+                      />
+                    ))}
+                    {simulationIds === null && !loading && !loadError && filteredQuestions.length === 0 && <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>}
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
+        </main>
+        {showAccountSync && <AccountSyncPanel onClose={() => setShowAccountSync(false)} onSync={() => setManualSyncRevision((revision) => revision + 1)} onUseExistingAccount={(email) => { setAccountLoginEmail(email); setShowAccountLogin(true); setAccessState('locked'); setShowAccountSync(false) }} syncStatus={syncStatus} />}
+        <footer className="flex flex-wrap items-center justify-center gap-2 border-t border-line bg-white/70 px-5 py-6 text-xs text-muted"><span>Fragata do Saber <span className="px-1 text-coral">·</span> Preparação feita com propósito</span><button className="font-semibold transition hover:text-sea" type="button" onClick={() => setAdminMode(true)}>Painel administrativo</button></footer>
+      </div>
+    </ErrorBoundary>
   )
 }
 
