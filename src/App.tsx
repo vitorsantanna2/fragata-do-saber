@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type TouchEvent } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type TouchEvent } from 'react'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { supabase } from './lib/supabase'
@@ -19,15 +19,18 @@ import {
   type SavedSimulation,
   type StudyQuestionSnapshot,
 } from './lib/localDatabase'
+import { Skeleton, SkeletonText } from './components/Skeleton'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ExamChoiceGrid, examChoices } from './components/ExamChoiceGrid'
 import { QuestionFilters } from './components/QuestionFilters'
 import { QuestionCard } from './components/QuestionCard'
-import { Simulation } from './components/Simulation'
-import AdminQuestionsPanel from './components/AdminQuestionsPanel'
 import { shuffle, conciseSource } from './lib/utils'
 import { useQuestions } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
+
+const AdminQuestionsPanel = lazy(() => import('./components/AdminQuestionsPanel').then((mod) => ({ default: mod.default })))
+const Simulation = lazy(() => import('./components/Simulation').then((mod) => ({ default: mod.Simulation })))
+const PerformanceDashboard = lazy(() => import('./components/PerformanceDashboard').then((mod) => ({ default: mod.PerformanceDashboard })))
 
 const SIMULATION_SIZE = 50
 const OFFLINE_ACCESS_GRACE_MS = 30 * 24 * 60 * 60 * 1000
@@ -109,80 +112,6 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
         />
       </div>
     </div>
-  )
-}
-
-function PerformanceDashboard({
-  snapshots,
-  answers,
-  onClose,
-  onReview,
-}: {
-  snapshots: Record<string, StudyQuestionSnapshot>
-  answers: Record<string, number>
-  onClose: () => void
-  onReview: (questionId: string, question: StudyQuestionSnapshot) => void
-}) {
-  const [examFilter, setExamFilter] = useState('Todos')
-  const [subjectFilter, setSubjectFilter] = useState('Todos')
-  const allQuestions = Object.entries(snapshots)
-  const exams = [...new Set(allQuestions.map(([, question]) => question.exam))].sort()
-  const subjects = [...new Set(allQuestions
-    .filter(([, question]) => examFilter === 'Todos' || question.exam === examFilter)
-    .map(([, question]) => question.subject))].sort()
-  const questions = allQuestions.filter(([, question]) =>
-    (examFilter === 'Todos' || question.exam === examFilter) &&
-    (subjectFilter === 'Todos' || question.subject === subjectFilter))
-  const answered = questions.filter(([id]) => answers[id] !== undefined)
-  const correct = answered.filter(([id, question]) => answers[id] === question.correctOption)
-  const wrong = answered.filter(([id, question]) => answers[id] !== question.correctOption)
-  const accuracy = answered.length ? Math.round((correct.length / answered.length) * 100) : 0
-
-  function makeGroups(key: 'exam' | 'subject') {
-    const groups = new Map<string, { answered: number; correct: number }>()
-    for (const [id, question] of questions) {
-      if (answers[id] === undefined) continue
-      const label = question[key]
-      const group = groups.get(label) ?? { answered: 0, correct: 0 }
-      group.answered += 1
-      if (answers[id] === question.correctOption) group.correct += 1
-      groups.set(label, group)
-    }
-    return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))
-  }
-
-  const groupings = examFilter === 'Todos' ? makeGroups('exam') : makeGroups('subject')
-
-  return (
-    <section className="mt-8" aria-labelledby="performance-title">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Seu progresso no aparelho</p>
-          <h2 id="performance-title" className="mt-1 font-display text-2xl font-extrabold">Painel de desempenho</h2>
-        </div>
-        <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold hover:border-sea hover:text-sea" type="button" onClick={onClose}>Voltar aos concursos</button>
-      </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <label className="text-xs font-bold text-muted">Concurso<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={examFilter} onChange={(event) => { setExamFilter(event.target.value); setSubjectFilter('Todos') }}><option>Todos</option>{exams.map((exam) => <option key={exam}>{exam}</option>)}</select></label>
-        <label className="text-xs font-bold text-muted">Matéria<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value)}><option>Todos</option>{subjects.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
-      </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: 'Respondidas', value: answered.length },
-          { label: 'Acertos', value: correct.length },
-          { label: 'Erros', value: wrong.length },
-          { label: 'Aproveitamento', value: `${accuracy}%` },
-        ].map((item) => <article key={item.label} className="rounded-xl border border-line bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-muted">{item.label}</p><p className="mt-2 font-display text-3xl font-extrabold text-ink">{item.value}</p></article>)}
-      </div>
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <section className="rounded-xl border border-line bg-white p-4 sm:p-5"><h3 className="font-display text-lg font-extrabold">{examFilter === 'Todos' ? 'Por concurso' : 'Por matéria'}</h3>
-          {groupings.length ? <div className="mt-3 space-y-3">{groupings.map(([label, values]) => { const percent = values.answered ? Math.round(values.correct / values.answered * 100) : 0; return <div key={label}><div className="flex justify-between gap-3 text-sm"><span className="font-semibold">{label}</span><span className="shrink-0 text-muted">{values.correct}/{values.answered} · {percent}%</span></div><div className="mt-1.5 h-2 overflow-hidden rounded-full bg-paper"><div className="h-full rounded-full bg-sea" style={{ width: `${percent}%` }} /></div></div> })}</div> : <p className="mt-3 text-sm leading-6 text-muted">Responda algumas questões para ver seu desempenho por grupo.</p>}
-        </section>
-        <section className="rounded-xl border border-line bg-white p-4 sm:p-5"><div className="flex items-center justify-between gap-2"><h3 className="font-display text-lg font-extrabold">Questões para revisar</h3><span className="rounded-full bg-[#fff2e8] px-2.5 py-1 text-xs font-bold text-[#9b5734]">{wrong.length} erradas</span></div>
-          {wrong.length ? <div className="mt-3 max-h-80 space-y-2 overflow-y-auto">{wrong.slice(0, 30).map(([id, question]) => <button key={id} type="button" className="w-full rounded-lg border border-line p-3 text-left hover:border-sea" onClick={() => onReview(id, question)}><span className="block text-xs font-bold text-sea">{question.exam} · {question.subject}{question.topic ? ` · ${question.topic}` : ''}</span><span className="mt-1 line-clamp-2 block text-sm leading-5">{question.prompt}</span><span className="mt-1 block text-xs font-bold text-muted">Toque para revisar</span></button>)}</div> : <p className="mt-3 text-sm leading-6 text-muted">Nenhuma questão errada neste filtro. Questões respondidas são guardadas neste aparelho.</p>}
-        </section>
-      </div>
-    </section>
   )
 }
 
@@ -539,6 +468,15 @@ function App() {
     }
   }
 
+  const returnToHome = useCallback(() => {
+    setTopic('Todos')
+    setYear('Todos')
+    setSelectedExamId(null)
+    setSelectedStudyMode(null)
+    setSimulationIds(null)
+    setShowPerformance(false)
+  }, [setTopic, setYear, setSelectedExamId, setSelectedStudyMode, setSimulationIds, setShowPerformance])
+
   useEffect(() => {
     if (Capacitor.getPlatform() !== 'android') return
     const listener = CapacitorApp.addListener('backButton', () => {
@@ -561,7 +499,7 @@ function App() {
       }
     })
     return () => { void listener.then((handle) => handle.remove()) }
-  }, [adminMode, showAccountSync, showPerformance, openImageMap, simulationIds, selectedExamId, selectedStudyMode])
+  }, [adminMode, showAccountSync, showPerformance, openImageMap, simulationIds, selectedExamId, selectedStudyMode, returnToHome])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSplashElapsed(true), 900)
@@ -665,15 +603,6 @@ function App() {
     setSimulationIds(null)
   }
 
-  function returnToHome() {
-    setTopic('Todos')
-    setYear('Todos')
-    setSelectedExamId(null)
-    setSelectedStudyMode(null)
-    setSimulationIds(null)
-    setShowPerformance(false)
-  }
-
   function continueStudying() {
     if (resumeSavedSimulation && savedSimulation && savedSimulation.ids.length > 0) {
       const examChoice = examChoices.find((choice) => choice.id === savedSimulation.examId)
@@ -761,7 +690,11 @@ function App() {
   if (adminMode) {
     return (
       <ErrorBoundary>
-        <AdminQuestionsPanel onClose={() => setAdminMode(false)} />
+        <div className="min-h-screen bg-paper text-ink">
+          <Suspense fallback={<div className="mx-auto mt-20 p-8 text-center text-muted">Carregando painel administrativo…</div>}>
+            <AdminQuestionsPanel onClose={() => setAdminMode(false)} />
+          </Suspense>
+        </div>
       </ErrorBoundary>
     )
   }
@@ -878,12 +811,14 @@ function App() {
           </section>
 
           {showPerformance ? (
-            <PerformanceDashboard
-              snapshots={questionSnapshots}
-              answers={answers}
-              onClose={() => setShowPerformance(false)}
-              onReview={reviewQuestion}
-            />
+            <Suspense fallback={<div className="mt-8 p-8 text-center"><Skeleton className="w-32 mx-auto mb-2" /><SkeletonText className="w-48 mx-auto" /></div>}>
+              <PerformanceDashboard
+                snapshots={questionSnapshots}
+                answers={answers}
+                onClose={() => setShowPerformance(false)}
+                onReview={reviewQuestion}
+              />
+            </Suspense>
           ) : !selectedExamId ? (
             <section className="mt-7" id="questoes">
               {((resumeSavedSimulation && savedSimulation?.ids.length) || lastStudiedQuestion) && (
@@ -1071,14 +1006,16 @@ function App() {
                   </div>
                   <div className="space-y-4">
                     {simulationIds !== null && (
-                      <Simulation
-                        questions={filteredQuestions}
-                        simulationIds={simulationIds}
-                        simulationAnswers={simulationAnswers}
-                        simulationRevealed={simulationRevealed}
-                        recordSimulationAnswer={recordSimulationAnswer}
-                        recordSimulationReveal={recordSimulationReveal}
-                      />
+                      <Suspense fallback={<div className="mt-4 p-8 text-center"><Skeleton className="w-32 mx-auto mb-2" /><SkeletonText className="w-64 mx-auto" /></div>}>
+                        <Simulation
+                          questions={filteredQuestions}
+                          simulationIds={simulationIds}
+                          simulationAnswers={simulationAnswers}
+                          simulationRevealed={simulationRevealed}
+                          recordSimulationAnswer={recordSimulationAnswer}
+                          recordSimulationReveal={recordSimulationReveal}
+                        />
+                      </Suspense>
                     )}
                     {simulationComplete && (
                       <section className="rounded-xl border border-sea/20 bg-sea-light p-5" aria-live="polite">
