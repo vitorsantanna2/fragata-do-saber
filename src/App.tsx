@@ -1,14 +1,21 @@
-import { Fragment, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type TouchEvent } from 'react'
+import { App as CapacitorApp } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
+import AdminQuestionsPanel from './components/AdminQuestionsPanel'
 import { supabase } from './lib/supabase'
+import { downloadMindMap, getMindMapUrl, loadMindMaps, openMindMapPdf, type MindMap } from './lib/mindMaps'
 import {
   cacheQuestions,
   getLocalDatabase,
   getLocalMetadata,
+  hasCachedMindMaps,
   hasCachedQuestions,
   isNativeApp,
+  loadStudyProgress,
   readCachedQuestions,
+  saveStudyProgress,
   setLocalMetadata,
   type CachedQuestionRow,
 } from './lib/localDatabase'
@@ -16,7 +23,8 @@ import {
 type Question = {
   id: string
   year: string
-  questionNumber: number
+  questionNumber: number | null
+  questionType: 'exam' | 'bibliography'
   subject: string
   topic: string | null
   difficulty: string | null
@@ -28,6 +36,7 @@ type Question = {
   options: string[]
   answer: number
   explanation: string | null
+  source: string | null
 }
 
 type QuestionRow = CachedQuestionRow
@@ -107,7 +116,7 @@ async function canContinueOffline() {
 
   try {
     const lastValidatedAt = await getLocalMetadata('access_last_validated_at')
-    if (!lastValidatedAt || !(await hasCachedQuestions())) return false
+    if (!lastValidatedAt || (!(await hasCachedQuestions()) && !(await hasCachedMindMaps()))) return false
 
     const elapsed = Date.now() - Date.parse(lastValidatedAt)
     return elapsed >= 0 && elapsed <= OFFLINE_ACCESS_GRACE_MS
@@ -119,8 +128,9 @@ async function canContinueOffline() {
 function toQuestion(row: QuestionRow): Question {
   return {
     id: row.id,
-    year: String(row.year),
-    questionNumber: row.question_number,
+    year: row.question_type === 'bibliography' ? 'Bibliografia' : String(row.year ?? ''),
+    questionNumber: row.question_type === 'bibliography' || row.question_number === 0 ? null : row.question_number,
+    questionType: row.question_type,
     subject: row.subject,
     topic: row.topic,
     difficulty: row.difficulty,
@@ -132,7 +142,24 @@ function toQuestion(row: QuestionRow): Question {
     options: row.options,
     answer: row.correct_option,
     explanation: row.explanation,
+    source: row.source,
   }
+}
+
+function conciseSource(source: string) {
+  const normalized = source.replace(/\s+/g, ' ').trim()
+  const edition = /\b\d+\s*(?:[ªaºo])?\s*\.?\s*(?:ed\.?|edição)(?![\p{L}])/iu.exec(normalized)
+  if (!edition || edition.index === undefined) return normalized
+
+  const end = edition.index + edition[0].length
+  return `${normalized.slice(0, end).replace(/[\s.,;:]+$/, '')}.`
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('pt-BR')
 }
 
 // Fisher-Yates: sorteio realmente uniforme (evite sort(() => Math.random() - 0.5))
@@ -184,7 +211,90 @@ function RichText({ text, className }: RichTextProps) {
   )
 }
 
+function ZoomableImage({ src, alt }: { src: string; alt: string }) {
+  const [scale, setScale] = useState(1)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const gesture = useRef<{ distance: number; scale: number; x: number; y: number; touchX: number; touchY: number } | null>(null)
+
+  function zoom(nextScale: number) {
+    const boundedScale = Math.min(5, Math.max(1, nextScale))
+    setScale(boundedScale)
+    if (boundedScale === 1) setOffset({ x: 0, y: 0 })
+  }
+
+  function onTouchStart(event: TouchEvent<HTMLDivElement>) {
+    if (event.touches.length > 1) {
+      const first = event.touches[0]
+      const second = event.touches[1]
+      gesture.current = {
+        distance: Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY),
+        scale,
+        x: offset.x,
+        y: offset.y,
+        touchX: (first.clientX + second.clientX) / 2,
+        touchY: (first.clientY + second.clientY) / 2,
+      }
+    } else {
+      const touch = event.touches[0]
+      gesture.current = { distance: 0, scale, x: offset.x, y: offset.y, touchX: touch.clientX, touchY: touch.clientY }
+    }
+  }
+
+  function onTouchMove(event: TouchEvent<HTMLDivElement>) {
+    const start = gesture.current
+    if (!start) return
+    if (event.touches.length > 1) {
+      const first = event.touches[0]
+      const second = event.touches[1]
+      const distance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY)
+      const centerX = (first.clientX + second.clientX) / 2
+      const centerY = (first.clientY + second.clientY) / 2
+      zoom(start.scale * distance / Math.max(start.distance, 1))
+      setOffset({ x: start.x + centerX - start.touchX, y: start.y + centerY - start.touchY })
+    } else if (start.scale > 1) {
+      const touch = event.touches[0]
+      setOffset({ x: start.x + touch.clientX - start.touchX, y: start.y + touch.clientY - start.touchY })
+    }
+  }
+
+  function onTouchEnd(event: TouchEvent<HTMLDivElement>) {
+    gesture.current = null
+    if (event.touches.length === 1) {
+      const touch = event.touches[0]
+      gesture.current = { distance: 0, scale, x: offset.x, y: offset.y, touchX: touch.clientX, touchY: touch.clientY }
+    }
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center justify-center gap-2 border-b border-line p-2" aria-label="Controles de zoom">
+        <button className="grid size-10 place-items-center rounded-lg border border-line text-xl font-bold disabled:opacity-40" type="button" aria-label="Aumentar zoom" disabled={scale >= 5} onClick={() => zoom(scale + 0.5)}>+</button>
+        <span className="min-w-14 text-center text-sm font-bold tabular-nums">{Math.round(scale * 100)}%</span>
+        <button className="grid size-10 place-items-center rounded-lg border border-line text-xl font-bold disabled:opacity-40" type="button" aria-label="Diminuir zoom" disabled={scale <= 1} onClick={() => zoom(scale - 0.5)}>−</button>
+        <button className="rounded-lg border border-line px-3 py-2 text-sm font-bold" type="button" onClick={() => { zoom(1); setOffset({ x: 0, y: 0 }) }}>Ajustar</button>
+      </div>
+      <div
+        className="grid min-h-[50vh] flex-1 touch-none place-items-center overflow-hidden bg-slate-100 sm:min-h-[65vh]"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
+        onWheel={(event) => { if (event.ctrlKey || event.metaKey) { event.preventDefault(); zoom(scale + (event.deltaY < 0 ? 0.2 : -0.2)) } }}
+      >
+        <img
+          className="max-h-[70vh] max-w-full select-none object-contain sm:max-h-[75vh]"
+          style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: 'center' }}
+          src={src}
+          alt={alt}
+          draggable={false}
+        />
+      </div>
+    </div>
+  )
+}
+
 function App() {
+  const [adminMode, setAdminMode] = useState(false)
   const [accessState, setAccessState] = useState<'checking' | 'locked' | 'granted'>('checking')
   const [splashElapsed, setSplashElapsed] = useState(false)
   const [accessCode, setAccessCode] = useState('')
@@ -198,15 +308,129 @@ function App() {
   const [selectedStudyMode, setSelectedStudyMode] = useState<'exam-questions' | 'bibliography-questions' | 'mind-maps' | null>(null)
   const [topic, setTopic] = useState('Todos')
   const [year, setYear] = useState('Todos')
+  const [bibliographySource, setBibliographySource] = useState('Todos')
+  const [questionSearch, setQuestionSearch] = useState('')
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [revealed, setRevealed] = useState<string[]>([])
   const [favorites, setFavorites] = useState<string[]>([])
   const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
+  const [mindMaps, setMindMaps] = useState<MindMap[]>([])
+  const [mindMapsLoading, setMindMapsLoading] = useState(false)
+  const [mindMapsError, setMindMapsError] = useState('')
+  const [mindMapAction, setMindMapAction] = useState<string | null>(null)
+  const [showDownloadedMindMapsOnly, setShowDownloadedMindMapsOnly] = useState(false)
+  const [openImageMap, setOpenImageMap] = useState<{ map: MindMap; url: string } | null>(null)
+  const [progressRestored, setProgressRestored] = useState(false)
+  const skipSelectionReset = useRef(false)
+
+  useEffect(() => {
+    let active = true
+    void loadStudyProgress().then((progress) => {
+      if (!active) return
+      if (progress) {
+        skipSelectionReset.current = true
+        setAnswers(progress.answers)
+        setRevealed(progress.revealed)
+        setFavorites(progress.favorites)
+        setSelectedExamId(progress.selectedExamId)
+        setSelectedStudyMode(progress.selectedStudyMode)
+        setTopic(progress.topic)
+        setYear(progress.year)
+        setBibliographySource(progress.bibliographySource)
+        setQuestionSearch(progress.questionSearch)
+      }
+      setProgressRestored(true)
+    })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    if (!progressRestored) return
+    const timeout = window.setTimeout(() => {
+      void saveStudyProgress({
+        answers, revealed, favorites, selectedExamId, selectedStudyMode,
+        topic, year, bibliographySource, questionSearch,
+      })
+    }, 200)
+    return () => window.clearTimeout(timeout)
+  }, [progressRestored, answers, revealed, favorites, selectedExamId, selectedStudyMode, topic, year, bibliographySource, questionSearch])
+
+  useEffect(() => {
+    if (Capacitor.getPlatform() !== 'android') return
+
+    const listener = CapacitorApp.addListener('backButton', () => {
+      if (adminMode) {
+        setAdminMode(false)
+      } else if (openImageMap) {
+        setOpenImageMap(null)
+      } else if (simulationIds !== null) {
+        exitSimulation()
+      } else if (selectedExamId === 'cp-t-informatica' && selectedStudyMode !== null) {
+        setSelectedStudyMode(null)
+      } else if (selectedExamId !== null) {
+        returnToHome()
+      } else {
+        void CapacitorApp.exitApp()
+      }
+    })
+
+    return () => { void listener.then((handle) => handle.remove()) }
+  }, [adminMode, openImageMap, simulationIds, selectedExamId, selectedStudyMode])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSplashElapsed(true), 900)
     return () => window.clearTimeout(timeout)
   }, [])
+
+  useEffect(() => {
+    if (selectedStudyMode !== 'mind-maps' || selectedExamId !== 'cp-t-informatica') return
+    let active = true
+    setMindMapsLoading(true)
+    setMindMapsError('')
+    void loadMindMaps()
+      .then((maps) => { if (active) setMindMaps(maps) })
+      .catch((error: unknown) => {
+        if (active) setMindMapsError(`Não foi possível carregar o catálogo de mapas. Confira a configuração do Supabase. ${error instanceof Error ? error.message : ''}`)
+      })
+      .finally(() => { if (active) setMindMapsLoading(false) })
+    return () => { active = false }
+  }, [selectedExamId, selectedStudyMode])
+
+  async function handleMindMapAction(map: MindMap) {
+    setMindMapAction(map.id)
+    setMindMapsError('')
+    try {
+      let currentMap = map
+      if (!map.local_path && isNativeApp()) {
+        const localPath = await downloadMindMap(map)
+        currentMap = { ...map, local_path: localPath }
+        setMindMaps((items) => items.map((item) => item.id === map.id ? currentMap : item))
+      }
+      if (map.content_type === 'application/pdf') {
+        await openMindMapPdf(currentMap)
+      } else {
+        const url = await getMindMapUrl(currentMap)
+        setOpenImageMap({ map: currentMap, url })
+      }
+    } catch (error) {
+      setMindMapsError(`Não foi possível abrir “${map.title}”. ${error instanceof Error ? error.message : 'Verifique sua conexão e tente novamente.'}`)
+    } finally {
+      setMindMapAction(null)
+    }
+  }
+
+  async function handleMindMapDownload(map: MindMap) {
+    setMindMapAction(map.id)
+    setMindMapsError('')
+    try {
+      const localPath = await downloadMindMap(map)
+      setMindMaps((items) => items.map((item) => item.id === map.id ? { ...item, local_path: localPath } : item))
+    } catch (error) {
+      setMindMapsError(`Não foi possível baixar “${map.title}”. ${error instanceof Error ? error.message : 'Verifique sua conexão e tente novamente.'}`)
+    } finally {
+      setMindMapAction(null)
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -334,13 +558,24 @@ function App() {
         return
       }
 
+      if (selectedExam.id === 'cp-t-informatica' && selectedStudyMode !== 'exam-questions' && selectedStudyMode !== 'bibliography-questions') {
+        setQuestions([])
+        setLoading(false)
+        setLoadError('')
+        return
+      }
+
+      const questionType: 'exam' | 'bibliography' = selectedExam.id === 'cp-t-informatica' && selectedStudyMode === 'bibliography-questions'
+        ? 'bibliography'
+        : 'exam'
+
       setLoading(true)
       setLoadError('')
       setUsingOfflineCache(false)
 
       let cachedRows: QuestionRow[] = []
       try {
-        cachedRows = await readCachedQuestions(selectedExam.exam, selectedExam.subject)
+        cachedRows = await readCachedQuestions(selectedExam.exam, selectedExam.subject, questionType)
         if (!active) return
         if (cachedRows.length > 0) {
           setQuestions(cachedRows.map(toQuestion))
@@ -359,9 +594,11 @@ function App() {
 
       let query = supabase
         .from('questions')
-        .select('id, year, question_number, subject, topic, difficulty, exam, statement, statement_after_image, image_url, image_alt, options, correct_option, explanation')
+        .select('id, year, question_number, question_type, subject, topic, difficulty, exam, statement, statement_after_image, image_url, image_alt, options, correct_option, explanation, source')
         .eq('is_published', true)
+        .eq('is_annulled', false)
         .eq('exam', selectedExam.exam)
+        .eq('question_type', questionType)
 
       if (selectedExam.subject) {
         query = query.eq('subject', selectedExam.subject)
@@ -381,13 +618,14 @@ function App() {
       } else {
         const questionRows = data as QuestionRow[]
         setUsingOfflineCache(false)
-        void cacheQuestions(questionRows, selectedExam.exam, selectedExam.subject).catch((cacheError) => {
+        void cacheQuestions(questionRows, selectedExam.exam, selectedExam.subject, questionType).catch((cacheError) => {
           console.warn('Não foi possível atualizar o cache local de questões.', cacheError)
         })
         setQuestions((data as QuestionRow[]).map((row) => ({
           id: row.id,
-          year: String(row.year),
+          year: row.question_type === 'bibliography' ? 'Bibliografia' : String(row.year ?? ''),
           questionNumber: row.question_number,
+          questionType: row.question_type,
           subject: row.subject,
           topic: row.topic,
           difficulty: row.difficulty,
@@ -399,6 +637,7 @@ function App() {
           options: row.options,
           answer: row.correct_option,
           explanation: row.explanation,
+          source: row.source,
         })))
       }
 
@@ -410,26 +649,56 @@ function App() {
     return () => {
       active = false
     }
-  }, [selectedExamId])
+  }, [selectedExamId, selectedStudyMode])
+
+  useEffect(() => {
+    if (!progressRestored) return
+    if (skipSelectionReset.current) {
+      skipSelectionReset.current = false
+      return
+    }
+    setTopic('Todos')
+    setYear('Todos')
+    setBibliographySource('Todos')
+    setQuestionSearch('')
+    setSimulationIds(null)
+  }, [progressRestored, selectedExamId, selectedStudyMode])
 
   const topics = useMemo(
     () => ['Todos', ...new Set(questions.flatMap((question) => question.topic ? [question.topic] : []))],
     [questions],
   )
   const years = useMemo(
-    () => ['Todos', ...new Set(questions.map((question) => question.year))],
+    () => ['Todos', ...new Set(questions.map((question) => question.year).filter(Boolean))],
+    [questions],
+  )
+  const bibliographySources = useMemo(
+    () => ['Todos', ...new Set(questions.flatMap((question) => question.source ? [conciseSource(question.source)] : []))],
     [questions],
   )
 
-  const filteredQuestions = useMemo(
-    () =>
-      questions.filter(
-        (question) =>
-          (topic === 'Todos' || question.topic === topic) &&
-          (year === 'Todos' || question.year === year),
-      ),
-    [questions, topic, year],
-  )
+  const filteredQuestions = useMemo(() => {
+    const normalizedSearch = normalizeSearchText(questionSearch.trim())
+    return questions.filter((question) => {
+      const searchableText = [
+        question.prompt,
+        question.promptAfterImage,
+        question.options.join(' '),
+        question.explanation,
+        question.source,
+        question.subject,
+        question.topic,
+        question.exam,
+        question.year,
+      ].filter(Boolean).join(' ')
+      const matchesSearch = !normalizedSearch || normalizeSearchText(searchableText).includes(normalizedSearch)
+
+      return matchesSearch &&
+        (topic === 'Todos' || question.topic === topic) &&
+        (selectedStudyMode !== 'bibliography-questions' || bibliographySource === 'Todos' || (question.source !== null && conciseSource(question.source) === bibliographySource)) &&
+        (year === 'Todos' || question.year === year)
+    })
+  }, [questions, topic, year, bibliographySource, selectedStudyMode, questionSearch])
 
   const visibleQuestions = useMemo(() => {
     if (!simulationIds) return filteredQuestions
@@ -439,6 +708,11 @@ function App() {
       return q ? [q] : []
     })
   }, [simulationIds, filteredQuestions, questions])
+
+  const downloadedMindMapsCount = mindMaps.filter((map) => map.local_path).length
+  const visibleMindMaps = showDownloadedMindMapsOnly
+    ? mindMaps.filter((map) => map.local_path)
+    : mindMaps
 
   const simulationAnsweredCount = visibleQuestions.filter(
   (question) => answers[question.id] !== undefined,
@@ -472,8 +746,6 @@ function App() {
 
 function exitSimulation() {
   setSimulationIds(null)
-  setAnswers({})
-  setRevealed([])
 }
 
 function changeTopic(value: string) {
@@ -488,8 +760,6 @@ function changeYear(value: string) {
 
   function selectExam(examId: string) {
     setQuestions([])
-    setAnswers({})
-    setRevealed([])
     setTopic('Todos')
     setYear('Todos')
     setSelectedExamId(examId)
@@ -499,8 +769,6 @@ function changeYear(value: string) {
 
   function returnToHome() {
     setQuestions([])
-    setAnswers({})
-    setRevealed([])
     setTopic('Todos')
     setYear('Todos')
     setLoadError('')
@@ -511,6 +779,10 @@ function changeYear(value: string) {
 
   function toggleInList(list: string[], id: string, update: (value: string[]) => void) {
     update(list.includes(id) ? list.filter((item) => item !== id) : [...list, id])
+  }
+
+  if (adminMode) {
+    return <AdminQuestionsPanel onClose={() => setAdminMode(false)} />
   }
 
   if (accessState === 'checking' || !splashElapsed) {
@@ -558,6 +830,9 @@ function changeYear(value: string) {
               {checkingCode ? 'Validando...' : 'Acessar'}
             </button>
           </form>
+          <button className="mt-5 w-full rounded-lg border border-line px-4 py-2.5 text-sm font-bold text-muted transition hover:border-sea hover:text-sea" type="button" onClick={() => setAdminMode(true)}>
+            Acesso administrativo
+          </button>
         </section>
       </main>
     )
@@ -694,23 +969,6 @@ function changeYear(value: string) {
               </button>
             </div>
           </section>
-        ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === 'bibliography-questions' ? (
-          <section className="mt-10" id="questoes-bibliografia">
-            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Quadro Técnico - Informática</p>
-                <h2 className="mt-1 font-display text-2xl font-extrabold">Questões de apostilas e bibliografia</h2>
-              </div>
-              <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={() => setSelectedStudyMode(null)}>
-                Voltar às opções
-              </button>
-            </div>
-            <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center sm:p-12">
-              <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#eef3f5] text-2xl" aria-hidden="true">▤</span>
-              <h3 className="mt-4 font-display text-xl font-extrabold">As questões de bibliografia aparecerão aqui</h3>
-              <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">Esta área reunirá questões baseadas nas apostilas e nos livros da bibliografia do concurso.</p>
-            </div>
-          </section>
         ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === 'mind-maps' ? (
           <section className="mt-10" id="mapas-mentais">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -722,11 +980,79 @@ function changeYear(value: string) {
                 Voltar às opções
               </button>
             </div>
-            <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center sm:p-12">
-              <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#fff2e8] text-2xl" aria-hidden="true">✦</span>
-              <h3 className="mt-4 font-display text-xl font-extrabold">Seus mapas mentais aparecerão aqui</h3>
-              <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">Esta área está pronta para receber os mapas mentais do Quadro Técnico. Assim que você enviar os arquivos, eles poderão ser organizados aqui.</p>
-            </div>
+            {mindMaps.length > 0 && (
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-white p-4 sm:p-5">
+                <div className="min-w-52 flex-1">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="font-bold text-ink">Disponibilidade offline</span>
+                    <span className="font-extrabold text-sea">{downloadedMindMapsCount}/{mindMaps.length}</span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-paper" role="progressbar" aria-label="Mapas disponíveis offline" aria-valuemin={0} aria-valuemax={mindMaps.length} aria-valuenow={downloadedMindMapsCount}>
+                    <div className="h-full rounded-full bg-sea transition-all" style={{ width: `${mindMaps.length ? downloadedMindMapsCount / mindMaps.length * 100 : 0}%` }} />
+                  </div>
+                  <p className="mt-2 text-xs text-muted">{downloadedMindMapsCount === 0 ? 'Nenhum mapa baixado neste aparelho.' : `${downloadedMindMapsCount} ${downloadedMindMapsCount === 1 ? 'mapa pronto' : 'mapas prontos'} para estudar sem internet.`}</p>
+                </div>
+                <button
+                  className={`rounded-lg border px-4 py-2.5 text-sm font-bold transition ${showDownloadedMindMapsOnly ? 'border-sea bg-sea-light text-sea' : 'border-line bg-white text-ink hover:border-sea hover:text-sea'}`}
+                  type="button"
+                  aria-pressed={showDownloadedMindMapsOnly}
+                  onClick={() => setShowDownloadedMindMapsOnly((show) => !show)}
+                >
+                  {showDownloadedMindMapsOnly ? 'Mostrar todos os mapas' : `Ver mapas baixados (${downloadedMindMapsCount})`}
+                </button>
+              </div>
+            )}
+            {mindMapsError && <p className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800" role="alert">{mindMapsError}</p>}
+            {mindMapsLoading ? (
+              <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando mapas mentais…</p>
+            ) : mindMaps.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center sm:p-12">
+                <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#fff2e8] text-2xl" aria-hidden="true">✦</span>
+                <h3 className="mt-4 font-display text-xl font-extrabold">Nenhum mapa publicado ainda</h3>
+                <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">Os mapas publicados para o Quadro Técnico aparecerão aqui. Quando estiver online, baixe cada mapa para consultá-lo sem internet.</p>
+              </div>
+            ) : visibleMindMaps.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">Nenhum mapa foi baixado neste aparelho ainda. Volte a mostrar todos e baixe mapas quando estiver online.</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {visibleMindMaps.map((map) => (
+                  <article key={map.id} className="rounded-xl border border-line bg-white p-5">
+                    <p className="text-xs font-bold uppercase tracking-[0.1em] text-sea">{map.subject}</p>
+                    <h3 className="mt-2 font-display font-extrabold">{map.title}</h3>
+                    {map.description && <p className="mt-2 text-sm leading-6 text-muted">{map.description}</p>}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-muted">{map.content_type === 'application/pdf' ? 'PDF' : 'Imagem'}</span>
+                      {map.local_path ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-sea-light px-2.5 py-1 text-xs font-bold text-sea"><span aria-hidden="true">✓</span> Disponível offline</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-paper px-2.5 py-1 text-xs font-bold text-muted"><span aria-hidden="true">⇩</span> Ainda não baixado</span>
+                      )}
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button className="rounded-lg bg-sea px-4 py-2 text-sm font-bold text-white transition hover:bg-ink disabled:opacity-60" type="button" disabled={mindMapAction === map.id} onClick={() => void handleMindMapAction(map)}>
+                        {mindMapAction === map.id ? 'Preparando…' : 'Abrir mapa'}
+                      </button>
+                      {isNativeApp() && !map.local_path && (
+                        <button className="rounded-lg border border-line px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea disabled:opacity-60" type="button" disabled={mindMapAction === map.id} onClick={() => void handleMindMapDownload(map)}>
+                          Baixar para offline
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+            {openImageMap && (
+              <div className="fixed inset-0 z-50 grid place-items-center bg-ink/90 p-3 sm:p-8" role="dialog" aria-modal="true" aria-label={openImageMap.map.title}>
+                <div className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white">
+                  <div className="flex items-center justify-between gap-3 border-b border-line p-4">
+                    <h3 className="font-display font-extrabold">{openImageMap.map.title}</h3>
+                    <button className="rounded-lg border border-line px-3 py-2 text-sm font-bold" type="button" onClick={() => setOpenImageMap(null)}>Fechar</button>
+                  </div>
+                  <ZoomableImage key={openImageMap.map.id} src={openImageMap.url} alt={openImageMap.map.title} />
+                </div>
+              </div>
+            )}
           </section>
         ) : (
         <>
@@ -748,9 +1074,24 @@ function changeYear(value: string) {
             <div className="mb-5 flex items-center justify-between">
               <h2 className="font-display text-base font-extrabold">Filtrar questões</h2>
             </div>
+            <label className="mb-4 block rounded-xl border border-line bg-white p-4">
+              <span className="mb-2 block text-xs font-bold text-ink">Buscar questões</span>
+              <input
+                className="block min-h-11 w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-muted focus:border-sea focus:ring-2 focus:ring-sea/10 disabled:cursor-not-allowed disabled:opacity-60"
+                type="search"
+                value={questionSearch}
+                onChange={(event) => setQuestionSearch(event.target.value)}
+                placeholder="Enunciado, alternativa, tópico, livro ou explicação"
+                aria-label="Buscar questões por texto"
+                disabled={simulationIds !== null}
+              />
+              {simulationIds !== null && <span className="mt-2 block text-xs text-muted">Saia do simulado para buscar na lista de questões.</span>}
+            </label>
+
             <div className="space-y-4">
               <FilterSelect label="Tópico" value={topic} options={topics} onChange={changeTopic} />
-              <FilterSelect label="Ano da prova" value={year} options={years} onChange={changeYear} />
+              {selectedStudyMode === 'bibliography-questions' && <FilterSelect label="Apostila ou livro" value={bibliographySource} options={bibliographySources} onChange={setBibliographySource} />}
+              {selectedStudyMode !== 'bibliography-questions' && <FilterSelect label="Ano da prova" value={year} options={years} onChange={changeYear} />}
             <div className="mt-5 space-y-2">
               <button
                 className="w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white transition hover:bg-ink disabled:opacity-50"
@@ -787,7 +1128,7 @@ function changeYear(value: string) {
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Banco de questões</p>
-                <h2 className="mt-1 font-display text-2xl font-extrabold">Continue sua preparação</h2>
+                <h2 className="mt-1 font-display text-2xl font-extrabold">{selectedStudyMode === 'bibliography-questions' ? 'Questões baseadas na bibliografia' : 'Continue sua preparação'}</h2>
               </div>
               <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-line">{visibleQuestions.length} {simulationIds ? 'no simulado' : 'disponíveis'}</span>
             </div>
@@ -824,17 +1165,23 @@ function changeYear(value: string) {
                 return (
                   <article className="rounded-xl border border-line bg-white p-5 sm:p-6" key={question.id}>
                     <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-                      <span className="rounded-md bg-sea-light px-2.5 py-1 text-sea">Q{String(question.questionNumber).padStart(2, '0')}</span>
-                      <span className="text-muted">{question.year}</span><span className="text-line">/</span>
+                      {question.questionType === 'bibliography' ? (
+                        <span className="rounded-md bg-sea-light px-2.5 py-1 text-sea">Bibliografia</span>
+                      ) : (
+                        <>
+                          <span className="rounded-md bg-sea-light px-2.5 py-1 text-sea">{question.questionNumber === null ? 'Questão' : `Q${String(question.questionNumber).padStart(2, '0')}`}</span>
+                          {question.year && <span className="text-muted">{question.year}</span>}
+                        </>
+                      )}
                       <span className="text-muted">{question.subject}</span>
                       {question.topic && <span className="rounded-full bg-sea-light px-2.5 py-1 text-sea">{question.topic}</span>}
                       {question.difficulty && <span className="rounded-full bg-[#fff2e8] px-2.5 py-1 text-[#9b5734]">{question.difficulty}</span>}
-                      <span className="ml-auto rounded-full bg-paper px-2.5 py-1 text-muted">{question.year}</span>
                       <button className={`ml-1 grid size-8 place-items-center rounded-md transition hover:bg-paper ${favorites.includes(question.id) ? 'text-coral' : 'text-muted'}`} type="button" aria-label={favorites.includes(question.id) ? 'Remover dos favoritos' : 'Salvar nos favoritos'} onClick={() => toggleInList(favorites, question.id, setFavorites)}>
                         {favorites.includes(question.id) ? '★' : '☆'}
                       </button>
                     </div>
                     <p className="mt-4 text-xs font-semibold text-muted">{question.exam}</p>
+                    {question.source && <p className="mt-2 text-sm text-muted" title={question.source}><strong>Referência:</strong> {conciseSource(question.source)}</p>}
                     <RichText className="mt-2 block whitespace-pre-wrap font-semibold leading-6 text-ink" text={question.prompt} />
                     {question.imageUrl && (
                       <img
@@ -882,7 +1229,7 @@ function changeYear(value: string) {
         </>
         )}
       </main>
-      <footer className="border-t border-line bg-white/70 px-5 py-6 text-center text-xs text-muted">Fragata do Saber <span className="px-1 text-coral">·</span> Preparação feita com propósito</footer>
+      <footer className="flex flex-wrap items-center justify-center gap-2 border-t border-line bg-white/70 px-5 py-6 text-xs text-muted"><span>Fragata do Saber <span className="px-1 text-coral">·</span> Preparação feita com propósito</span><button className="font-semibold transition hover:text-sea" type="button" onClick={() => setAdminMode(true)}>Painel administrativo</button></footer>
     </div>
   )
 }

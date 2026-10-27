@@ -1,62 +1,41 @@
 <div align="center">
   <img src="public/logo.png" alt="Fragata do Saber" width="180" />
   <h1>Fragata do Saber</h1>
-  <p>Questões e simulados para concursos navais, com acesso web e aplicativo Android.</p>
+  <p>Plataforma de questões, simulados e mapas mentais para concursos navais.</p>
   <a href="https://fragatadosaber.online">Acessar o Fragata do Saber</a>
 </div>
 
-## Índice
-
-- [Sobre o projeto](#sobre-o-projeto)
-- [Funcionalidades](#funcionalidades)
-- [Tecnologias](#tecnologias)
-- [Começando](#começando)
-- [Variáveis de ambiente](#variáveis-de-ambiente)
-- [Configuração do Supabase](#configuração-do-supabase)
-- [Aplicativo Android](#aplicativo-android)
-- [Modo offline](#modo-offline)
-- [Adicionar questões](#adicionar-questões)
-- [Acesso por código](#acesso-por-código)
-- [Implantação](#implantação)
-- [Scripts](#scripts)
-
 ## Sobre o projeto
 
-O Fragata do Saber é uma plataforma de estudo para concursos navais. A pessoa escolhe um concurso, filtra questões por ano ou tópico, responde e acompanha o resultado do simulado.
+O Fragata do Saber ajuda na preparação para concursos navais. O projeto oferece uma aplicação web e um aplicativo Android, com acesso por código e suporte a estudo offline no Android.
 
-Concursos atualmente disponíveis:
+## Recursos
 
-- EA-HSG
-- Quadro Técnico - Informática (CP-T)
-- Cursos expeditos cadastrados na interface
+- Questões de provas e questões baseadas em livros e apostilas.
+- Busca no enunciado e filtros por concurso, matéria, tópico, ano e bibliografia.
+- Correção imediata, explicações, favoritos e simulados com pontuação.
+- Mapas mentais em PDF e imagem, com zoom para imagens.
+- Painel administrativo para revisar, cadastrar e publicar questões e mapas.
+- App Android com SQLite, download de mapas para acesso offline e botão Voltar com navegação entre telas.
+- Salvamento local de respostas, questões reveladas, favoritos, filtros e último concurso/modo acessado.
 
-## Funcionalidades
-
-- Questões e alternativas carregadas do Supabase.
-- Filtros por tópico e ano da prova.
-- Correção imediata e resultado do simulado calculado sobre 100 pontos.
-- Fórmulas em LaTeX renderizadas com KaTeX.
-- Imagens e texto complementar associados às questões.
-- Acesso compartilhado por código, sem cadastro identificável por pessoa.
-- No Quadro Técnico, opções para questões de provas, questões de bibliografia e mapas mentais. As duas últimas áreas ainda aguardam conteúdo.
-- Aplicativo Android com ícone próprio, tela de abertura e cache local de questões.
+O progresso salvo é local ao aparelho e ainda não sincroniza entre dispositivos.
 
 ## Tecnologias
 
-- React 19, TypeScript e Vite 8
-- Tailwind CSS 4
-- Supabase: PostgreSQL, autenticação anônima e Storage
-- Capacitor 8 e SQLite no Android
-- KaTeX
-- GitHub Actions e GitHub Pages
+- React, TypeScript e Vite
+- Tailwind CSS
+- Supabase: PostgreSQL, Auth, Row Level Security e Storage
+- Capacitor e SQLite no Android
+- KaTeX para fórmulas matemáticas
 
 ## Começando
 
 ### Pré-requisitos
 
-- Node.js 22 ou compatível com o Vite do projeto
+- Node.js compatível com o Vite usado pelo projeto
 - npm
-- Um projeto Supabase configurado para carregar questões e validar os códigos de acesso
+- Um projeto Supabase configurado (veja [Configuração do Supabase](#configuração-do-supabase))
 
 ### Instalação
 
@@ -66,9 +45,7 @@ cd fragata-do-saber
 npm install
 ```
 
-### Variáveis de ambiente
-
-Crie o arquivo `.env.local` na raiz do projeto:
+Crie `.env.local` na raiz:
 
 ```dotenv
 VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
@@ -77,7 +54,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sua-chave-publishable
 
 Use somente a chave `publishable` no frontend. Nunca coloque uma chave `service_role` em variáveis `VITE_` ou no repositório.
 
-### Executar localmente
+Inicie o servidor local:
 
 ```bash
 npm run dev
@@ -85,18 +62,32 @@ npm run dev
 
 ## Configuração do Supabase
 
-1. Crie um projeto Supabase.
-2. No **SQL Editor**, execute `supabase_questions_setup.sql` para criar ou atualizar `public.questions`.
-3. Execute `supabase_access_gate.sql` para criar as tabelas, funções de acesso e políticas RLS.
-4. Em **Authentication → Providers**, habilite **Anonymous Sign-Ins**.
-5. Se as questões usarem imagens, crie um bucket público chamado `question-images` no **Storage**.
-6. Copie a URL e a chave `publishable` do projeto para `.env.local`.
+Execute os scripts pelo **SQL Editor** do Supabase nesta ordem:
 
-A política RLS permite consultar questões publicadas somente para sessões com acesso válido. A chave `publishable` é pública por natureza; a proteção dos dados depende das funções e políticas RLS configuradas no banco.
+1. `supabase_questions_setup.sql` — tabela de questões e políticas de leitura.
+2. `supabase_access_gate.sql` — validação por código de acesso.
+3. `supabase_mind_maps_setup.sql` — catálogo de mapas e bucket privado `mind-maps`.
+4. `supabase_admin_questions_setup.sql` — painel administrativo, bucket de imagens de questões e permissões administrativas para questões e mapas.
+
+Habilite **Anonymous Sign-Ins** em **Authentication → Providers**. Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` em `.env.local` para desenvolvimento. No GitHub Pages, configure os mesmos valores em **Settings → Secrets and variables → Actions → Variables**.
+
+### Conta administrativa
+
+Crie uma conta de e-mail e senha em **Authentication → Users**. Copie o UUID do usuário e cadastre-o na tabela `public.admin_users`:
+
+```sql
+insert into public.admin_users (user_id)
+values ('UUID-DA-CONTA-AQUI')
+on conflict (user_id) do nothing;
+```
+
+O painel pode ser aberto pelo link **Painel administrativo** no app. Ele permite revisar e publicar questões e mapas. Administradores podem enviar imagens de questões (PNG, JPG ou WebP, até 10 MB) e arquivos de mapas (PDF, PNG, JPG ou WebP, até 25 MB). Os mapas ficam no bucket privado.
+
+As alterações administrativas são protegidas por RLS no banco. A chave `publishable` do frontend não concede privilégios administrativos.
 
 ## Aplicativo Android
 
-O app Android usa Capacitor. Para compilar, instale o Android Studio, o SDK Android e o JDK 21. No Android Studio, configure o JDK 21 como **Gradle JDK**. O caminho local do SDK fica em `android/local.properties`; esse arquivo não deve ser compartilhado.
+O projeto Android usa Capacitor. Instale o Android Studio, o SDK Android e o JDK 21. Configure o JDK 21 como **Gradle JDK** no Android Studio. O caminho local do SDK fica em `android/local.properties`, que não deve ser compartilhado.
 
 Compile o site e sincronize os arquivos e plugins Android:
 
@@ -110,7 +101,7 @@ Abra o projeto no Android Studio:
 npm run android:open
 ```
 
-Ou compile um APK de depuração no Windows:
+Para compilar um APK de depuração no Windows:
 
 ```powershell
 cd android
@@ -119,63 +110,49 @@ cd android
 
 O APK fica em `android/app/build/outputs/apk/debug/app-debug.apk`. Instale o APK recém-gerado no aparelho para conferir as alterações.
 
-Para publicar uma versão de teste no GitHub Releases, crie e envie uma tag no formato `v*` (por exemplo, `v1.0.0-beta.3`). O workflow `.github/workflows/android-release.yml` compila o APK e o anexa a uma pré-release. Esse APK de depuração é para instalação direta e não está assinado para a Play Store. Ao preparar outra versão, atualize também o `versionCode` em `android/app/build.gradle`.
+O botão Voltar do Android fecha o visualizador de mapas, sai do simulado ou retorna à tela anterior do fluxo de estudo. Na tela inicial, ele encerra o app.
 
-As artes originais e os arquivos derivados ficam em `android/assets/`. Os recursos nativos do ícone e da abertura estão em `android/app/src/main/res/`. Durante a checagem inicial de acesso, `public/splash-screen.jpg` aparece por pelo menos 0,9 segundo. A imagem cabe inteira na tela, sem cortar as laterais; o fundo azul preenche o espaço restante. No Android 12 ou superior, a tela nativa do sistema aparece primeiro com o ícone do app.
+Para publicar uma versão de teste no GitHub Releases, crie e envie uma tag no formato `v*`, por exemplo `v1.0.0-beta.3`. O workflow `.github/workflows/android-release.yml` compila o APK e o anexa a uma pré-release. O APK de depuração não está assinado para a Play Store. Atualize também o `versionCode` em `android/app/build.gradle` ao preparar outra versão.
 
-## Modo offline
+As artes originais e os arquivos derivados ficam em `android/assets/`. Os recursos nativos do ícone e da tela de abertura ficam em `android/app/src/main/res/`.
 
-No Android, as questões consultadas com conexão são armazenadas em SQLite no aparelho. Ao abrir uma prova, o app mostra primeiro as questões salvas e tenta atualizá-las pelo Supabase. Para estudar sem conexão, abra o app online e acesse antes as questões que pretende revisar.
+## Modo offline e progresso local
 
-O acesso offline pode continuar por até 30 dias após a última validação online, desde que existam questões em cache. O cache inclui enunciados, alternativas, gabaritos e explicações. Imagens associadas por URL não são baixadas para o dispositivo. Respostas e favoritos ainda não são salvos nem sincronizados. Mapas mentais e questões de bibliografia ainda não estão ligados a conteúdo no banco.
+No Android, questões consultadas enquanto há conexão são armazenadas em SQLite. Para preparar o estudo offline, acesse online as questões que pretende revisar e use **Baixar para offline** nos mapas mentais. Os arquivos dos mapas são guardados no armazenamento privado do app; PDFs abrem em um leitor instalado e imagens abrem no próprio app.
 
-O banco local `fragata_saber` e suas tabelas são criados automaticamente no primeiro início do app.
+O acesso offline pode continuar por até 30 dias após a última validação online, desde que haja questões ou mapas baixados no aparelho. Respostas, questões reveladas, favoritos, filtros e o concurso/modo de estudo atual são salvos localmente. Esse progresso não sincroniza entre dispositivos. Imagens de questões carregadas por URL ainda precisam de conexão.
 
-## Adicionar questões
+O banco local `fragata_saber` e suas tabelas são criados automaticamente na primeira inicialização do app.
 
-Cada questão ocupa uma linha em `public.questions`:
+## Gerenciar mapas mentais
 
-| Campo | Uso |
-| --- | --- |
-| `year`, `exam`, `exam_color`, `question_number` | Identificação da prova |
-| `subject`, `topic`, `difficulty` | Classificação; tópico e dificuldade podem ficar vazios |
-| `statement` | Enunciado antes de uma imagem |
-| `statement_after_image` | Texto opcional depois da imagem |
-| `image_url`, `image_alt` | URL da imagem e descrição acessível |
-| `options` | Array JSON de alternativas |
-| `correct_option` | Índice da resposta correta, começando em zero (A = 0) |
-| `explanation` | Comentário exibido com o gabarito |
-| `source` | Origem da questão para conferência |
-| `is_published` | Use `false` durante a revisão e `true` para publicar |
+No painel administrativo, abra a aba **Mapas mentais** para cadastrar ou editar título, matéria, descrição, ordem de exibição e publicação. Selecione um PDF ou uma imagem PNG, JPG ou WebP de até 25 MB. Salve como rascunho durante a revisão ou publique para disponibilizar aos estudantes com acesso válido.
 
-Para importar questões em lote, use **Table Editor → questions → Import data from CSV**. Mantenha `options` como JSON válido em uma única célula e revise o OCR, as alternativas e o gabarito antes de publicar. Questões anuladas não devem ser publicadas.
+O app Android baixa cada mapa para uso offline. Ao substituir o arquivo, o painel cria um caminho novo no Storage e atualiza os metadados; na próxima sincronização o app reconhece a versão nova.
 
-Para incluir imagens, envie-as ao bucket `question-images` e salve a URL em `image_url`. Escreva fórmulas em LaTeX entre cifrões, por exemplo `$x^{-2}$` ou `$(A+B)^2$`.
+## Gerenciar questões
+
+As questões ficam em `public.questions`. Use `question_type = 'exam'` para questões originadas de provas e `question_type = 'bibliography'` para questões baseadas em livros ou apostilas. Para questões bibliográficas do Quadro Técnico, mantenha `exam = 'CP-T'`, informe a referência em `source` e classifique a questão com `subject` e `topic`.
+
+No painel administrativo, é possível revisar os campos e a prévia, salvar rascunhos, publicar e retirar questões de publicação. Imagens podem ser enviadas pelo formulário ou vinculadas por URL externa. Fórmulas podem ser escritas em LaTeX entre cifrões, por exemplo `$x^{-2}$` ou `$(A+B)^2$`.
 
 ## Acesso por código
 
-O acesso é compartilhado por código e usa uma sessão anônima do Supabase. Para gerar um código mensal, execute `supabase_generate_access_code.sql` no **SQL Editor**. O código é exibido uma vez; somente seu hash fica salvo no banco. Guarde o valor retornado e envie-o às pessoas autorizadas.
-
-Para mudar a validade ou o rótulo do código, ajuste `interval '1 month'` e `Acesso mensal` no script antes de executá-lo.
+O acesso de estudo é compartilhado por código e usa uma sessão anônima do Supabase, sem cadastro individual. Para gerar um código mensal, execute `supabase_generate_access_code.sql` no **SQL Editor**. O código é exibido uma vez; somente seu hash fica armazenado no banco. Guarde o valor retornado e envie-o às pessoas autorizadas.
 
 ## Implantação
 
-O workflow `.github/workflows/deploy.yml` publica o site no GitHub Pages a cada push para `main` ou quando iniciado manualmente. Em **Settings → Pages**, escolha **GitHub Actions** como origem.
+O workflow `.github/workflows/deploy.yml` publica o site no GitHub Pages a cada push para `main` ou quando iniciado manualmente. Em **Settings → Pages**, selecione **GitHub Actions** como origem.
 
-Configure estas variáveis em **Settings → Secrets and variables → Actions → Variables**:
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
-
-O site usa o domínio configurado em `public/CNAME`: [fragatadosaber.online](https://fragatadosaber.online).
+O domínio do site é configurado em `public/CNAME`: [fragatadosaber.online](https://fragatadosaber.online).
 
 ## Scripts
 
 | Comando | Descrição |
 | --- | --- |
-| `npm run dev` | Inicia o servidor local de desenvolvimento |
+| `npm run dev` | Inicia o servidor de desenvolvimento |
 | `npm run build` | Executa o typecheck e gera o build de produção |
-| `npm run preview` | Pré-visualiza o build localmente |
+| `npm run preview` | Pré-visualiza o build local |
 | `npm run lint` | Analisa o código com Oxlint |
 | `npm run android:sync` | Compila o site e sincroniza o projeto Android |
 | `npm run android:open` | Abre o projeto Android no Android Studio |

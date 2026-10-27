@@ -87,6 +87,8 @@ revoke select on public.questions from anon;
 grant select on public.questions to authenticated;
 
 drop policy if exists "Public can read published questions" on public.questions;
+drop policy if exists "Authenticated users can read published questions" on public.questions;
+drop policy if exists "Question access awaits access gate" on public.questions;
 drop policy if exists "Access code holders can read published questions" on public.questions;
 
 create policy "Access code holders can read published questions"
