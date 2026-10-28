@@ -651,15 +651,16 @@ function App() {
     ? mindMaps.filter((map) => map.local_path)
     : mindMaps
 
-  const simulationAnsweredCount = filteredQuestions.filter(
-    (question) => simulationAnswers[question.id] !== undefined,
-  ).length
-  const simulationCorrectCount = filteredQuestions.filter(
-    (question) => simulationAnswers[question.id] === question.answer,
-  ).length
-  const simulationComplete = filteredQuestions.length > 0 && simulationAnsweredCount === filteredQuestions.length
-  const pointsPerQuestion = filteredQuestions.length ? 100 / filteredQuestions.length : 0
-  const simulationScore = simulationComplete ? (simulationCorrectCount / filteredQuestions.length) * 100 : 0
+  const simulationTotal = simulationIds !== null ? simulationIds.length : filteredQuestions.length
+  const simulationAnsweredCount = simulationIds !== null
+    ? simulationIds.filter((id) => simulationAnswers[id] !== undefined).length
+    : filteredQuestions.filter((question) => simulationAnswers[question.id] !== undefined).length
+  const simulationCorrectCount = simulationIds !== null
+    ? simulationIds.filter((id) => simulationAnswers[id] !== undefined && simulationAnswers[id] === filteredQuestions.find((q) => q.id === id)?.answer).length
+    : filteredQuestions.filter((question) => simulationAnswers[question.id] === question.answer).length
+  const simulationComplete = simulationTotal > 0 && simulationAnsweredCount === simulationTotal
+  const pointsPerQuestion = simulationTotal ? 100 / simulationTotal : 0
+  const simulationScore = simulationComplete ? (simulationCorrectCount / simulationTotal) * 100 : 0
 
   const correctCount = questions.filter(
     (question) => answers[question.id] === question.answer,
