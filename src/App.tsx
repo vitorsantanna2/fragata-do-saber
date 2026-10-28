@@ -87,6 +87,22 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
     gesture.current = null
   }
 
+  function onMouseDown(event: React.MouseEvent<HTMLDivElement>) {
+    if (scale <= 1) return
+    gesture.current = { distance: 0, scale, x: offset.x, y: offset.y, touchX: event.clientX, touchY: event.clientY }
+    ;(event.currentTarget as HTMLElement).setPointerCapture((event as unknown as PointerEvent).pointerId)
+  }
+
+  function onMouseMove(event: React.MouseEvent<HTMLDivElement>) {
+    const start = gesture.current
+    if (!start) return
+    setOffset({ x: start.x + event.clientX - start.touchX, y: start.y + event.clientY - start.touchY })
+  }
+
+  function onMouseUp() {
+    gesture.current = null
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-center gap-2 border-b border-line p-2" aria-label="Controles de zoom">
@@ -101,6 +117,10 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchEnd}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
         onWheel={(event) => { if (event.ctrlKey || event.metaKey) { event.preventDefault(); zoom(scale + (event.deltaY < 0 ? 0.2 : -0.2)) } }}
       >
         <img
