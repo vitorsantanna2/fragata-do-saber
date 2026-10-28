@@ -40,7 +40,7 @@ const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path}`
 function ZoomableImage({ src, alt }: { src: string; alt: string }) {
   const [scale, setScale] = useState(1)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const gesture = useRef<{ distance: number; scale: number; x: number; y: number; touchX: number; touchY: number } | null>(null)
+  const gesture = useRef<{ distance: number; scale: number; x: number; y: number; clientX: number; clientY: number } | null>(null)
 
   function zoom(nextScale: number) {
     const boundedScale = Math.min(5, Math.max(1, nextScale))
@@ -48,15 +48,11 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
     if (boundedScale === 1) setOffset({ x: 0, y: 0 })
   }
 
-  function resetView() {
-    zoom(1)
-  }
-
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === '+' || event.key === '=') zoom(scale + 0.5)
       else if (event.key === '-') zoom(scale - 0.5)
-      else if (event.key === '0') resetView()
+      else if (event.key === '0') zoom(1)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -71,18 +67,19 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
         scale,
         x: offset.x,
         y: offset.y,
-        touchX: (first.clientX + second.clientX) / 2,
-        touchY: (first.clientY + second.clientY) / 2,
+        clientX: (first.clientX + second.clientX) / 2,
+        clientY: (first.clientY + second.clientY) / 2,
       }
     } else {
       const touch = event.touches[0]
-      gesture.current = { distance: 0, scale, x: offset.x, y: offset.y, touchX: touch.clientX, touchY: touch.clientY }
+      gesture.current = { distance: 0, scale, x: offset.x, y: offset.y, clientX: touch.clientX, clientY: touch.clientY }
     }
   }
 
   function onTouchMove(event: TouchEvent<HTMLDivElement>) {
     const start = gesture.current
     if (!start) return
+    event.preventDefault()
     if (event.touches.length > 1) {
       const first = event.touches[0]
       const second = event.touches[1]
@@ -90,10 +87,10 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
       const centerX = (first.clientX + second.clientX) / 2
       const centerY = (first.clientY + second.clientY) / 2
       zoom(start.scale * distance / Math.max(start.distance, 1))
-      setOffset({ x: start.x + centerX - start.touchX, y: start.y + centerY - start.touchY })
+      setOffset({ x: start.x + centerX - start.clientX, y: start.y + centerY - start.clientY })
     } else if (start.scale > 1) {
       const touch = event.touches[0]
-      setOffset({ x: start.x + touch.clientX - start.touchX, y: start.y + touch.clientY - start.touchY })
+      setOffset({ x: start.x + touch.clientX - start.clientX, y: start.y + touch.clientY - start.clientY })
     }
   }
 
@@ -103,14 +100,13 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
 
   function onMouseDown(event: React.MouseEvent<HTMLDivElement>) {
     if (scale <= 1) return
-    gesture.current = { distance: 0, scale, x: offset.x, y: offset.y, touchX: event.clientX, touchY: event.clientY }
-    ;(event.currentTarget as HTMLElement).setPointerCapture((event as unknown as PointerEvent).pointerId)
+    gesture.current = { distance: 0, scale, x: offset.x, y: offset.y, clientX: event.clientX, clientY: event.clientY }
   }
 
   function onMouseMove(event: React.MouseEvent<HTMLDivElement>) {
     const start = gesture.current
     if (!start) return
-    setOffset({ x: start.x + event.clientX - start.touchX, y: start.y + event.clientY - start.touchY })
+    setOffset({ x: start.x + event.clientX - start.clientX, y: start.y + event.clientY - start.clientY })
   }
 
   function onMouseUp() {
@@ -119,13 +115,13 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
 
   function onDoubleClick() {
     if (scale === 1) zoom(2)
-    else resetView()
+    else zoom(1)
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div
-        className="grid min-h-[50vh] flex-1 touch-none place-items-center overflow-hidden sm:min-h-[65vh]"
+        className="grid min-h-[50vh] flex-1 place-items-center overflow-hidden sm:min-h-[65vh]"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -1047,14 +1043,9 @@ function App() {
                 </div>
               )}
               {openImageMap && (
-                <div className="fixed inset-0 z-50 grid place-items-center bg-ink/90 p-3 sm:p-8" role="dialog" aria-modal="true" aria-label={openImageMap.map.title}>
-                  <div className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white">
-                    <div className="flex items-center justify-between gap-3 border-b border-line p-4">
-                      <h3 className="font-display font-extrabold">{openImageMap.map.title}</h3>
-                      <button className="rounded-lg border border-line px-3 py-2 text-sm font-bold" type="button" onClick={() => setOpenImageMap(null)}>Fechar</button>
-                    </div>
-                    <ZoomableImage key={openImageMap.map.id} src={openImageMap.url} alt={openImageMap.map.title} />
-                  </div>
+                <div className="fixed inset-0 z-50 grid place-items-center bg-ink/95 p-2" role="dialog" aria-modal="true" aria-label={openImageMap.map.title} onClick={(event) => { if (event.target === event.currentTarget) setOpenImageMap(null) }}>
+                  <button className="absolute top-2 right-2 z-10 rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-bold" type="button" onClick={() => setOpenImageMap(null)}>×</button>
+                  <ZoomableImage key={openImageMap.map.id} src={openImageMap.url} alt={openImageMap.map.title} />
                 </div>
               )}
             </section>
