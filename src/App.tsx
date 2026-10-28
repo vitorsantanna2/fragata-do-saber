@@ -121,7 +121,7 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div
-        className="grid min-h-[50vh] flex-1 place-items-center overflow-hidden sm:min-h-[65vh]"
+        className="grid min-h-[50vh] flex-1 place-items-center overflow-auto sm:min-h-[65vh]"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
