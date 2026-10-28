@@ -48,6 +48,20 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
     if (boundedScale === 1) setOffset({ x: 0, y: 0 })
   }
 
+  function resetView() {
+    zoom(1)
+  }
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === '+' || event.key === '=') zoom(scale + 0.5)
+      else if (event.key === '-') zoom(scale - 0.5)
+      else if (event.key === '0') resetView()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [scale])
+
   function onTouchStart(event: TouchEvent<HTMLDivElement>) {
     if (event.touches.length > 1) {
       const first = event.touches[0]
@@ -103,16 +117,15 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
     gesture.current = null
   }
 
+  function onDoubleClick() {
+    if (scale === 1) zoom(2)
+    else resetView()
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-center gap-2 border-b border-line p-2" aria-label="Controles de zoom">
-        <button className="grid size-10 place-items-center rounded-lg border border-line text-xl font-bold disabled:opacity-40" type="button" aria-label="Aumentar zoom" disabled={scale >= 5} onClick={() => zoom(scale + 0.5)}>+</button>
-        <span className="min-w-14 text-center text-sm font-bold tabular-nums">{Math.round(scale * 100)}%</span>
-        <button className="grid size-10 place-items-center rounded-lg border border-line text-xl font-bold disabled:opacity-40" type="button" aria-label="Diminuir zoom" disabled={scale <= 1} onClick={() => zoom(scale - 0.5)}>−</button>
-        <button className="rounded-lg border border-line px-3 py-2 text-sm font-bold" type="button" onClick={() => { zoom(1); setOffset({ x: 0, y: 0 }) }}>Ajustar</button>
-      </div>
       <div
-        className="grid min-h-[50vh] flex-1 touch-none place-items-center overflow-hidden bg-slate-100 sm:min-h-[65vh]"
+        className="grid min-h-[50vh] flex-1 touch-none place-items-center overflow-hidden sm:min-h-[65vh]"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -121,10 +134,11 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
+        onDoubleClick={onDoubleClick}
         onWheel={(event) => { if (event.ctrlKey || event.metaKey) { event.preventDefault(); zoom(scale + (event.deltaY < 0 ? 0.2 : -0.2)) } }}
       >
         <img
-          className="max-h-[70vh] max-w-full select-none object-contain sm:max-h-[75vh]"
+          className="max-h-[80vh] max-w-full select-none object-contain sm:max-h-[85vh]"
           style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: 'center' }}
           src={src}
           alt={alt}
