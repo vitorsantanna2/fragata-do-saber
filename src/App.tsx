@@ -267,6 +267,7 @@ function App() {
   const [showDownloadedMindMapsOnly, setShowDownloadedMindMapsOnly] = useState(false)
   const [openImageMap, setOpenImageMap] = useState<{ map: MindMap; url: string } | null>(null)
   const [accountUser, setAccountUser] = useState<{ id: string; email: string | null; is_anonymous: boolean } | null>(null)
+  const [logoutError, setLogoutError] = useState('')
 
   const {
     questions,
@@ -331,6 +332,13 @@ function App() {
     })
     return () => subscription.unsubscribe()
   }, [])
+
+  async function handleLogout() {
+    if (!supabase) return
+    setLogoutError('')
+    const { error } = await supabase.auth.signOut()
+    if (error) setLogoutError(`Não foi possível sair: ${error.message}`)
+  }
 
   useEffect(() => {
     const online = () => setIsOnline(true)
@@ -767,9 +775,10 @@ function App() {
                 <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Rumo à aprovação</span>
               </span>
             </a>
-            <div className="flex w-full gap-2 sm:w-auto"><button className="flex-1 whitespace-nowrap rounded-lg border border-sea bg-white px-2 py-2 text-xs font-bold text-sea transition hover:bg-sea hover:text-white sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowPerformance(true)}>Meu desempenho</button><button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold transition hover:border-sea hover:text-sea sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowAccountSync(true)}>{accountUser && !accountUser.is_anonymous ? 'Conta' : 'Sincronizar'}</button></div>
+            <div className="flex w-full gap-2 sm:w-auto"><button className="flex-1 whitespace-nowrap rounded-lg border border-sea bg-white px-2 py-2 text-xs font-bold text-sea transition hover:bg-sea hover:text-white sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowPerformance(true)}>Meu desempenho</button><button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold transition hover:border-sea hover:text-sea sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowAccountSync(true)}>{accountUser && !accountUser.is_anonymous ? 'Conta' : 'Sincronizar'}</button>{accountUser && !accountUser.is_anonymous ? <button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50 hover:text-red-700 sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={handleLogout}>Sair</button> : null}</div>
           </div>
         </header>
+        {logoutError && <div className="mx-auto max-w-7xl px-5 py-3"><p className="rounded-lg bg-red-50 p-3 text-sm leading-5 text-red-800" role="alert">{logoutError}</p></div>}
 
         <main id="inicio" className="mx-auto max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
           <section className="relative overflow-hidden rounded-2xl bg-ink px-5 py-5 text-white shadow-lg shadow-ink/10 sm:px-8 sm:py-6" id="simulados">
