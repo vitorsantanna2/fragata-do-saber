@@ -252,6 +252,11 @@ function App() {
   const [showAccountLogin, setShowAccountLogin] = useState(false)
   const [accountLoginEmail, setAccountLoginEmail] = useState('')
   const [accountLoginPassword, setAccountLoginPassword] = useState('')
+  const [showAccountCreate, setShowAccountCreate] = useState(false)
+  const [accountCreateEmail, setAccountCreateEmail] = useState('')
+  const [accountCreatePassword, setAccountCreatePassword] = useState('')
+  const [accountCreateConfirmPassword, setAccountCreateConfirmPassword] = useState('')
+  const [creatingAccount, setCreatingAccount] = useState(false)
   const [showAccountSync, setShowAccountSync] = useState(false)
   const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine)
   const [showPerformance, setShowPerformance] = useState(false)
@@ -473,6 +478,49 @@ function App() {
       setAccessError(`Não foi possível entrar: ${error instanceof Error ? error.message : 'Confira o e-mail e a senha.'}`)
     } finally {
       setCheckingCode(false)
+    }
+  }
+
+  async function handleAccountCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!supabase) return
+    setAccessError('')
+    if (accountCreatePassword !== accountCreateConfirmPassword) {
+      setAccessError('A senha e a confirmação não coincidem.')
+      return
+    }
+    if (accountCreatePassword.length < 8) {
+      setAccessError('A senha deve ter pelo menos 8 caracteres.')
+      return
+    }
+    setCreatingAccount(true)
+    try {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: accountCreateEmail.trim(),
+        password: accountCreatePassword,
+      })
+      if (signUpError) throw signUpError
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: accountCreateEmail.trim(),
+        password: accountCreatePassword,
+      })
+      if (signInError) throw signInError
+      const { data, error } = await supabase.rpc('redeem_access_code', { p_code: accessCode.trim() })
+      if (error) throw error
+      if (!data) {
+        setAccessError('Conta criada, mas o código de acesso é inválido ou expirado. Informe um código válido.')
+        return
+      }
+      void setLocalMetadata('access_last_validated_at', new Date().toISOString())
+      setAccessState('granted')
+      setAccessError('')
+      setAccountCreateEmail('')
+      setAccountCreatePassword('')
+      setAccountCreateConfirmPassword('')
+    } catch (error) {
+      setAccessError(`Não foi possível criar a conta: ${error instanceof Error ? error.message : 'Confira os dados e tente novamente.'}`)
+    } finally {
+      setCreatingAccount(false)
     }
   }
 
@@ -747,14 +795,22 @@ function App() {
               {checkingCode ? 'Validando...' : 'Acessar'}
             </button>
           </form>
-          {showAccountLogin ? <form className="mt-5 space-y-3 rounded-xl border border-line p-4" onSubmit={(event) => void handleAccountLogin(event)}>
+          {showAccountCreate ? <form className="mt-5 space-y-3 rounded-xl border border-line p-4" onSubmit={(event) => void handleAccountCreate(event)}>
+            <p className="text-xs leading-5 text-muted">Crie sua conta para sincronizar o progresso entre aparelhos.</p>
+            <label className="block text-sm font-bold">E-mail<input autoComplete="username" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="email" value={accountCreateEmail} onChange={(event) => setAccountCreateEmail(event.target.value)} required /></label>
+            <label className="block text-sm font-bold">Senha<input autoComplete="new-password" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="password" value={accountCreatePassword} onChange={(event) => setAccountCreatePassword(event.target.value)} required /></label>
+            <label className="block text-sm font-bold">Confirme a senha<input autoComplete="new-password" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="password" value={accountCreateConfirmPassword} onChange={(event) => setAccountCreateConfirmPassword(event.target.value)} required /></label>
+            <button className="w-full rounded-lg bg-sea px-4 py-2.5 text-sm font-extrabold text-white disabled:opacity-60" type="submit" disabled={creatingAccount}>{creatingAccount ? 'Criando…' : 'Criar conta'}</button>
+            <p className="text-xs leading-5 text-muted">Depois de criar, informe seu código de acesso acima para liberar os estudos.</p>
+            <button className="mt-3 w-full text-sm font-bold text-muted underline" type="button" onClick={() => { setShowAccountCreate(false); setShowAccountLogin(false) }}>Voltar</button>
+          </form> : showAccountLogin ? <form className="mt-5 space-y-3 rounded-xl border border-line p-4" onSubmit={(event) => void handleAccountLogin(event)}>
             <p className="text-xs leading-5 text-muted">Ao entrar, o progresso salvo neste aparelho será mesclado à conta.</p>
             <p className="text-sm font-bold">Entrar na conta de sincronização</p>
             <label className="block text-sm font-bold">E-mail<input autoComplete="username" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="email" value={accountLoginEmail} onChange={(event) => setAccountLoginEmail(event.target.value)} required /></label>
             <label className="block text-sm font-bold">Senha<input autoComplete="current-password" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="password" value={accountLoginPassword} onChange={(event) => setAccountLoginPassword(event.target.value)} required /></label>
             <button className="w-full rounded-lg bg-sea px-4 py-2.5 text-sm font-extrabold text-white disabled:opacity-60" type="submit" disabled={checkingCode}>{checkingCode ? 'Entrando…' : 'Entrar e sincronizar'}</button>
             <p className="text-xs leading-5 text-muted">O acesso por código continua independente. Se a conta ainda não tiver autorização ativa, informe seu código acima.</p>
-          </form> : <button className="mt-4 w-full rounded-lg border border-sea px-4 py-2.5 text-sm font-bold text-sea hover:bg-sea-light" type="button" onClick={() => setShowAccountLogin(true)}>Já tenho conta · entrar e sincronizar</button>}
+          </form> : <div className="mt-4 space-y-2"><button className="w-full rounded-lg border border-sea px-4 py-2.5 text-sm font-bold text-sea hover:bg-sea-light" type="button" onClick={() => setShowAccountLogin(true)}>Já tenho conta · entrar e sincronizar</button><button className="w-full rounded-lg border border-line px-4 py-2.5 text-sm font-bold text-sea hover:bg-sea-light" type="button" onClick={() => setShowAccountCreate(true)}>Não tem conta? Criar conta</button></div>}
           <button className="mt-5 w-full rounded-lg border border-line px-4 py-2.5 text-sm font-bold text-muted transition hover:border-sea hover:text-sea" type="button" onClick={() => setAdminMode(true)}>
             Acesso administrativo
           </button>
