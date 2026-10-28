@@ -52,6 +52,7 @@ export type StudyProgress = {
   questionSnapshots: Record<string, StudyQuestionSnapshot>
   progressUpdatedAt: Record<string, string>
   savedSimulation: SavedSimulation | null
+  completedSimulations: CompletedSimulation[]
 }
 
 export type SavedSimulation = {
@@ -62,6 +63,18 @@ export type SavedSimulation = {
   studyMode: 'exam-questions' | 'bibliography-questions'
   lastQuestionId: string | null
   updatedAt: string
+}
+
+export type CompletedSimulation = {
+  id: string
+  examId: string
+  examTitle: string | null
+  studyMode: 'exam-questions' | 'bibliography-questions'
+  totalQuestions: number
+  correctAnswers: number
+  wrongAnswers: number
+  score: number
+  completedAt: string
 }
 
 export type StudyQuestionSnapshot = {
@@ -103,6 +116,7 @@ export async function loadStudyProgress(): Promise<StudyProgress | null> {
       questionSnapshots: progress.questionSnapshots ?? {},
       progressUpdatedAt: progress.progressUpdatedAt ?? {},
       savedSimulation: progress.savedSimulation ?? null,
+      completedSimulations: progress.completedSimulations ?? [],
     }
   } catch {
     return null

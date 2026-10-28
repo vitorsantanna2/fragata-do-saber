@@ -4,6 +4,7 @@ import {
   saveStudyProgress,
   type StudyQuestionSnapshot,
   type SavedSimulation,
+  type CompletedSimulation,
 } from '../lib/localDatabase'
 import { syncStudyProgress } from '../lib/progressSync'
 
@@ -20,6 +21,8 @@ type UseProgressReturn = {
   progressUpdatedAt: Record<string, string>
   questionSnapshots: Record<string, StudyQuestionSnapshot>
   savedSimulation: SavedSimulation | null
+  completedSimulations: CompletedSimulation[]
+  recordCompletedSimulation: (simulation: CompletedSimulation) => void
   syncStatus: 'local' | 'offline' | 'syncing' | 'synced' | 'error'
   setAnswers: (value: Record<string, number>) => void
   setRevealed: (value: string[]) => void
@@ -52,8 +55,13 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   const [progressUpdatedAt, setProgressUpdatedAt] = useState<Record<string, string>>({})
   const [questionSnapshots, setQuestionSnapshots] = useState<Record<string, StudyQuestionSnapshot>>({})
   const [savedSimulation, setSavedSimulation] = useState<SavedSimulation | null>(null)
+  const [completedSimulations, setCompletedSimulations] = useState<CompletedSimulation[]>([])
   const [simulationRevealed, setSimulationRevealed] = useState<string[]>([])
   const [syncStatus, setSyncStatus] = useState<'local' | 'offline' | 'syncing' | 'synced' | 'error'>('local')
+
+  function recordCompletedSimulation(simulation: CompletedSimulation) {
+    setCompletedSimulations((current) => [simulation, ...current].slice(0, 50))
+  }
   const [manualSyncRevision, setManualSyncRevision] = useState(0)
   const [progressRestored, setProgressRestored] = useState(false)
 
@@ -76,6 +84,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         setProgressUpdatedAt(progress.progressUpdatedAt)
         setQuestionSnapshots(progress.questionSnapshots)
         setSavedSimulation(progress.savedSimulation)
+        setCompletedSimulations(progress.completedSimulations)
       }
       setProgressRestored(true)
     })
@@ -88,11 +97,11 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
       void saveStudyProgress({
         answers, revealed, favorites, selectedExamId: null as any, selectedStudyMode: null as any,
         topic: '', year: '', bibliographySource: '', questionSearch: '', questionSnapshots, progressUpdatedAt,
-        savedSimulation,
+        savedSimulation, completedSimulations,
       })
     }, 200)
     return () => window.clearTimeout(timeout)
-  }, [progressRestored, answers, revealed, favorites, questionSnapshots, progressUpdatedAt, savedSimulation])
+    }, [progressRestored, answers, revealed, favorites, questionSnapshots, progressUpdatedAt, savedSimulation, completedSimulations])
 
   useEffect(() => {
     if (!progressRestored) return
@@ -182,6 +191,8 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
     progressUpdatedAt,
     questionSnapshots,
     savedSimulation,
+    completedSimulations,
+    recordCompletedSimulation,
     simulationRevealed,
     setSimulationRevealed,
     syncStatus,

@@ -18,6 +18,7 @@ import {
   setLocalMetadata,
   type SavedSimulation,
   type StudyQuestionSnapshot,
+  type CompletedSimulation,
 } from './lib/localDatabase'
 import { Skeleton, SkeletonText } from './components/Skeleton'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -295,6 +296,7 @@ function App() {
   const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
   const [simulationAnswers, setSimulationAnswers] = useState<Record<string, number>>({})
   const reviewQuestionIdRef = useRef<string | null>(null)
+  const lastCompletedSimulationIdRef = useRef<string | null>(null)
   const [mindMaps, setMindMaps] = useState<MindMap[]>([])
   const [mindMapsLoading, setMindMapsLoading] = useState(false)
   const [mindMapsError, setMindMapsError] = useState('')
@@ -341,6 +343,8 @@ function App() {
     questionSnapshots,
     savedSimulation,
     setSavedSimulation,
+    completedSimulations,
+    recordCompletedSimulation,
     simulationRevealed,
     setSimulationRevealed,
     syncStatus,
@@ -757,6 +761,26 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  useEffect(() => {
+    if (!simulationComplete || !savedSimulation) return
+    const examChoice = examChoices.find((choice) => choice.id === savedSimulation.examId)
+    const completed: CompletedSimulation = {
+      id: `completed-${Date.now()}`,
+      examId: savedSimulation.examId,
+      examTitle: examChoice?.title ?? null,
+      studyMode: savedSimulation.studyMode,
+      totalQuestions: filteredQuestions.length,
+      correctAnswers: simulationCorrectCount,
+      wrongAnswers: simulationAnsweredCount - simulationCorrectCount,
+      score: simulationScore,
+      completedAt: new Date().toISOString(),
+    }
+    if (lastCompletedSimulationIdRef.current !== completed.id) {
+      lastCompletedSimulationIdRef.current = completed.id
+      recordCompletedSimulation(completed)
+    }
+  }, [simulationComplete, savedSimulation, filteredQuestions, simulationCorrectCount, simulationAnsweredCount, simulationScore, examChoices, recordCompletedSimulation])
+
   function recordSimulationAnswer(questionId: string, optionIndex: number) {
     const nextAnswers = { ...simulationAnswers, [questionId]: optionIndex }
     const updatedAt = new Date().toISOString()
@@ -910,6 +934,7 @@ function App() {
               <PerformanceDashboard
                 snapshots={questionSnapshots}
                 answers={answers}
+                completedSimulations={completedSimulations}
                 onClose={() => setShowPerformance(false)}
                 onReview={reviewQuestion}
               />

@@ -10,9 +10,22 @@ type StudyQuestionSnapshot = {
   correctOption: number
 }
 
+type CompletedSimulation = {
+  id: string
+  examId: string
+  examTitle: string | null
+  studyMode: 'exam-questions' | 'bibliography-questions'
+  totalQuestions: number
+  correctAnswers: number
+  wrongAnswers: number
+  score: number
+  completedAt: string
+}
+
 type PerformanceDashboardProps = {
   snapshots: Record<string, StudyQuestionSnapshot>
   answers: Record<string, number>
+  completedSimulations: CompletedSimulation[]
   onClose: () => void
   onReview: (questionId: string, question: StudyQuestionSnapshot) => void
 }
@@ -20,6 +33,7 @@ type PerformanceDashboardProps = {
 export function PerformanceDashboard({
   snapshots,
   answers,
+  completedSimulations,
   onClose,
   onReview,
 }: PerformanceDashboardProps) {
@@ -53,6 +67,10 @@ export function PerformanceDashboard({
 
   const groupings = examFilter === 'Todos' ? makeGroups('exam') : makeGroups('subject')
 
+  function formatDate(iso: string) {
+    return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  }
+
   return (
     <section className="mt-8" aria-labelledby="performance-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -82,6 +100,40 @@ export function PerformanceDashboard({
           {wrong.length ? <div className="mt-3 max-h-80 space-y-2 overflow-y-auto">{wrong.slice(0, 30).map(([id, question]) => <button key={id} type="button" className="w-full rounded-lg border border-line p-3 text-left hover:border-sea" onClick={() => onReview(id, question)}><span className="block text-xs font-bold text-sea">{question.exam} · {question.subject}{question.topic ? ` · ${question.topic}` : ''}</span><span className="mt-1 line-clamp-2 block text-sm leading-5">{question.prompt}</span><span className="mt-1 block text-xs font-bold text-muted">Toque para revisar</span></button>)}</div> : <p className="mt-3 text-sm leading-6 text-muted">Nenhuma questão errada neste filtro. Questões respondidas são guardadas neste aparelho.</p>}
         </section>
       </div>
+      <section className="mt-6 rounded-xl border border-line bg-white p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h3 className="font-display text-lg font-extrabold">Simulados concluídos</h3>
+          <span className="rounded-full bg-sea-light px-2.5 py-1 text-xs font-bold text-sea">{completedSimulations.length}</span>
+        </div>
+        {completedSimulations.length ? (
+          <div className="space-y-2">
+            {completedSimulations.map((sim) => {
+              const percent = sim.totalQuestions ? Math.round(sim.correctAnswers / sim.totalQuestions * 100) : 0
+              return (
+                <article key={sim.id} className="rounded-lg border border-line p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                    <div>
+                      <p className="text-xs font-bold text-sea">{sim.examTitle ?? sim.examId}</p>
+                      <p className="text-[10px] text-muted">{sim.studyMode === 'bibliography-questions' ? 'Bibliografia' : 'Prova'}{sim.totalQuestions ? ` · ${sim.totalQuestions} questões` : ''}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-display text-xl font-extrabold text-ink">{sim.score.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
+                      <p className="text-[10px] font-bold text-muted">{percent}%</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between gap-2 text-xs text-muted">
+                    <span>{sim.correctAnswers} acertos</span>
+                    <span>{sim.wrongAnswers} erros</span>
+                    <span>{formatDate(sim.completedAt)}</span>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="mt-3 text-sm leading-6 text-muted">Nenhum simulado concluído ainda. Os simulados que você finalizar aparecerão aqui com a nota e a data.</p>
+        )}
+      </section>
     </section>
   )
 }
