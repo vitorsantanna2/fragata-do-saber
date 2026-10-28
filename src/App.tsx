@@ -134,7 +134,7 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
         onWheel={(event) => { if (event.ctrlKey || event.metaKey) { event.preventDefault(); zoom(scale + (event.deltaY < 0 ? 0.2 : -0.2)) } }}
       >
         <img
-          className="max-h-[80vh] max-w-full select-none object-contain sm:max-h-[85vh]"
+          className="max-h-[92vh] max-w-full select-none object-contain"
           style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: 'center' }}
           src={src}
           alt={alt}
@@ -1043,8 +1043,8 @@ function App() {
                 </div>
               )}
               {openImageMap && (
-                <div className="fixed inset-0 z-50 grid place-items-center bg-ink/95 p-2" role="dialog" aria-modal="true" aria-label={openImageMap.map.title} onClick={(event) => { if (event.target === event.currentTarget) setOpenImageMap(null) }}>
-                  <button className="absolute top-2 right-2 z-10 rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-bold" type="button" onClick={() => setOpenImageMap(null)}>×</button>
+                <div className="fixed inset-0 z-50 grid place-items-center bg-ink/95 p-1" role="dialog" aria-modal="true" aria-label={openImageMap.map.title} onClick={(event) => { if (event.target === event.currentTarget) setOpenImageMap(null) }}>
+                  <button className="absolute top-1 right-1 z-10 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold" type="button" onClick={() => setOpenImageMap(null)}>×</button>
                   <ZoomableImage key={openImageMap.map.id} src={openImageMap.url} alt={openImageMap.map.title} />
                 </div>
               )}
