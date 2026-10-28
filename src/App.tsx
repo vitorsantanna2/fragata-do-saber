@@ -135,7 +135,7 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
         onWheel={(event) => { if (event.ctrlKey || event.metaKey) { event.preventDefault(); zoom(scale + (event.deltaY < 0 ? 0.2 : -0.2)) } }}
       >
         <img
-          className="max-h-[92vh] max-w-full select-none object-contain"
+          className="select-none"
           style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: 'center' }}
           src={src}
           alt={alt}
