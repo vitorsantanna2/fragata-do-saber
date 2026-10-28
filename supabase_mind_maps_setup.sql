@@ -36,7 +36,7 @@ create trigger mind_maps_updated_at
 
 alter table public.mind_maps enable row level security;
 revoke all on public.mind_maps from anon, authenticated;
-grant select on public.mind_maps to authenticated;
+grant select, insert, update on public.mind_maps to authenticated;
 
 drop policy if exists "Access holders can read published mind maps" on public.mind_maps;
 create policy "Access holders can read published mind maps"
@@ -44,6 +44,21 @@ create policy "Access holders can read published mind maps"
   for select
   to authenticated
   using (is_published = true and public.has_active_access());
+
+drop policy if exists "Access holders can insert mind maps" on public.mind_maps;
+create policy "Access holders can insert mind maps"
+  on public.mind_maps
+  for insert
+  to authenticated
+  with check (public.has_active_access());
+
+drop policy if exists "Access holders can update mind maps" on public.mind_maps;
+create policy "Access holders can update mind maps"
+  on public.mind_maps
+  for update
+  to authenticated
+  using (public.has_active_access())
+  with check (public.has_active_access());
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
@@ -64,6 +79,21 @@ create policy "Access holders can read mind map files"
   for select
   to authenticated
   using (bucket_id = 'mind-maps' and public.has_active_access());
+
+drop policy if exists "Access holders can insert mind map files" on storage.objects;
+create policy "Access holders can insert mind map files"
+  on storage.objects
+  for insert
+  to authenticated
+  with check (bucket_id = 'mind-maps' and public.has_active_access());
+
+drop policy if exists "Access holders can update mind map files" on storage.objects;
+create policy "Access holders can update mind map files"
+  on storage.objects
+  for update
+  to authenticated
+  using (bucket_id = 'mind-maps' and public.has_active_access())
+  with check (bucket_id = 'mind-maps' and public.has_active_access());
 
 -- Para adicionar um mapa:
 -- 1. Envie o arquivo pelo painel Storage para o bucket privado "mind-maps".
