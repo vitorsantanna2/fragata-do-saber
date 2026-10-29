@@ -891,6 +891,9 @@ function App() {
                   </div>
                 </div>
               )}
+              {!selectedExamId && (
+                <img className="mx-auto w-full max-w-[140px] rounded-lg border border-white/10 shadow-md shadow-black/20" src={publicAsset('logo.png')} alt="Logo Fragata do Saber" />
+              )}
             </div>
             </div>
           </section>
