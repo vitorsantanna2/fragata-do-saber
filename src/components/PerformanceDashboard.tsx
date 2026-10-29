@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PerformanceInfographic } from './PerformanceInfographic'
+import { OffensiveCounter } from './OffensiveCounter'
 
 type StudyQuestionSnapshot = {
   exam: string
@@ -29,6 +30,8 @@ type PerformanceDashboardProps = {
   completedSimulations: CompletedSimulation[]
   onClose: () => void
   onReview: (questionId: string, question: StudyQuestionSnapshot) => void
+  offensiveState: { totalOffensives: number; currentStreak: number; bestStreak: number; offensiveLoggedToday: boolean; joinedAt: string | null } | null
+  offensiveLoaded: boolean
 }
 
 export function PerformanceDashboard({
@@ -37,6 +40,8 @@ export function PerformanceDashboard({
   completedSimulations,
   onClose,
   onReview,
+  offensiveState,
+  offensiveLoaded,
 }: PerformanceDashboardProps) {
   const [examFilter, setExamFilter] = useState('Todos')
   const [subjectFilter, setSubjectFilter] = useState('Todos')
@@ -102,6 +107,15 @@ export function PerformanceDashboard({
         </section>
       </div>
       <PerformanceInfographic snapshots={snapshots} answers={answers} />
+      {offensiveLoaded && offensiveState && (
+        <OffensiveCounter
+          totalOffensives={offensiveState.totalOffensives}
+          currentStreak={offensiveState.currentStreak}
+          bestStreak={offensiveState.bestStreak}
+          offensiveLoggedToday={offensiveState.offensiveLoggedToday}
+          joinedAt={offensiveState.joinedAt}
+        />
+      )}
       <section className="mt-6 rounded-xl border border-line bg-white p-4 sm:p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3 className="font-display text-lg font-extrabold">Simulados concluídos</h3>

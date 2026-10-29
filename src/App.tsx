@@ -26,7 +26,6 @@ import { ExamChoiceGrid, examChoices } from './components/ExamChoiceGrid'
 import { QuestionFilters } from './components/QuestionFilters'
 import { QuestionCard } from './components/QuestionCard'
 import { MindMapViewer } from './components/MindMapViewer'
-import { OffensiveCounter } from './components/OffensiveCounter'
 import { shuffle, conciseSource } from './lib/utils'
 import { useQuestions } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
@@ -912,21 +911,12 @@ function App() {
                 completedSimulations={completedSimulations}
                 onClose={() => setShowPerformance(false)}
                 onReview={reviewQuestion}
+                offensiveState={offensiveState}
+                offensiveLoaded={offensiveLoaded}
               />
             </Suspense>
           ) : !selectedExamId ? (
-            <>
-              {offensiveLoaded && offensiveState && (
-                <OffensiveCounter
-                  compact
-                  totalOffensives={offensiveState.totalOffensives}
-                  currentStreak={offensiveState.currentStreak}
-                  bestStreak={offensiveState.bestStreak}
-                  offensiveLoggedToday={offensiveState.offensiveLoggedToday}
-                  joinedAt={offensiveState.joinedAt}
-                />
-              )}
-              <section className="mt-7" id="questoes">
+            <section className="mt-7" id="questoes">
               {((resumeSavedSimulation && savedSimulation?.ids.length) || lastStudiedQuestion) && (
                 <button
                   className="mb-7 flex w-full items-center gap-4 rounded-2xl border border-sea/20 bg-sea-light/60 p-4 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5 sm:p-5"
@@ -947,8 +937,7 @@ function App() {
                 <h2 className="mt-1 font-display text-3xl font-extrabold">Escolha seu concurso</h2>
               </div>
               <ExamChoiceGrid onSelect={selectExam} publicAsset={publicAsset} />
-              </section>
-            </>
+            </section>
           ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === null ? (
             <section className="mt-10" id="questoes">
               <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
