@@ -582,10 +582,6 @@ function App() {
     }
   }, [reviewQuestionId, filteredQuestions, setTopic, setYear, setQuestionSearch, setBibliographySource])
 
-  useEffect(() => {
-    if (reviewQuestionId) setReviewQuestionId(null)
-  }, [answers, reviewQuestionId])
-
 
 
   useEffect(() => {
