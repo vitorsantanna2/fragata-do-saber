@@ -20,7 +20,7 @@ function PerformanceInfographic({
   answers,
 }: PerformanceInfographicProps) {
   const allQuestions = Object.entries(snapshots)
-  const [groupBy, setGroupBy] = useState<'subject' | 'topic'>('subject')
+  const [groupBy, setGroupBy] = useState<'subject' | 'topic'>('topic')
 
   const groups = useMemo(() => {
     const map = new Map<string, { answered: number; correct: number; wrong: number }>()
