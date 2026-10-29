@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { StudyProgress, StudyQuestionSnapshot } from './localDatabase'
+import type { StudyProgress, StudyQuestionSnapshot, CompletedSimulation } from './localDatabase'
 
 type CloudProgressRow = {
   user_id: string
@@ -183,5 +183,17 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
     completedAt: row.completed_at,
   })).sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
 
-  return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations }
+  return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations: deduplicateCompletedSimulations(completedSimulations) }
+}
+
+function deduplicateCompletedSimulations(simulations: CompletedSimulation[]): CompletedSimulation[] {
+  const seen = new Map<string, CompletedSimulation>()
+  for (const sim of simulations) {
+    const key = `${sim.examId}|${sim.examTitle ?? ''}|${sim.studyMode}|${sim.totalQuestions}|${sim.correctAnswers}|${sim.wrongAnswers}|${sim.score}|${sim.completedAt}`
+    const existing = seen.get(key)
+    if (!existing || Date.parse(sim.completedAt) > Date.parse(existing.completedAt)) {
+      seen.set(key, sim)
+    }
+  }
+  return [...seen.values()].sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
 }
