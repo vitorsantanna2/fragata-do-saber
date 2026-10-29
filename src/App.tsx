@@ -295,6 +295,7 @@ function App() {
   const [selectedStudyMode, setSelectedStudyMode] = useState<'exam-questions' | 'bibliography-questions' | 'mind-maps' | null>(null)
   const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
   const [showQuestionList, setShowQuestionList] = useState(false)
+  const [reviewQuestionId, setReviewQuestionId] = useState<string | null>(null)
   const [simulationAnswers, setSimulationAnswers] = useState<Record<string, number>>({})
   const reviewQuestionIdRef = useRef<string | null>(null)
   const lastCompletedSimulationRef = useRef<{ examId: string; updatedAt: string } | null>(null)
@@ -570,8 +571,22 @@ function App() {
   }, [setTopic, setYear, setSelectedExamId, setSelectedStudyMode, setSimulationIds, setShowQuestionList, setShowPerformance])
 
   useEffect(() => {
-    setShowQuestionList(false)
-  }, [selectedExamId])
+    if (!reviewQuestionId) setShowQuestionList(false)
+  }, [selectedExamId, reviewQuestionId])
+
+  useEffect(() => {
+    if (!reviewQuestionId) return
+    const element = document.getElementById(`question-${reviewQuestionId}`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [reviewQuestionId, filteredQuestions])
+
+  useEffect(() => {
+    if (reviewQuestionId) setReviewQuestionId(null)
+  }, [answers, reviewQuestionId])
+
+
 
   useEffect(() => {
     if (topic !== 'Todos' || year !== 'Todos' || questionSearch !== '' || bibliographySource !== 'Todos') {
@@ -751,7 +766,7 @@ function App() {
       setSelectedStudyMode(nextMode)
     }
     setSimulationIds(null)
-    reviewQuestionIdRef.current = questionId
+    setReviewQuestionId(questionId)
     setShowPerformance(false)
   }
 
@@ -802,7 +817,8 @@ function App() {
     }
     lastCompletedSimulationRef.current = currentKey
     recordCompletedSimulation(completed)
-  }, [simulationComplete, savedSimulation, simulationIds, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, examChoices, recordCompletedSimulation])
+    setAnswers({ ...answers, ...simulationAnswers })
+  }, [simulationComplete, savedSimulation, simulationIds, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, examChoices, recordCompletedSimulation, simulationAnswers, answers])
 
   function recordSimulationAnswer(questionId: string, optionIndex: number) {
     const nextAnswers = { ...simulationAnswers, [questionId]: optionIndex }
@@ -1178,20 +1194,22 @@ function App() {
                     {!loading && usingOfflineCache && <p className="rounded-xl border border-[#ead7be] bg-[#fff8ed] p-4 text-sm leading-6 text-[#805b2d]">Sem conexão: estas questões foram carregadas do aparelho. O conteúdo será atualizado quando a internet voltar.</p>}
                     {!loading && loadError && <p className="rounded-xl border border-red-200 bg-white p-5 text-sm leading-6 text-red-800">{loadError}</p>}
                     {showQuestionList && simulationIds === null && !loading && !loadError && filteredQuestions.map((question) => (
-                      <QuestionCard
-                        key={question.id}
-                        question={question}
-                        answerState={answers}
-                        revealedState={revealed}
-                        favorites={favorites}
-                        setAnswers={(value) => setAnswers(value)}
-                        setRevealed={(value) => setRevealed(value)}
-                        setFavorites={(value) => setFavorites(value)}
-                        simulationIds={null}
-                        recordSimulationAnswer={recordSimulationAnswer}
-                        recordSimulationReveal={recordSimulationReveal}
-                        conciseSource={conciseSource}
-                      />
+                      <div key={question.id} id={`question-${question.id}`} className={reviewQuestionId === question.id ? 'ring-2 ring-sea rounded-lg' : ''}>
+                        <QuestionCard
+                          key={question.id}
+                          question={question}
+                          answerState={answers}
+                          revealedState={revealed}
+                          favorites={favorites}
+                          setAnswers={(value) => setAnswers(value)}
+                          setRevealed={(value) => setRevealed(value)}
+                          setFavorites={(value) => setFavorites(value)}
+                          simulationIds={null}
+                          recordSimulationAnswer={recordSimulationAnswer}
+                          recordSimulationReveal={recordSimulationReveal}
+                          conciseSource={conciseSource}
+                        />
+                      </div>
                     ))}
                     {showQuestionList && simulationIds === null && !loading && !loadError && filteredQuestions.length === 0 && <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>}
                     {!showQuestionList && simulationIds === null && !loading && !loadError && <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
