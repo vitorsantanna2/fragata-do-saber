@@ -22,6 +22,7 @@ type CloudSimulationRow = {
   score: number
   completed_at: string
   updated_at: string
+  is_simulation: boolean
 }
 
 type SyncInput = Pick<StudyProgress, 'answers' | 'favorites' | 'revealed' | 'progressUpdatedAt' | 'questionSnapshots' | 'completedSimulations'>
@@ -154,6 +155,7 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
       score: sim.score,
       completed_at: sim.completedAt,
       updated_at: sim.completedAt,
+      is_simulation: sim.isSimulation ?? false,
     }
     const remote = remoteSimsById.get(sim.id)
     if (!remote || Date.parse(sim.completedAt) > Date.parse(remote.completed_at)) {
@@ -181,6 +183,7 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
     wrongAnswers: row.wrong_answers,
     score: Number(row.score),
     completedAt: row.completed_at,
+    isSimulation: row.is_simulation ?? false,
   })).sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
 
   return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations: deduplicateCompletedSimulations(completedSimulations) }
@@ -189,7 +192,7 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
 function deduplicateCompletedSimulations(simulations: CompletedSimulation[]): CompletedSimulation[] {
   const seen = new Map<string, CompletedSimulation>()
   for (const sim of simulations) {
-    const key = `${sim.examId}|${sim.examTitle ?? ''}|${sim.studyMode}|${sim.totalQuestions}|${sim.correctAnswers}|${sim.wrongAnswers}|${sim.score}`
+    const key = `${sim.examId}|${sim.examTitle ?? ''}|${sim.studyMode}|${sim.totalQuestions}|${sim.correctAnswers}|${sim.wrongAnswers}|${sim.score}|${sim.isSimulation}`
     const existing = seen.get(key)
     if (!existing || Date.parse(sim.completedAt) > Date.parse(existing.completedAt)) {
       seen.set(key, sim)

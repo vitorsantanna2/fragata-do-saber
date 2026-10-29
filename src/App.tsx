@@ -764,7 +764,7 @@ function App() {
   }
 
   useEffect(() => {
-    if (!simulationComplete || !savedSimulation) return
+    if (!simulationComplete || !savedSimulation || simulationIds === null) return
 
     const currentKey = { examId: savedSimulation.examId, updatedAt: savedSimulation.updatedAt }
     if (
@@ -785,10 +785,11 @@ function App() {
       wrongAnswers: simulationAnsweredCount - simulationCorrectCount,
       score: simulationScore,
       completedAt: new Date().toISOString(),
+      isSimulation: true,
     }
     lastCompletedSimulationRef.current = currentKey
     recordCompletedSimulation(completed)
-  }, [simulationComplete, savedSimulation, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, examChoices, recordCompletedSimulation])
+  }, [simulationComplete, savedSimulation, simulationIds, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, examChoices, recordCompletedSimulation])
 
   function recordSimulationAnswer(questionId: string, optionIndex: number) {
     const nextAnswers = { ...simulationAnswers, [questionId]: optionIndex }

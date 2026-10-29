@@ -75,6 +75,7 @@ export type CompletedSimulation = {
   wrongAnswers: number
   score: number
   completedAt: string
+  isSimulation: boolean
 }
 
 export type StudyQuestionSnapshot = {
@@ -92,7 +93,7 @@ const STUDY_PROGRESS_KEY = 'study_progress_v1'
 function deduplicateCompletedSimulations(simulations: CompletedSimulation[]): CompletedSimulation[] {
   const seen = new Map<string, CompletedSimulation>()
   for (const sim of simulations) {
-    const key = `${sim.examId}|${sim.examTitle ?? ''}|${sim.studyMode}|${sim.totalQuestions}|${sim.correctAnswers}|${sim.wrongAnswers}|${sim.score}`
+    const key = `${sim.examId}|${sim.examTitle ?? ''}|${sim.studyMode}|${sim.totalQuestions}|${sim.correctAnswers}|${sim.wrongAnswers}|${sim.score}|${sim.isSimulation}`
     const existing = seen.get(key)
     if (!existing || Date.parse(sim.completedAt) > Date.parse(existing.completedAt)) {
       seen.set(key, sim)
@@ -128,7 +129,7 @@ export async function loadStudyProgress(): Promise<StudyProgress | null> {
       questionSnapshots: progress.questionSnapshots ?? {},
       progressUpdatedAt: progress.progressUpdatedAt ?? {},
       savedSimulation: progress.savedSimulation ?? null,
-      completedSimulations: deduplicateCompletedSimulations(progress.completedSimulations ?? []),
+      completedSimulations: deduplicateCompletedSimulations((progress.completedSimulations ?? []).filter((s) => s.isSimulation)),
     }
   } catch {
     return null
