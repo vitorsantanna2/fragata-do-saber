@@ -15,7 +15,6 @@ import {
   hasCachedQuestions,
   isNativeApp,
   loadOffensiveState,
-  registerOffensiveAccess,
   registerOffensiveSimulation,
   setLocalMetadata,
   type SavedSimulation,
@@ -353,10 +352,6 @@ function App() {
     if (data) {
       void setLocalMetadata('access_last_validated_at', new Date().toISOString())
       setAccessState('granted')
-      void registerOffensiveAccess().then((state) => {
-        setOffensiveState(state)
-        setOffensiveLoaded(true)
-      })
     } else {
       setAccessState('locked')
     }

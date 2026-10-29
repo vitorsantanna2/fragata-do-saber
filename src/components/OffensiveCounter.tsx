@@ -40,7 +40,7 @@ export function OffensiveCounter({
       </div>
       {!offensiveLoggedToday && (
         <p className="mt-3 text-sm leading-6 text-muted text-center">
-          Acesse a plataforma ou complete um simulado hoje para iniciar sua ofensiva de estudos.
+          Complete um simulado hoje para iniciar sua ofensiva de estudos.
         </p>
       )}
     </section>
