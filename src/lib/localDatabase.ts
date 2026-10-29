@@ -89,6 +89,17 @@ export type StudyQuestionSnapshot = {
 
 const STUDY_PROGRESS_KEY = 'study_progress_v1'
 
+function deduplicateCompletedSimulations(simulations: CompletedSimulation[]): CompletedSimulation[] {
+  const seen = new Map<string, CompletedSimulation>()
+  for (const sim of simulations) {
+    const key = `${sim.examId}-${sim.completedAt}`
+    if (!seen.has(key) || sim.completedAt > seen.get(key)!.completedAt) {
+      seen.set(key, sim)
+    }
+  }
+  return [...seen.values()].sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
+}
+
 const sqliteConnection = new SQLiteConnection(CapacitorSQLite)
 let databasePromise: Promise<SQLiteDBConnection | null> | null = null
 
@@ -116,7 +127,7 @@ export async function loadStudyProgress(): Promise<StudyProgress | null> {
       questionSnapshots: progress.questionSnapshots ?? {},
       progressUpdatedAt: progress.progressUpdatedAt ?? {},
       savedSimulation: progress.savedSimulation ?? null,
-      completedSimulations: progress.completedSimulations ?? [],
+      completedSimulations: deduplicateCompletedSimulations(progress.completedSimulations ?? []),
     }
   } catch {
     return null
