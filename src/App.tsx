@@ -572,11 +572,15 @@ function App() {
 
   useEffect(() => {
     if (!reviewQuestionId) return
+    setTopic('Todos')
+    setYear('Todos')
+    setQuestionSearch('')
+    setBibliographySource('Todos')
     const element = document.getElementById(`question-${reviewQuestionId}`)
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }, [reviewQuestionId, filteredQuestions])
+  }, [reviewQuestionId, filteredQuestions, setTopic, setYear, setQuestionSearch, setBibliographySource])
 
   useEffect(() => {
     if (reviewQuestionId) setReviewQuestionId(null)
