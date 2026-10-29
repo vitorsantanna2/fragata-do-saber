@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
-import shipImage from '/logo_embarque.png'
-import waveImage from '/logo_mar.png'
+const shipImage = new URL('/logo_embarque.png', import.meta.url).href
+const waveImage = new URL('/logo_mar.png', import.meta.url).href
 
 type OffensiveCounterProps = {
   totalOffensives: number
