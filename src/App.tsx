@@ -945,19 +945,19 @@ function App() {
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('mind-maps')}>
-                  <span className="grid size-12 place-items-center rounded-xl bg-[#fff2e8] text-2xl" aria-hidden="true">✦</span>
+                  <span className="grid size-12 place-items-center rounded-xl bg-[#fff2e8] text-2xl text-sea" aria-hidden="true">✦</span>
                   <span className="mt-5 block font-display text-xl font-extrabold text-ink">Mapas mentais</span>
                   <span className="mt-2 block text-sm leading-6 text-muted">Revise os conteúdos do Quadro Técnico com mapas mentais.</span>
                   <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar mapas <span aria-hidden="true">→</span></span>
                 </button>
                 <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('exam-questions')}>
-                  <span className="grid size-12 place-items-center rounded-xl bg-sea-light text-2xl" aria-hidden="true">✓</span>
+                  <span className="grid size-12 place-items-center rounded-xl bg-sea-light text-2xl text-sea" aria-hidden="true">✓</span>
                   <span className="mt-5 block font-display text-xl font-extrabold text-ink">Questões de provas</span>
                   <span className="mt-2 block text-sm leading-6 text-muted">Pratique com questões de provas anteriores e simulados.</span>
                   <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar questões de provas <span aria-hidden="true">→</span></span>
                 </button>
                 <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('bibliography-questions')}>
-                  <span className="grid size-12 place-items-center rounded-xl bg-[#eef3f5] text-2xl" aria-hidden="true">▤</span>
+                  <span className="grid size-12 place-items-center rounded-xl bg-[#eef3f5] text-2xl text-sea" aria-hidden="true">▤</span>
                   <span className="mt-5 block font-display text-xl font-extrabold text-ink">Questões de apostilas e livros</span>
                   <span className="mt-2 block text-sm leading-6 text-muted">Estude com questões elaboradas a partir das apostilas e livros do edital.</span>
                   <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar questões de bibliografia <span aria-hidden="true">→</span></span>
