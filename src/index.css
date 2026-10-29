@@ -22,6 +22,31 @@
   --color-coral: #e0a372;
 }
 
+/* Sobrescreve cores fixas do Tailwind quando o tema escuro está ativo */
+[data-theme='dark'] .bg-white,
+[data-theme='dark'] .bg-white\/5,
+[data-theme='dark'] .bg-white\/10,
+[data-theme='dark'] .bg-white\/20,
+[data-theme='dark'] .bg-white\/50,
+[data-theme='dark'] .bg-white\/70,
+[data-theme='dark'] .bg-white\/90,
+[data-theme='dark'] .bg-white\/95 {
+  background-color: var(--color-paper) !important;
+}
+
+[data-theme='dark'] .text-ink {
+  color: var(--color-ink) !important;
+}
+
+[data-theme='dark'] .border-line {
+  border-color: var(--color-line) !important;
+}
+
+[data-theme='dark'] .shadow-ink\/10,
+[data-theme='dark'] .shadow-ink\/5 {
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow) !important;
+}
+
 @layer base {
   :root {
     font-family: var(--font-sans);
@@ -37,8 +62,10 @@
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
-    background-image: radial-gradient(#dbe5df 0.7px, transparent 0.7px);
+    background: var(--color-paper);
+    background-image: radial-gradient(var(--color-line) 0.7px, transparent 0.7px);
     background-size: 18px 18px;
+    color: var(--color-ink);
   }
 
   button,
