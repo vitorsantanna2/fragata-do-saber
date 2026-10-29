@@ -60,7 +60,15 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   const [syncStatus, setSyncStatus] = useState<'local' | 'offline' | 'syncing' | 'synced' | 'error'>('local')
 
   function recordCompletedSimulation(simulation: CompletedSimulation) {
-    setCompletedSimulations((current) => [simulation, ...current].slice(0, 50))
+    setCompletedSimulations((current) => {
+      const key = `${simulation.examId}|${simulation.examTitle ?? ''}|${simulation.studyMode}|${simulation.totalQuestions}|${simulation.correctAnswers}|${simulation.wrongAnswers}|${simulation.score}`
+      const alreadyExists = current.some((s) => {
+        const existingKey = `${s.examId}|${s.examTitle ?? ''}|${s.studyMode}|${s.totalQuestions}|${s.correctAnswers}|${s.wrongAnswers}|${s.score}`
+        return existingKey === key
+      })
+      if (alreadyExists) return current
+      return [simulation, ...current].slice(0, 50)
+    })
   }
   const [manualSyncRevision, setManualSyncRevision] = useState(0)
   const [progressRestored, setProgressRestored] = useState(false)
