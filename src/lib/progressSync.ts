@@ -216,6 +216,14 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
   const user = sessionData.session?.user
   if (!user || user.is_anonymous) return null
 
+  const toIsoDate = (value: string | null): string | null => {
+    if (!value) return null
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
+    if (m) return `${m[3]}-${m[2]}-${m[1]}`
+    return value
+  }
+
   const { data: remote, error: fetchError } = await supabase
     .from('user_offensive_state')
     .select('user_id,total_offensives,current_streak,best_streak,last_offensive_date,offensive_logged_today,joined_at,updated_at')
@@ -238,11 +246,15 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
   let shouldUpload = false
 
   if (!remoteRow) {
-    next = { ...state, joinedAt: state.joinedAt ?? now }
+    next = {
+      ...state,
+      joinedAt: state.joinedAt ?? now,
+      lastOffensiveDate: toIsoDate(state.lastOffensiveDate),
+    }
     shouldUpload = true
   } else {
     const remoteUpdated = Date.parse(remoteRow.updated_at)
-    const localUpdated = Date.parse(state.lastOffensiveDate ?? state.joinedAt ?? now)
+    const localUpdated = Date.parse(toIsoDate(state.lastOffensiveDate) ?? state.joinedAt ?? now)
 
     if (remoteUpdated > localUpdated) {
       next = {
@@ -254,7 +266,11 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
         joinedAt: remoteRow.joined_at,
       }
     } else {
-      next = { ...state, joinedAt: state.joinedAt ?? remoteRow.joined_at }
+      next = {
+        ...state,
+        joinedAt: state.joinedAt ?? remoteRow.joined_at,
+        lastOffensiveDate: toIsoDate(state.lastOffensiveDate),
+      }
       shouldUpload = true
     }
   }
@@ -265,7 +281,7 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
       total_offensives: next.totalOffensives,
       current_streak: next.currentStreak,
       best_streak: next.bestStreak,
-      last_offensive_date: next.lastOffensiveDate,
+      last_offensive_date: toIsoDate(next.lastOffensiveDate),
       offensive_logged_today: next.offensiveLoggedToday,
       joined_at: next.joinedAt,
       updated_at: updatedAt,
