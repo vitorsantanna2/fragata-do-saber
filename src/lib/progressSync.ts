@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { StudyProgress, StudyQuestionSnapshot, CompletedSimulation } from './localDatabase'
+import type { StudyProgress, StudyQuestionSnapshot, CompletedSimulation, OffensiveState } from './localDatabase'
 
 type CloudProgressRow = {
   user_id: string
@@ -25,11 +25,31 @@ type CloudSimulationRow = {
   is_simulation: boolean
 }
 
+type CloudOffensiveStateRow = {
+  user_id: string
+  total_offensives: number
+  current_streak: number
+  best_streak: number
+  last_offensive_date: string | null
+  offensive_logged_today: boolean
+  joined_at: string
+  updated_at: string
+}
+
 type SyncInput = Pick<StudyProgress, 'answers' | 'favorites' | 'revealed' | 'progressUpdatedAt' | 'questionSnapshots' | 'completedSimulations'>
 
 export type SyncedProgress = Omit<SyncInput, 'questionSnapshots' | 'completedSimulations'> & {
   questionSnapshots: Record<string, StudyQuestionSnapshot>
   completedSimulations: StudyProgress['completedSimulations']
+}
+
+export type SyncedOffensiveState = {
+  totalOffensives: number
+  currentStreak: number
+  bestStreak: number
+  lastOffensiveDate: string | null
+  offensiveLoggedToday: boolean
+  joinedAt: string | null
 }
 
 export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProgress | null> {
@@ -187,6 +207,74 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
   })).sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
 
   return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations: deduplicateCompletedSimulations(completedSimulations) }
+}
+
+export async function syncOffensiveState(state: OffensiveState): Promise<SyncedOffensiveState | null> {
+  if (!supabase || !navigator.onLine) return null
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  const user = sessionData.session?.user
+  if (!user || user.is_anonymous) return null
+
+  const { data: remote, error: fetchError } = await supabase
+    .from('user_offensive_state')
+    .select('user_id,total_offensives,current_streak,best_streak,last_offensive_date,offensive_logged_today,joined_at,updated_at')
+    .eq('user_id', user.id)
+    .single()
+
+  if (fetchError && fetchError.code !== 'PGRST116') throw fetchError
+
+  const remoteRow = remote as CloudOffensiveStateRow | null
+  const now = new Date().toISOString()
+  let updatedAt = now
+
+  let next: OffensiveState = { ...state }
+  let shouldUpload = false
+
+  if (!remoteRow) {
+    next = { ...state, joinedAt: state.joinedAt ?? now }
+    shouldUpload = true
+  } else {
+    const remoteUpdated = Date.parse(remoteRow.updated_at)
+    const localUpdated = Date.parse(state.lastOffensiveDate ?? state.joinedAt ?? now)
+
+    if (remoteUpdated > localUpdated) {
+      next = {
+        totalOffensives: remoteRow.total_offensives,
+        currentStreak: remoteRow.current_streak,
+        bestStreak: remoteRow.best_streak,
+        lastOffensiveDate: remoteRow.last_offensive_date,
+        offensiveLoggedToday: remoteRow.offensive_logged_today,
+        joinedAt: remoteRow.joined_at,
+      }
+    } else {
+      next = { ...state, joinedAt: state.joinedAt ?? remoteRow.joined_at }
+      shouldUpload = true
+    }
+  }
+
+  if (shouldUpload) {
+    const { error: upsertError } = await supabase.from('user_offensive_state').upsert({
+      user_id: user.id,
+      total_offensives: next.totalOffensives,
+      current_streak: next.currentStreak,
+      best_streak: next.bestStreak,
+      last_offensive_date: next.lastOffensiveDate,
+      offensive_logged_today: next.offensiveLoggedToday,
+      joined_at: next.joinedAt,
+      updated_at: updatedAt,
+    }, { onConflict: 'user_id' })
+    if (upsertError) throw upsertError
+  }
+
+  return {
+    totalOffensives: next.totalOffensives,
+    currentStreak: next.currentStreak,
+    bestStreak: next.bestStreak,
+    lastOffensiveDate: next.lastOffensiveDate,
+    offensiveLoggedToday: next.offensiveLoggedToday,
+    joinedAt: next.joinedAt,
+  }
 }
 
 function deduplicateCompletedSimulations(simulations: CompletedSimulation[]): CompletedSimulation[] {

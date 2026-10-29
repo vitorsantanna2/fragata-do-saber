@@ -14,13 +14,11 @@ import {
   hasCachedMindMaps,
   hasCachedQuestions,
   isNativeApp,
-  loadOffensiveState,
   registerOffensiveSimulation,
   setLocalMetadata,
   type SavedSimulation,
   type StudyQuestionSnapshot,
   type CompletedSimulation,
-  type OffensiveState,
 } from './lib/localDatabase'
 import { Skeleton, SkeletonText } from './components/Skeleton'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -203,8 +201,6 @@ function App() {
   const [mindMapAction, setMindMapAction] = useState<string | null>(null)
   const [showDownloadedMindMapsOnly, setShowDownloadedMindMapsOnly] = useState(false)
   const [openMindMap, setOpenMindMap] = useState<{ map: MindMap; url: string } | null>(null)
-  const [offensiveState, setOffensiveState] = useState<OffensiveState | null>(null)
-  const [offensiveLoaded, setOffensiveLoaded] = useState(false)
   const [accountUser, setAccountUser] = useState<{ id: string; email: string | null; is_anonymous: boolean } | null>(null)
   const [logoutError, setLogoutError] = useState('')
 
@@ -250,6 +246,9 @@ function App() {
     simulationRevealed,
     setSimulationRevealed,
     syncStatus,
+    offensiveState,
+    offensiveLoaded,
+    setOffensiveState,
     setAnswers,
     setRevealed,
     setFavorites,
@@ -359,16 +358,6 @@ function App() {
 
   useEffect(() => {
     void checkAccess()
-  }, [])
-
-  useEffect(() => {
-    let active = true
-    void loadOffensiveState().then((state) => {
-      if (!active) return
-      setOffensiveState(state)
-      setOffensiveLoaded(true)
-    })
-    return () => { active = false }
   }, [])
 
   async function handleAccessSubmit(event: FormEvent<HTMLFormElement>) {

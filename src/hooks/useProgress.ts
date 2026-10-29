@@ -2,11 +2,13 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import {
   loadStudyProgress,
   saveStudyProgress,
+  loadOffensiveState,
   type StudyQuestionSnapshot,
   type SavedSimulation,
   type CompletedSimulation,
+  type OffensiveState,
 } from '../lib/localDatabase'
-import { syncStudyProgress } from '../lib/progressSync'
+import { syncStudyProgress, syncOffensiveState } from '../lib/progressSync'
 
 type UseProgressProps = {
   questions: any[]
@@ -24,6 +26,9 @@ type UseProgressReturn = {
   completedSimulations: CompletedSimulation[]
   recordCompletedSimulation: (simulation: CompletedSimulation) => void
   syncStatus: 'local' | 'offline' | 'syncing' | 'synced' | 'error'
+  offensiveState: OffensiveState | null
+  offensiveLoaded: boolean
+  setOffensiveState: (value: OffensiveState | null) => void
   setAnswers: (value: Record<string, number>) => void
   setRevealed: (value: string[]) => void
   setFavorites: (value: string[]) => void
@@ -58,6 +63,8 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   const [completedSimulations, setCompletedSimulations] = useState<CompletedSimulation[]>([])
   const [simulationRevealed, setSimulationRevealed] = useState<string[]>([])
   const [syncStatus, setSyncStatus] = useState<'local' | 'offline' | 'syncing' | 'synced' | 'error'>('local')
+  const [offensiveState, setOffensiveState] = useState<OffensiveState | null>(null)
+  const [offensiveLoaded, setOffensiveLoaded] = useState(false)
 
   function recordCompletedSimulation(simulation: CompletedSimulation) {
     setCompletedSimulations((current) => {
@@ -95,6 +102,11 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         setCompletedSimulations(progress.completedSimulations)
       }
       setProgressRestored(true)
+    })
+    void loadOffensiveState().then((state) => {
+      if (!active) return
+      setOffensiveState(state)
+      setOffensiveLoaded(true)
     })
     return () => { active = false }
   }, [])
@@ -175,6 +187,28 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   }, [progressRestored, accountUser, isOnline, answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, manualSyncRevision])
 
   useEffect(() => {
+    if (!progressRestored || !accountUser || accountUser.is_anonymous) return
+    if (!isOnline) return
+    if (!offensiveState) return
+
+    let active = true
+    const timer = window.setTimeout(() => {
+      void syncOffensiveState(offensiveState)
+        .then((synced) => {
+          if (!active) return
+          if (synced) {
+            setOffensiveState(synced as OffensiveState)
+          }
+        })
+        .catch((error: unknown) => {
+          if (!active) return
+          console.warn('Falha ao sincronizar ofensiva.', error)
+        })
+    }, 450)
+    return () => { active = false; window.clearTimeout(timer) }
+  }, [progressRestored, accountUser, isOnline, offensiveState])
+
+  useEffect(() => {
     if (!questions.length) return
     setQuestionSnapshots((current) => {
       const next = { ...current }
@@ -205,6 +239,9 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
     simulationRevealed,
     setSimulationRevealed,
     syncStatus,
+    offensiveState,
+    offensiveLoaded,
+    setOffensiveState,
     setAnswers,
     setRevealed,
     setFavorites,
