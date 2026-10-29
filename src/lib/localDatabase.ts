@@ -101,7 +101,8 @@ const STUDY_PROGRESS_KEY = 'study_progress_v1'
 const OFFENSIVE_STATE_KEY = 'offensive_state_v1'
 
 function todayKey() {
-  return new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+  const now = new Date()
+  return now.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
 }
 
 function blankOffensiveState(): OffensiveState {
