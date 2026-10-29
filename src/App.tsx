@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type TouchEvent } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { supabase } from './lib/supabase'
@@ -6,7 +6,6 @@ import {
   downloadMindMap,
   getMindMapUrl,
   loadMindMaps,
-  openMindMapPdf,
   type MindMap,
 } from './lib/mindMaps'
 import {
@@ -25,6 +24,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { ExamChoiceGrid, examChoices } from './components/ExamChoiceGrid'
 import { QuestionFilters } from './components/QuestionFilters'
 import { QuestionCard } from './components/QuestionCard'
+import { MindMapViewer } from './components/MindMapViewer'
 import { shuffle, conciseSource } from './lib/utils'
 import { useQuestions } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
@@ -37,114 +37,6 @@ const SIMULATION_SIZE = 50
 const OFFLINE_ACCESS_GRACE_MS = 30 * 24 * 60 * 60 * 1000
 
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path}`
-
-function ZoomableImage({ src, alt }: { src: string; alt: string }) {
-  const [scale, setScale] = useState(1)
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const gesture = useRef<{ distance: number; scale: number; x: number; y: number; clientX: number; clientY: number } | null>(null)
-
-  function zoom(nextScale: number) {
-    const boundedScale = Math.min(5, Math.max(1, nextScale))
-    setScale(boundedScale)
-    if (boundedScale === 1) setOffset({ x: 0, y: 0 })
-  }
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === '+' || event.key === '=') zoom(scale + 0.5)
-      else if (event.key === '-') zoom(scale - 0.5)
-      else if (event.key === '0') zoom(1)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [scale])
-
-  function onTouchStart(event: TouchEvent<HTMLDivElement>) {
-    if (event.touches.length > 1) {
-      const first = event.touches[0]
-      const second = event.touches[1]
-      gesture.current = {
-        distance: Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY),
-        scale,
-        x: offset.x,
-        y: offset.y,
-        clientX: (first.clientX + second.clientX) / 2,
-        clientY: (first.clientY + second.clientY) / 2,
-      }
-    } else {
-      const touch = event.touches[0]
-      gesture.current = { distance: 0, scale, x: offset.x, y: offset.y, clientX: touch.clientX, clientY: touch.clientY }
-    }
-  }
-
-  function onTouchMove(event: TouchEvent<HTMLDivElement>) {
-    const start = gesture.current
-    if (!start) return
-    event.preventDefault()
-    if (event.touches.length > 1) {
-      const first = event.touches[0]
-      const second = event.touches[1]
-      const distance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY)
-      const centerX = (first.clientX + second.clientX) / 2
-      const centerY = (first.clientY + second.clientY) / 2
-      zoom(start.scale * distance / Math.max(start.distance, 1))
-      setOffset({ x: start.x + centerX - start.clientX, y: start.y + centerY - start.clientY })
-    } else if (start.scale > 1) {
-      const touch = event.touches[0]
-      setOffset({ x: start.x + touch.clientX - start.clientX, y: start.y + touch.clientY - start.clientY })
-    }
-  }
-
-  function onTouchEnd() {
-    gesture.current = null
-  }
-
-  function onMouseDown(event: React.MouseEvent<HTMLDivElement>) {
-    if (scale <= 1) return
-    gesture.current = { distance: 0, scale, x: offset.x, y: offset.y, clientX: event.clientX, clientY: event.clientY }
-  }
-
-  function onMouseMove(event: React.MouseEvent<HTMLDivElement>) {
-    const start = gesture.current
-    if (!start) return
-    setOffset({ x: start.x + event.clientX - start.clientX, y: start.y + event.clientY - start.clientY })
-  }
-
-  function onMouseUp() {
-    gesture.current = null
-  }
-
-  function onDoubleClick() {
-    if (scale === 1) zoom(2)
-    else zoom(1)
-  }
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div
-        className="grid min-h-[50vh] flex-1 place-items-center overflow-auto sm:min-h-[65vh]"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={onTouchEnd}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
-        onDoubleClick={onDoubleClick}
-        onWheel={(event) => { if (event.ctrlKey || event.metaKey) { event.preventDefault(); zoom(scale + (event.deltaY < 0 ? 0.2 : -0.2)) } }}
-      >
-        <img
-          className="select-none"
-          style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: 'center' }}
-          src={src}
-          alt={alt}
-          draggable={false}
-        />
-      </div>
-    </div>
-  )
-}
 
 function AccountSyncPanel({
   onClose,
@@ -305,7 +197,7 @@ function App() {
   const [mindMapsError, setMindMapsError] = useState('')
   const [mindMapAction, setMindMapAction] = useState<string | null>(null)
   const [showDownloadedMindMapsOnly, setShowDownloadedMindMapsOnly] = useState(false)
-  const [openImageMap, setOpenImageMap] = useState<{ map: MindMap; url: string } | null>(null)
+  const [openMindMap, setOpenMindMap] = useState<{ map: MindMap; url: string } | null>(null)
   const [accountUser, setAccountUser] = useState<{ id: string; email: string | null; is_anonymous: boolean } | null>(null)
   const [logoutError, setLogoutError] = useState('')
 
@@ -601,8 +493,8 @@ function App() {
         setShowAccountSync(false)
       } else if (showPerformance) {
         setShowPerformance(false)
-      } else if (openImageMap) {
-        setOpenImageMap(null)
+      } else if (openMindMap) {
+        setOpenMindMap(null)
       } else if (simulationIds !== null) {
         setSimulationIds(null)
       } else if (selectedExamId === 'cp-t-informatica' && selectedStudyMode !== null) {
@@ -614,7 +506,7 @@ function App() {
       }
     })
     return () => { void listener.then((handle) => handle.remove()) }
-  }, [adminMode, showAccountSync, showPerformance, openImageMap, simulationIds, selectedExamId, selectedStudyMode, returnToHome])
+  }, [adminMode, showAccountSync, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToHome])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSplashElapsed(true), 900)
@@ -645,12 +537,8 @@ function App() {
         currentMap = { ...map, local_path: localPath }
         setMindMaps((items) => items.map((item) => item.id === map.id ? currentMap : item))
       }
-      if (map.content_type === 'application/pdf') {
-        await openMindMapPdf(currentMap)
-      } else {
-        const url = await getMindMapUrl(currentMap)
-        setOpenImageMap({ map: currentMap, url })
-      }
+      const url = await getMindMapUrl(currentMap)
+      setOpenMindMap({ map: currentMap, url })
     } catch (error) {
       setMindMapsError(`Não foi possível abrir “${map.title}”. ${error instanceof Error ? error.message : 'Verifique sua conexão e tente novamente.'}`)
     } finally {
@@ -1110,11 +998,8 @@ function App() {
                   ))}
                 </div>
               )}
-              {openImageMap && (
-                <div className="fixed inset-0 z-50 grid place-items-center bg-ink/95 p-1" role="dialog" aria-modal="true" aria-label={openImageMap.map.title} onClick={(event) => { if (event.target === event.currentTarget) setOpenImageMap(null) }}>
-                  <button className="absolute top-1 right-1 z-10 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold" type="button" onClick={() => setOpenImageMap(null)}>×</button>
-                  <ZoomableImage key={openImageMap.map.id} src={openImageMap.url} alt={openImageMap.map.title} />
-                </div>
+              {openMindMap && (
+                <MindMapViewer map={openMindMap.map} url={openMindMap.url} onClose={() => setOpenMindMap(null)} />
               )}
             </section>
           ) : (
