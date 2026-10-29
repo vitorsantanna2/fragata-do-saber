@@ -222,7 +222,13 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
     .eq('user_id', user.id)
     .single()
 
-  if (fetchError && fetchError.code !== 'PGRST116') throw fetchError
+  const isNotFound = fetchError
+    && (fetchError.code === 'PGRST116'
+      || String(fetchError.code).startsWith('4')
+      || String(fetchError.message || '').includes('not found')
+      || String(fetchError.message || '').includes('JSON object requested'))
+
+  if (fetchError && !isNotFound) throw fetchError
 
   const remoteRow = remote as CloudOffensiveStateRow | null
   const now = new Date().toISOString()
