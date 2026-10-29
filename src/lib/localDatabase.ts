@@ -84,6 +84,7 @@ export type OffensiveState = {
   bestStreak: number
   lastOffensiveDate: string | null
   offensiveLoggedToday: boolean
+  joinedAt: string | null
 }
 
 export type StudyQuestionSnapshot = {
@@ -104,7 +105,7 @@ function todayKey() {
 }
 
 function blankOffensiveState(): OffensiveState {
-  return { totalOffensives: 0, currentStreak: 0, bestStreak: 0, lastOffensiveDate: null, offensiveLoggedToday: false }
+  return { totalOffensives: 0, currentStreak: 0, bestStreak: 0, lastOffensiveDate: null, offensiveLoggedToday: false, joinedAt: null }
 }
 
 function deduplicateCompletedSimulations(simulations: CompletedSimulation[]): CompletedSimulation[] {
@@ -187,7 +188,14 @@ export async function loadOffensiveState(): Promise<OffensiveState> {
     const stored = isNativeApp()
       ? await getLocalMetadata(OFFENSIVE_STATE_KEY)
       : window.localStorage.getItem(OFFENSIVE_STATE_KEY)
-    if (!stored) return blankOffensiveState()
+    if (!stored) {
+      const initial: OffensiveState = {
+        ...blankOffensiveState(),
+        joinedAt: new Date().toISOString(),
+      }
+      void saveOffensiveState(initial)
+      return initial
+    }
     const state = JSON.parse(stored) as Partial<OffensiveState>
     return {
       totalOffensives: state.totalOffensives ?? 0,
@@ -195,6 +203,7 @@ export async function loadOffensiveState(): Promise<OffensiveState> {
       bestStreak: state.bestStreak ?? 0,
       lastOffensiveDate: state.lastOffensiveDate ?? null,
       offensiveLoggedToday: state.offensiveLoggedToday ?? false,
+      joinedAt: state.joinedAt ?? null,
     }
   } catch {
     return blankOffensiveState()

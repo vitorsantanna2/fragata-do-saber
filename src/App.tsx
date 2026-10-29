@@ -1086,6 +1086,7 @@ function App() {
                     currentStreak={offensiveState.currentStreak}
                     bestStreak={offensiveState.bestStreak}
                     offensiveLoggedToday={offensiveState.offensiveLoggedToday}
+                    joinedAt={offensiveState.joinedAt}
                   />
                 )}
                 <div>
