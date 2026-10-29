@@ -868,16 +868,18 @@ function App() {
         <main id="inicio" className="mx-auto max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
           <section className="relative overflow-hidden rounded-2xl bg-ink px-5 py-5 text-white shadow-lg shadow-ink/10 sm:px-8 sm:py-6" id="simulados">
             <div className="relative grid gap-5 lg:grid-cols-[1fr_260px] lg:items-center">
-              <div className="max-w-2xl">
-                <p className="mb-2 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-200">
-                  <span className="size-2 rounded-full bg-coral" /> Preparação para concursos navais
-                </p>
-                <h1 className="max-w-xl font-display text-2xl font-extrabold leading-tight sm:text-3xl">Conhecimento é o seu melhor rumo.</h1>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">Treine com questões de provas anteriores, acompanhe sua evolução e chegue mais preparado para o próximo desafio.</p>
-                <a className="mt-4 inline-flex items-center gap-3 rounded-lg bg-[#d7815e] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#c76e4c]" href="#questoes">
-                  Escolher concurso <span aria-hidden="true">→</span>
-                </a>
-              </div>
+              {!selectedExamId && (
+                <div className="max-w-2xl">
+                  <p className="mb-2 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-200">
+                    <span className="size-2 rounded-full bg-coral" /> Preparação para concursos navais
+                  </p>
+                  <h1 className="max-w-xl font-display text-2xl font-extrabold leading-tight sm:text-3xl">Conhecimento é o seu melhor rumo.</h1>
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">Treine com questões de provas anteriores, acompanhe sua evolução e chegue mais preparado para o próximo desafio.</p>
+                  <a className="mt-4 inline-flex items-center gap-3 rounded-lg bg-[#d7815e] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#c76e4c]" href="#questoes">
+                    Escolher concurso <span aria-hidden="true">→</span>
+                  </a>
+                </div>
+              )}
               <div className="grid gap-3 border-t border-white/15 pt-4 sm:grid-cols-[minmax(0,140px)_minmax(0,1fr)] sm:items-center lg:grid-cols-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
                 <img className="mx-auto w-full max-w-[140px] rounded-lg border border-white/10 shadow-md shadow-black/20" src={publicAsset('logo.png')} alt="Logo Fragata do Saber" />
                 <div className={`grid gap-4 ${selectedExamId ? 'grid-cols-3' : 'grid-cols-2'}`}>
