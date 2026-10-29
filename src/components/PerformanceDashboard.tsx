@@ -90,6 +90,15 @@ export function PerformanceDashboard({
         <label className="text-xs font-bold text-muted">Concurso<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={examFilter} onChange={(event) => { setExamFilter(event.target.value); setSubjectFilter('Todos') }}><option>Todos</option>{exams.map((exam) => <option key={exam}>{exam}</option>)}</select></label>
         <label className="text-xs font-bold text-muted">Matéria<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value)}><option>Todos</option>{subjects.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
       </div>
+      {offensiveLoaded && offensiveState && (
+        <OffensiveCounter
+          totalOffensives={offensiveState.totalOffensives}
+          currentStreak={offensiveState.currentStreak}
+          bestStreak={offensiveState.bestStreak}
+          offensiveLoggedToday={offensiveState.offensiveLoggedToday}
+          joinedAt={offensiveState.joinedAt}
+        />
+      )}
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: 'Respondidas', value: answered.length },
@@ -107,15 +116,6 @@ export function PerformanceDashboard({
         </section>
       </div>
       <PerformanceInfographic snapshots={snapshots} answers={answers} />
-      {offensiveLoaded && offensiveState && (
-        <OffensiveCounter
-          totalOffensives={offensiveState.totalOffensives}
-          currentStreak={offensiveState.currentStreak}
-          bestStreak={offensiveState.bestStreak}
-          offensiveLoggedToday={offensiveState.offensiveLoggedToday}
-          joinedAt={offensiveState.joinedAt}
-        />
-      )}
       <section className="mt-6 rounded-xl border border-line bg-white p-4 sm:p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3 className="font-display text-lg font-extrabold">Simulados concluídos</h3>
