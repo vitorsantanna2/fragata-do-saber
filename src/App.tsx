@@ -864,8 +864,8 @@ function App() {
 
         <main id="inicio" className="mx-auto max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
           <section className="relative overflow-hidden rounded-2xl bg-ink px-5 py-5 text-white shadow-lg shadow-ink/10 sm:px-8 sm:py-6" id="simulados">
-            <div className="relative grid gap-5 lg:grid-cols-[1fr_260px] lg:items-center">
-              {!selectedExamId && (
+            {!selectedExamId && (
+              <div className="relative grid gap-5 lg:grid-cols-[1fr_260px] lg:items-center">
                 <div className="max-w-2xl">
                   <p className="mb-2 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-200">
                     <span className="size-2 rounded-full bg-coral" /> Preparação para concursos navais
@@ -876,26 +876,21 @@ function App() {
                     Escolher concurso <span aria-hidden="true">→</span>
                   </a>
                 </div>
-              )}
-              <div className="grid gap-3 border-t border-white/15 pt-4 sm:grid-cols-[minmax(0,140px)_minmax(0,1fr)] sm:items-center lg:grid-cols-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-                <img className="mx-auto w-full max-w-[140px] rounded-lg border border-white/10 shadow-md shadow-black/20" src={publicAsset('logo.png')} alt="Logo Fragata do Saber" />
-              {!selectedExamId && (
-                <div className="grid gap-4 grid-cols-2">
-                  <div>
-                    <p className="font-display text-2xl font-extrabold sm:text-3xl">{String(examChoices.length).padStart(2, '0')}</p>
-                    <p className="mt-1 text-xs text-white/60">cursos e concursos</p>
+                <div className="grid gap-3 border-t border-white/15 pt-4 sm:grid-cols-[minmax(0,140px)_minmax(0,1fr)] sm:items-center lg:grid-cols-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                  <div className="grid gap-4 grid-cols-2">
+                    <div>
+                      <p className="font-display text-2xl font-extrabold sm:text-3xl">{String(examChoices.length).padStart(2, '0')}</p>
+                      <p className="mt-1 text-xs text-white/60">cursos e concursos</p>
+                    </div>
+                    <div className="self-center">
+                      <p className="font-display text-base font-extrabold leading-5 sm:text-lg">Provas anteriores</p>
+                      <p className="mt-1 text-xs leading-5 text-white/60">Questões organizadas por concurso</p>
+                    </div>
                   </div>
-                  <div className="self-center">
-                    <p className="font-display text-base font-extrabold leading-5 sm:text-lg">Provas anteriores</p>
-                    <p className="mt-1 text-xs leading-5 text-white/60">Questões organizadas por concurso</p>
-                  </div>
+                  <img className="mx-auto w-full max-w-[140px] rounded-lg border border-white/10 shadow-md shadow-black/20" src={publicAsset('logo.png')} alt="Logo Fragata do Saber" />
                 </div>
-              )}
-              {!selectedExamId && (
-                <img className="mx-auto w-full max-w-[140px] rounded-lg border border-white/10 shadow-md shadow-black/20" src={publicAsset('logo.png')} alt="Logo Fragata do Saber" />
-              )}
-            </div>
-            </div>
+              </div>
+            )}
           </section>
           {showPerformance ? (
             <Suspense fallback={<div className="mt-8 p-8 text-center"><Skeleton className="w-32 mx-auto mb-2" /><SkeletonText className="w-48 mx-auto" /></div>}>
