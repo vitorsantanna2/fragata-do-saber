@@ -116,6 +116,25 @@ export async function loadStudyProgress(): Promise<StudyProgress | null> {
       : window.localStorage.getItem(STUDY_PROGRESS_KEY)
     if (!stored) return null
     const progress = JSON.parse(stored) as Partial<StudyProgress>
+    const validSimulations = deduplicateCompletedSimulations((progress.completedSimulations ?? []).filter((s) => s.isSimulation))
+    // Limpa registros que não são simulados de verdade do armazenamento local
+    if ((progress.completedSimulations ?? []).length !== validSimulations.length) {
+      void saveStudyProgress({
+        answers: progress.answers ?? {},
+        revealed: progress.revealed ?? [],
+        favorites: progress.favorites ?? [],
+        selectedExamId: progress.selectedExamId ?? null,
+        selectedStudyMode: progress.selectedStudyMode ?? null,
+        topic: progress.topic ?? 'Todos',
+        year: progress.year ?? 'Todos',
+        bibliographySource: progress.bibliographySource ?? 'Todos',
+        questionSearch: progress.questionSearch ?? '',
+        questionSnapshots: progress.questionSnapshots ?? {},
+        progressUpdatedAt: progress.progressUpdatedAt ?? {},
+        savedSimulation: progress.savedSimulation ?? null,
+        completedSimulations: validSimulations,
+      })
+    }
     return {
       answers: progress.answers ?? {},
       revealed: progress.revealed ?? [],
@@ -129,7 +148,7 @@ export async function loadStudyProgress(): Promise<StudyProgress | null> {
       questionSnapshots: progress.questionSnapshots ?? {},
       progressUpdatedAt: progress.progressUpdatedAt ?? {},
       savedSimulation: progress.savedSimulation ?? null,
-      completedSimulations: deduplicateCompletedSimulations((progress.completedSimulations ?? []).filter((s) => s.isSimulation)),
+      completedSimulations: validSimulations,
     }
   } catch {
     return null
