@@ -1056,6 +1056,15 @@ function App() {
                   </button>
                 </div>
               </div>
+              {offensiveLoaded && offensiveState && (
+                <OffensiveCounter
+                  totalOffensives={offensiveState.totalOffensives}
+                  currentStreak={offensiveState.currentStreak}
+                  bestStreak={offensiveState.bestStreak}
+                  offensiveLoggedToday={offensiveState.offensiveLoggedToday}
+                  joinedAt={offensiveState.joinedAt}
+                />
+              )}
               <section className="mt-4 grid gap-8 lg:grid-cols-[250px_minmax(0,1fr)]" id="questoes">
                 <QuestionFilters
                   questionSearch={questionSearch}
@@ -1080,15 +1089,6 @@ function App() {
                   performanceCorrectCount={performanceCorrectCount}
                   performanceAnsweredCount={performanceAnsweredCount}
                 />
-                {offensiveLoaded && offensiveState && (
-                  <OffensiveCounter
-                    totalOffensives={offensiveState.totalOffensives}
-                    currentStreak={offensiveState.currentStreak}
-                    bestStreak={offensiveState.bestStreak}
-                    offensiveLoggedToday={offensiveState.offensiveLoggedToday}
-                    joinedAt={offensiveState.joinedAt}
-                  />
-                )}
                 <div>
                   <div className="mb-4 flex items-end justify-between gap-4">
                     <div>
