@@ -586,9 +586,6 @@ function App() {
   const performanceCorrectCount = simulationIds !== null ? simulationCorrectCount : correctCount
   const performanceAnsweredCount = simulationIds !== null ? simulationAnsweredCount : Object.keys(answers).length
 
-  const examCount = new Set(questions.map((question) => question.exam)).size
-  const topicCount = new Set(questions.map((question) => question.topic).filter(Boolean)).size
-
   const lastStudiedQuestion = useMemo(() => {
     const latest = Object.entries(progressUpdatedAt)
       .filter(([questionId]) => questionSnapshots[questionId])
@@ -882,27 +879,19 @@ function App() {
               )}
               <div className="grid gap-3 border-t border-white/15 pt-4 sm:grid-cols-[minmax(0,140px)_minmax(0,1fr)] sm:items-center lg:grid-cols-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
                 <img className="mx-auto w-full max-w-[140px] rounded-lg border border-white/10 shadow-md shadow-black/20" src={publicAsset('logo.png')} alt="Logo Fragata do Saber" />
-                <div className={`grid gap-4 ${selectedExamId ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                  {selectedExamId ? (
-                    <>
-                      <div><p className="font-display text-2xl font-extrabold sm:text-3xl">{questions.length}</p><p className="mt-1 text-xs text-white/60">questões</p></div>
-                      <div><p className="font-display text-2xl font-extrabold sm:text-3xl">{examCount}</p><p className="mt-1 text-xs text-white/60">provas</p></div>
-                      <div><p className="font-display text-2xl font-extrabold sm:text-3xl">{topicCount}</p><p className="mt-1 text-xs text-white/60">assuntos</p></div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <p className="font-display text-2xl font-extrabold sm:text-3xl">{String(examChoices.length).padStart(2, '0')}</p>
-                        <p className="mt-1 text-xs text-white/60">cursos e concursos</p>
-                      </div>
-                      <div className="self-center">
-                        <p className="font-display text-base font-extrabold leading-5 sm:text-lg">Provas anteriores</p>
-                        <p className="mt-1 text-xs leading-5 text-white/60">Questões organizadas por concurso</p>
-                      </div>
-                    </>
-                  )}
+              {!selectedExamId && (
+                <div className="grid gap-4 grid-cols-2">
+                  <div>
+                    <p className="font-display text-2xl font-extrabold sm:text-3xl">{String(examChoices.length).padStart(2, '0')}</p>
+                    <p className="mt-1 text-xs text-white/60">cursos e concursos</p>
+                  </div>
+                  <div className="self-center">
+                    <p className="font-display text-base font-extrabold leading-5 sm:text-lg">Provas anteriores</p>
+                    <p className="mt-1 text-xs leading-5 text-white/60">Questões organizadas por concurso</p>
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
             </div>
           </section>
           {showPerformance ? (
