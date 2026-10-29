@@ -751,7 +751,9 @@ function App() {
       ? 'bibliography-questions'
       : 'exam-questions')
     setSimulationIds(null)
+    setShowQuestionList(true)
     reviewQuestionIdRef.current = questionId
+    setReviewQuestionId(questionId)
   }
 
   function reviewQuestion(questionId: string, snapshot: StudyQuestionSnapshot) {
@@ -766,6 +768,7 @@ function App() {
       setSelectedStudyMode(nextMode)
     }
     setSimulationIds(null)
+    setShowQuestionList(true)
     setReviewQuestionId(questionId)
     setShowPerformance(false)
   }
