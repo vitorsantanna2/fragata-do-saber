@@ -206,7 +206,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         })
     }, 450)
     return () => { active = false; window.clearTimeout(timer) }
-  }, [progressRestored, accountUser, isOnline, offensiveState])
+  }, [progressRestored, accountUser, isOnline, offensiveState, manualSyncRevision])
 
   useEffect(() => {
     if (!questions.length) return
