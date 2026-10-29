@@ -19,6 +19,8 @@ type QuestionFiltersProps = {
   startSimulation: () => void
   exitSimulation: () => void
   simulationSize: number
+  startQuickSimulation: () => void
+  quickSimulationSize: number
   performanceCorrectCount: number
   performanceAnsweredCount: number
 }
@@ -41,6 +43,8 @@ export function QuestionFilters({
   startSimulation,
   exitSimulation,
   simulationSize,
+  startQuickSimulation,
+  quickSimulationSize,
   performanceCorrectCount,
   performanceAnsweredCount,
 }: QuestionFiltersProps) {
@@ -79,6 +83,14 @@ export function QuestionFilters({
             onClick={startSimulation}
           >
             {simulationIds ? 'Gerar novo simulado' : `Gerar simulado (${Math.min(simulationSize, filteredQuestionsLength)} questões)`}
+          </button>
+          <button
+            className="w-full rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-bold transition hover:border-sea hover:text-sea disabled:opacity-50"
+            type="button"
+            disabled={filteredQuestionsLength === 0}
+            onClick={startQuickSimulation}
+          >
+            {`Simulado rápido (${Math.min(quickSimulationSize, filteredQuestionsLength)} questões)`}
           </button>
           {simulationIds && (
             <button

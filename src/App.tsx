@@ -14,10 +14,14 @@ import {
   hasCachedMindMaps,
   hasCachedQuestions,
   isNativeApp,
+  loadOffensiveState,
+  registerOffensiveAccess,
+  registerOffensiveSimulation,
   setLocalMetadata,
   type SavedSimulation,
   type StudyQuestionSnapshot,
   type CompletedSimulation,
+  type OffensiveState,
 } from './lib/localDatabase'
 import { Skeleton, SkeletonText } from './components/Skeleton'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -25,6 +29,7 @@ import { ExamChoiceGrid, examChoices } from './components/ExamChoiceGrid'
 import { QuestionFilters } from './components/QuestionFilters'
 import { QuestionCard } from './components/QuestionCard'
 import { MindMapViewer } from './components/MindMapViewer'
+import { OffensiveCounter } from './components/OffensiveCounter'
 import { shuffle, conciseSource } from './lib/utils'
 import { useQuestions } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
@@ -34,6 +39,7 @@ const Simulation = lazy(() => import('./components/Simulation').then((mod) => ({
 const PerformanceDashboard = lazy(() => import('./components/PerformanceDashboard').then((mod) => ({ default: mod.PerformanceDashboard })))
 
 const SIMULATION_SIZE = 50
+const QUICK_SIMULATION_SIZE = 10
 const OFFLINE_ACCESS_GRACE_MS = 30 * 24 * 60 * 60 * 1000
 
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path}`
@@ -198,6 +204,8 @@ function App() {
   const [mindMapAction, setMindMapAction] = useState<string | null>(null)
   const [showDownloadedMindMapsOnly, setShowDownloadedMindMapsOnly] = useState(false)
   const [openMindMap, setOpenMindMap] = useState<{ map: MindMap; url: string } | null>(null)
+  const [offensiveState, setOffensiveState] = useState<OffensiveState | null>(null)
+  const [offensiveLoaded, setOffensiveLoaded] = useState(false)
   const [accountUser, setAccountUser] = useState<{ id: string; email: string | null; is_anonymous: boolean } | null>(null)
   const [logoutError, setLogoutError] = useState('')
 
@@ -345,6 +353,10 @@ function App() {
     if (data) {
       void setLocalMetadata('access_last_validated_at', new Date().toISOString())
       setAccessState('granted')
+      void registerOffensiveAccess().then((state) => {
+        setOffensiveState(state)
+        setOffensiveLoaded(true)
+      })
     } else {
       setAccessState('locked')
     }
@@ -352,6 +364,16 @@ function App() {
 
   useEffect(() => {
     void checkAccess()
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    void loadOffensiveState().then((state) => {
+      if (!active) return
+      setOffensiveState(state)
+      setOffensiveLoaded(true)
+    })
+    return () => { active = false }
   }, [])
 
   async function handleAccessSubmit(event: FormEvent<HTMLFormElement>) {
@@ -683,6 +705,27 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  function startQuickSimulation() {
+    lastCompletedSimulationRef.current = null
+    const picked = shuffle(filteredQuestionsRef.current).slice(0, QUICK_SIMULATION_SIZE)
+    const ids = picked.map((question) => question.id)
+    const simulation: SavedSimulation = {
+      ids,
+      answers: {},
+      revealed: [],
+      examId: selectedExamId ?? '',
+      studyMode: selectedStudyMode === 'bibliography-questions' ? 'bibliography-questions' : 'exam-questions',
+      lastQuestionId: ids[0] ?? null,
+      updatedAt: new Date().toISOString(),
+    }
+    setSimulationAnswers(simulation.answers)
+    setSimulationRevealed(simulation.revealed)
+    setSimulationIds(ids)
+    setShowQuestionList(true)
+    setSavedSimulation(simulation)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   useEffect(() => {
     if (!simulationComplete || !savedSimulation || simulationIds === null) return
 
@@ -709,6 +752,7 @@ function App() {
     }
     lastCompletedSimulationRef.current = currentKey
     recordCompletedSimulation(completed)
+    void registerOffensiveSimulation().then((state) => setOffensiveState(state))
     setAnswers({ ...answers, ...simulationAnswers })
   }, [simulationComplete, savedSimulation, simulationIds, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, examChoices, recordCompletedSimulation, simulationAnswers, answers])
 
@@ -1036,9 +1080,19 @@ function App() {
                   startSimulation={startSimulation}
                   exitSimulation={() => setSimulationIds(null)}
                   simulationSize={SIMULATION_SIZE}
+                  startQuickSimulation={startQuickSimulation}
+                  quickSimulationSize={QUICK_SIMULATION_SIZE}
                   performanceCorrectCount={performanceCorrectCount}
                   performanceAnsweredCount={performanceAnsweredCount}
                 />
+                {offensiveLoaded && offensiveState && (
+                  <OffensiveCounter
+                    totalOffensives={offensiveState.totalOffensives}
+                    currentStreak={offensiveState.currentStreak}
+                    bestStreak={offensiveState.bestStreak}
+                    offensiveLoggedToday={offensiveState.offensiveLoggedToday}
+                  />
+                )}
                 <div>
                   <div className="mb-4 flex items-end justify-between gap-4">
                     <div>

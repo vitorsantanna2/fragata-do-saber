@@ -78,6 +78,14 @@ export type CompletedSimulation = {
   isSimulation: boolean
 }
 
+export type OffensiveState = {
+  totalOffensives: number
+  currentStreak: number
+  bestStreak: number
+  lastOffensiveDate: string | null
+  offensiveLoggedToday: boolean
+}
+
 export type StudyQuestionSnapshot = {
   exam: string
   subject: string
@@ -89,6 +97,15 @@ export type StudyQuestionSnapshot = {
 }
 
 const STUDY_PROGRESS_KEY = 'study_progress_v1'
+const OFFENSIVE_STATE_KEY = 'offensive_state_v1'
+
+function todayKey() {
+  return new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+}
+
+function blankOffensiveState(): OffensiveState {
+  return { totalOffensives: 0, currentStreak: 0, bestStreak: 0, lastOffensiveDate: null, offensiveLoggedToday: false }
+}
 
 function deduplicateCompletedSimulations(simulations: CompletedSimulation[]): CompletedSimulation[] {
   const seen = new Map<string, CompletedSimulation>()
@@ -163,6 +180,103 @@ export async function saveStudyProgress(progress: StudyProgress) {
   } catch (error) {
     console.warn('Não foi possível salvar o progresso de estudo localmente.', error)
   }
+}
+
+export async function loadOffensiveState(): Promise<OffensiveState> {
+  try {
+    const stored = isNativeApp()
+      ? await getLocalMetadata(OFFENSIVE_STATE_KEY)
+      : window.localStorage.getItem(OFFENSIVE_STATE_KEY)
+    if (!stored) return blankOffensiveState()
+    const state = JSON.parse(stored) as Partial<OffensiveState>
+    return {
+      totalOffensives: state.totalOffensives ?? 0,
+      currentStreak: state.currentStreak ?? 0,
+      bestStreak: state.bestStreak ?? 0,
+      lastOffensiveDate: state.lastOffensiveDate ?? null,
+      offensiveLoggedToday: state.offensiveLoggedToday ?? false,
+    }
+  } catch {
+    return blankOffensiveState()
+  }
+}
+
+export async function saveOffensiveState(state: OffensiveState) {
+  const serialized = JSON.stringify(state)
+  try {
+    if (isNativeApp()) await setLocalMetadata(OFFENSIVE_STATE_KEY, serialized)
+    else window.localStorage.setItem(OFFENSIVE_STATE_KEY, serialized)
+  } catch (error) {
+    console.warn('Não foi possível salvar o estado da ofensiva localmente.', error)
+  }
+}
+
+export async function registerOffensiveAccess(): Promise<OffensiveState> {
+  const state = await loadOffensiveState()
+  const today = todayKey()
+  if (state.offensiveLoggedToday && state.lastOffensiveDate === today) return state
+
+  const next: OffensiveState = {
+    ...state,
+    totalOffensives: state.totalOffensives + 1,
+    offensiveLoggedToday: true,
+    lastOffensiveDate: today,
+  }
+
+  if (state.lastOffensiveDate === null) {
+    next.currentStreak = 1
+    next.bestStreak = 1
+  } else if (state.lastOffensiveDate === today) {
+    // já contado, não altera streak
+  } else {
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayKey = yesterday.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    if (state.lastOffensiveDate === yesterdayKey) {
+      next.currentStreak = state.currentStreak + 1
+      if (next.currentStreak > next.bestStreak) next.bestStreak = next.currentStreak
+    } else {
+      next.currentStreak = 1
+      if (next.currentStreak > next.bestStreak) next.bestStreak = next.currentStreak
+    }
+  }
+
+  await saveOffensiveState(next)
+  return next
+}
+
+export async function registerOffensiveSimulation(): Promise<OffensiveState> {
+  const state = await loadOffensiveState()
+  const today = todayKey()
+  if (state.offensiveLoggedToday && state.lastOffensiveDate === today) return state
+
+  const next: OffensiveState = {
+    ...state,
+    totalOffensives: state.totalOffensives + 1,
+    offensiveLoggedToday: true,
+    lastOffensiveDate: today,
+  }
+
+  if (state.lastOffensiveDate === null) {
+    next.currentStreak = 1
+    next.bestStreak = 1
+  } else if (state.lastOffensiveDate === today) {
+    // não altera streak
+  } else {
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayKey = yesterday.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    if (state.lastOffensiveDate === yesterdayKey) {
+      next.currentStreak = state.currentStreak + 1
+      if (next.currentStreak > next.bestStreak) next.bestStreak = next.currentStreak
+    } else {
+      next.currentStreak = 1
+      if (next.currentStreak > next.bestStreak) next.bestStreak = next.currentStreak
+    }
+  }
+
+  await saveOffensiveState(next)
+  return next
 }
 
 export function getLocalDatabase() {
