@@ -90,8 +90,8 @@ export function QuestionFilters({
             disabled={filteredQuestionsLength === 0}
             onClick={startQuickSimulation}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="mr-1.5 inline-block">
-              <path d="M11.57 3.52l-4.17 5.31H7.5l4.17 5.31h2.67l4.17-5.31H16.5l-4.17-5.31z" />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="mr-1.5 inline-block text-sea">
+              <path d="M13 2L3 14h9l-1 7 7-7h-9l1-7z" />
             </svg>
             Simulado rápido ({Math.min(quickSimulationSize, filteredQuestionsLength)} questões)
           </button>
