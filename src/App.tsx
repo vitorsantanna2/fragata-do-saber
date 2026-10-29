@@ -294,6 +294,7 @@ function App() {
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null)
   const [selectedStudyMode, setSelectedStudyMode] = useState<'exam-questions' | 'bibliography-questions' | 'mind-maps' | null>(null)
   const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
+  const [showQuestionList, setShowQuestionList] = useState(false)
   const [simulationAnswers, setSimulationAnswers] = useState<Record<string, number>>({})
   const reviewQuestionIdRef = useRef<string | null>(null)
   const lastCompletedSimulationRef = useRef<{ examId: string; updatedAt: string } | null>(null)
@@ -564,8 +565,19 @@ function App() {
     setSelectedExamId(null)
     setSelectedStudyMode(null)
     setSimulationIds(null)
+    setShowQuestionList(false)
     setShowPerformance(false)
-  }, [setTopic, setYear, setSelectedExamId, setSelectedStudyMode, setSimulationIds, setShowPerformance])
+  }, [setTopic, setYear, setSelectedExamId, setSelectedStudyMode, setSimulationIds, setShowQuestionList, setShowPerformance])
+
+  useEffect(() => {
+    setShowQuestionList(false)
+  }, [selectedExamId])
+
+  useEffect(() => {
+    if (topic !== 'Todos' || year !== 'Todos' || questionSearch !== '' || bibliographySource !== 'Todos') {
+      setShowQuestionList(true)
+    }
+  }, [topic, year, questionSearch, bibliographySource, setShowQuestionList])
 
   useEffect(() => {
     if (Capacitor.getPlatform() !== 'android') return
@@ -759,6 +771,7 @@ function App() {
     setSimulationAnswers(simulation.answers)
     setSimulationRevealed(simulation.revealed)
     setSimulationIds(ids)
+    setShowQuestionList(true)
     setSavedSimulation(simulation)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -1164,7 +1177,7 @@ function App() {
                     {loading && <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando questões...</p>}
                     {!loading && usingOfflineCache && <p className="rounded-xl border border-[#ead7be] bg-[#fff8ed] p-4 text-sm leading-6 text-[#805b2d]">Sem conexão: estas questões foram carregadas do aparelho. O conteúdo será atualizado quando a internet voltar.</p>}
                     {!loading && loadError && <p className="rounded-xl border border-red-200 bg-white p-5 text-sm leading-6 text-red-800">{loadError}</p>}
-                    {simulationIds === null && !loading && !loadError && filteredQuestions.map((question) => (
+                    {showQuestionList && simulationIds === null && !loading && !loadError && filteredQuestions.map((question) => (
                       <QuestionCard
                         key={question.id}
                         question={question}
@@ -1180,7 +1193,11 @@ function App() {
                         conciseSource={conciseSource}
                       />
                     ))}
-                    {simulationIds === null && !loading && !loadError && filteredQuestions.length === 0 && <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>}
+                    {showQuestionList && simulationIds === null && !loading && !loadError && filteredQuestions.length === 0 && <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>}
+                    {!showQuestionList && simulationIds === null && !loading && !loadError && <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
+                      <p className="font-bold">Questões ainda não carregadas</p>
+                      <p className="mt-2 text-muted">Use os filtros acima para selecionar concurso, matéria, tópico e ano, depois toque em "Gerar simulado" para começar a estudar.</p>
+                    </div>}
                   </div>
                 </div>
               </section>
