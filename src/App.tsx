@@ -1189,7 +1189,7 @@ function App() {
           )}
         </main>
         {showAccountSync && <AccountSyncPanel onClose={() => setShowAccountSync(false)} onSync={() => setManualSyncRevision((revision) => revision + 1)} onUseExistingAccount={(email) => { setAccountLoginEmail(email); setShowAccountLogin(true); setAccessState('locked'); setShowAccountSync(false) }} syncStatus={syncStatus} />}
-        <footer className="flex flex-wrap items-center justify-center gap-2 border-t border-line bg-white/70 px-5 py-6 text-xs text-muted"><span>Fragata do Saber <span className="px-1 text-coral">·</span> Preparação feita com propósito</span><button className="font-semibold transition hover:text-sea" type="button" onClick={() => setAdminMode(true)}>Painel administrativo</button></footer>
+        <footer className="flex flex-wrap items-center justify-center gap-2 border-t border-line bg-white/70 px-5 py-6 text-xs text-muted"><span>Fragata do Saber <span className="px-1 text-coral">·</span> Preparação feita com propósito</span><span className="px-1 text-coral">·</span><span>@vitorsantanna2</span><button className="font-semibold transition hover:text-sea" type="button" onClick={() => setAdminMode(true)}>Painel administrativo</button></footer>
       </div>
     </ErrorBoundary>
   )
