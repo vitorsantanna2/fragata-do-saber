@@ -601,6 +601,11 @@ function App() {
     return examChoice ? { questionId, snapshot, examChoice } : null
   }, [progressUpdatedAt, questionSnapshots])
 
+  const daysSinceJoin = useMemo(() => {
+    if (!offensiveState?.joinedAt) return 0
+    return Math.max(0, Math.ceil((Date.now() - Date.parse(offensiveState.joinedAt)) / (1000 * 60 * 60 * 24)))
+  }, [offensiveState?.joinedAt])
+
   const resumeSavedSimulation = Boolean(savedSimulation && (
     !lastStudiedQuestion || Date.parse(savedSimulation.updatedAt) >= Date.parse(progressUpdatedAt[lastStudiedQuestion.questionId] ?? '')
   ))
@@ -844,6 +849,18 @@ function App() {
                 <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Rumo à aprovação</span>
               </span>
             </a>
+            {offensiveLoaded && offensiveState && (
+              <div className="hidden sm:flex items-center gap-2 px-2 py-1 rounded-lg border border-line bg-white">
+                <div className="flex items-center gap-1.5">
+                  <img className="size-4" src={publicAsset('logo_embarque.png')} alt="Navio" />
+                  <span className="text-xs font-bold text-sea">{daysSinceJoin}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <img className="size-4" src={publicAsset('logo_mar.png')} alt="Mar" />
+                  <span className="text-xs font-bold text-ink">{offensiveState.totalOffensives}</span>
+                </div>
+              </div>
+            )}
             <div className="flex w-full gap-2 sm:w-auto"><button className="flex-1 whitespace-nowrap rounded-lg border border-sea bg-white px-2 py-2 text-xs font-bold text-sea transition hover:bg-sea hover:text-white sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowPerformance(true)}>Meu desempenho</button><button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold transition hover:border-sea hover:text-sea sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowAccountSync(true)}>{accountUser && !accountUser.is_anonymous ? 'Conta' : 'Sincronizar'}</button>{accountUser && !accountUser.is_anonymous ? <button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50 hover:text-red-700 sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={handleLogout}>Sair</button> : null}</div>
           </div>
         </header>
@@ -887,7 +904,15 @@ function App() {
               </div>
             </div>
           </section>
-
+          {offensiveLoaded && offensiveState && (
+            <OffensiveCounter
+              totalOffensives={offensiveState.totalOffensives}
+              currentStreak={offensiveState.currentStreak}
+              bestStreak={offensiveState.bestStreak}
+              offensiveLoggedToday={offensiveState.offensiveLoggedToday}
+              joinedAt={offensiveState.joinedAt}
+            />
+          )}
           {showPerformance ? (
             <Suspense fallback={<div className="mt-8 p-8 text-center"><Skeleton className="w-32 mx-auto mb-2" /><SkeletonText className="w-48 mx-auto" /></div>}>
               <PerformanceDashboard
@@ -1045,15 +1070,6 @@ function App() {
                   </button>
                 </div>
               </div>
-              {offensiveLoaded && offensiveState && (
-                <OffensiveCounter
-                  totalOffensives={offensiveState.totalOffensives}
-                  currentStreak={offensiveState.currentStreak}
-                  bestStreak={offensiveState.bestStreak}
-                  offensiveLoggedToday={offensiveState.offensiveLoggedToday}
-                  joinedAt={offensiveState.joinedAt}
-                />
-              )}
               <section className="mt-4 grid gap-8 lg:grid-cols-[250px_minmax(0,1fr)]" id="questoes">
                 <QuestionFilters
                   questionSearch={questionSearch}
