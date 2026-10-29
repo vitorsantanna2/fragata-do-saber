@@ -46,15 +46,40 @@ function RichText({ text, className }: { text: string; className?: string }) {
           return <Fragment key={index}>{segment}</Fragment>
         }
         const delimiters = isBlockMath ? 2 : 1
-        const math = segment.slice(delimiters, -delimiters)
+        let math = segment.slice(delimiters, -delimiters)
+        let html: string
+        const render = (source: string) => {
+          try {
+            return katex.renderToString(source, {
+              displayMode: isBlockMath,
+              throwOnError: false,
+            })
+          } catch {
+            return ''
+          }
+        }
+        html = render(math)
+        if (!html || html.includes('katex-error')) {
+          const normalized = math.replace(/\\\\/g, '\\')
+          if (normalized !== math) {
+            html = render(normalized)
+            if (html && !html.includes('katex-error')) {
+              math = normalized
+            }
+          }
+        }
+        if (!html || html.includes('katex-error')) {
+          return (
+            <span key={index} className="text-red-600 text-xs" title={`KaTeX: ${math}`}>
+              ${math}$
+            </span>
+          )
+        }
         return (
           <span
             key={index}
             dangerouslySetInnerHTML={{
-              __html: katex.renderToString(math, {
-                displayMode: isBlockMath,
-                throwOnError: false,
-              }),
+              __html: html,
             }}
           />
         )
