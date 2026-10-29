@@ -296,7 +296,7 @@ function App() {
   const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
   const [simulationAnswers, setSimulationAnswers] = useState<Record<string, number>>({})
   const reviewQuestionIdRef = useRef<string | null>(null)
-  const lastCompletedSimulationIdRef = useRef<string | null>(null)
+  const lastCompletedSimulationRef = useRef<{ examId: string; updatedAt: string } | null>(null)
   const [mindMaps, setMindMaps] = useState<MindMap[]>([])
   const [mindMapsLoading, setMindMapsLoading] = useState(false)
   const [mindMapsError, setMindMapsError] = useState('')
@@ -744,6 +744,7 @@ function App() {
   }
 
   function startSimulation() {
+    lastCompletedSimulationRef.current = null
     const picked = shuffle(filteredQuestionsRef.current).slice(0, SIMULATION_SIZE)
     const ids = picked.map((question) => question.id)
     const simulation: SavedSimulation = {
@@ -764,23 +765,30 @@ function App() {
 
   useEffect(() => {
     if (!simulationComplete || !savedSimulation) return
+
+    const currentKey = { examId: savedSimulation.examId, updatedAt: savedSimulation.updatedAt }
+    if (
+      lastCompletedSimulationRef.current?.examId === currentKey.examId &&
+      lastCompletedSimulationRef.current?.updatedAt === currentKey.updatedAt
+    ) {
+      return
+    }
+
     const examChoice = examChoices.find((choice) => choice.id === savedSimulation.examId)
     const completed: CompletedSimulation = {
-      id: `completed-${Date.now()}`,
+      id: `completed-${savedSimulation.examId}-${savedSimulation.updatedAt}`,
       examId: savedSimulation.examId,
       examTitle: examChoice?.title ?? null,
       studyMode: savedSimulation.studyMode,
-      totalQuestions: filteredQuestions.length,
+      totalQuestions: simulationTotal,
       correctAnswers: simulationCorrectCount,
       wrongAnswers: simulationAnsweredCount - simulationCorrectCount,
       score: simulationScore,
       completedAt: new Date().toISOString(),
     }
-    if (lastCompletedSimulationIdRef.current !== completed.id) {
-      lastCompletedSimulationIdRef.current = completed.id
-      recordCompletedSimulation(completed)
-    }
-  }, [simulationComplete, savedSimulation, filteredQuestions, simulationCorrectCount, simulationAnsweredCount, simulationScore, examChoices, recordCompletedSimulation])
+    lastCompletedSimulationRef.current = currentKey
+    recordCompletedSimulation(completed)
+  }, [simulationComplete, savedSimulation, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, examChoices, recordCompletedSimulation])
 
   function recordSimulationAnswer(questionId: string, optionIndex: number) {
     const nextAnswers = { ...simulationAnswers, [questionId]: optionIndex }
