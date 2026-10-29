@@ -10,10 +10,25 @@ type CloudProgressRow = {
   updated_at: string
 }
 
-type SyncInput = Pick<StudyProgress, 'answers' | 'favorites' | 'revealed' | 'progressUpdatedAt' | 'questionSnapshots'>
+type CloudSimulationRow = {
+  user_id: string
+  simulation_id: string
+  exam_id: string
+  exam_title: string | null
+  study_mode: string
+  total_questions: number
+  correct_answers: number
+  wrong_answers: number
+  score: number
+  completed_at: string
+  updated_at: string
+}
 
-export type SyncedProgress = Omit<SyncInput, 'questionSnapshots'> & {
+type SyncInput = Pick<StudyProgress, 'answers' | 'favorites' | 'revealed' | 'progressUpdatedAt' | 'questionSnapshots' | 'completedSimulations'>
+
+export type SyncedProgress = Omit<SyncInput, 'questionSnapshots' | 'completedSimulations'> & {
   questionSnapshots: Record<string, StudyQuestionSnapshot>
+  completedSimulations: StudyProgress['completedSimulations']
 }
 
 export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProgress | null> {
@@ -107,5 +122,66 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
     }
   }
 
-  return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots }
+  // ---- Simulações concluídas ----
+  const remoteSims: CloudSimulationRow[] = []
+  for (let page = 0; ; page += 1) {
+    const { data, error } = await supabase
+      .from('user_simulation_results')
+      .select('user_id,simulation_id,exam_id,exam_title,study_mode,total_questions,correct_answers,wrong_answers,score,completed_at,updated_at')
+      .eq('user_id', user.id)
+      .order('completed_at', { ascending: false })
+      .range(page * 500, page * 500 + 499)
+    if (error) throw error
+    const batch = (data ?? []) as CloudSimulationRow[]
+    remoteSims.push(...batch)
+    if (batch.length < 500) break
+  }
+
+  const remoteSimsById = new Map(remoteSims.map((row) => [row.simulation_id, row]))
+  const simWinners = new Map<string, CloudSimulationRow>()
+  const simUploads: CloudSimulationRow[] = []
+
+  for (const sim of progress.completedSimulations) {
+    const localRow: CloudSimulationRow = {
+      user_id: user.id,
+      simulation_id: sim.id,
+      exam_id: sim.examId,
+      exam_title: sim.examTitle ?? null,
+      study_mode: sim.studyMode,
+      total_questions: sim.totalQuestions,
+      correct_answers: sim.correctAnswers,
+      wrong_answers: sim.wrongAnswers,
+      score: sim.score,
+      completed_at: sim.completedAt,
+      updated_at: sim.completedAt,
+    }
+    const remote = remoteSimsById.get(sim.id)
+    if (!remote || Date.parse(sim.completedAt) > Date.parse(remote.completed_at)) {
+      simUploads.push(localRow)
+      simWinners.set(sim.id, localRow)
+    } else {
+      simWinners.set(sim.id, remote)
+    }
+    remoteSimsById.delete(sim.id)
+  }
+  for (const remote of remoteSimsById.values()) simWinners.set(remote.simulation_id, remote)
+
+  for (let offset = 0; offset < simUploads.length; offset += 100) {
+    const { error } = await supabase.from('user_simulation_results').upsert(simUploads.slice(offset, offset + 100), { onConflict: 'user_id,simulation_id' })
+    if (error) throw error
+  }
+
+  const completedSimulations = [...simWinners.values()].map((row) => ({
+    id: row.simulation_id,
+    examId: row.exam_id,
+    examTitle: row.exam_title ?? null,
+    studyMode: row.study_mode as 'exam-questions' | 'bibliography-questions',
+    totalQuestions: row.total_questions,
+    correctAnswers: row.correct_answers,
+    wrongAnswers: row.wrong_answers,
+    score: Number(row.score),
+    completedAt: row.completed_at,
+  })).sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
+
+  return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations }
 }

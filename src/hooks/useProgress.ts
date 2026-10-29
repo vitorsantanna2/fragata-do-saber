@@ -134,13 +134,13 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
       return
     }
 
-    const fingerprint = JSON.stringify({ userId: accountUser.id, answers, favorites: [...favorites].sort(), revealed: [...revealed].sort(), progressUpdatedAt })
+    const fingerprint = JSON.stringify({ userId: accountUser.id, answers, favorites: [...favorites].sort(), revealed: [...revealed].sort(), progressUpdatedAt, completedSimulations: [...completedSimulations].sort((a, b) => a.id.localeCompare(b.id)) })
     const isManualSync = manualSyncRevision > lastManualSyncRevision.current
     if (!isManualSync && fingerprint === lastSyncedProgressFingerprint.current) return
     let active = true
     const timer = window.setTimeout(() => {
       setSyncStatus('syncing')
-      void syncStudyProgress({ answers, favorites, revealed, progressUpdatedAt, questionSnapshots })
+      void syncStudyProgress({ answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations })
         .then((merged) => {
           if (!active) return
           lastManualSyncRevision.current = manualSyncRevision
@@ -153,6 +153,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
           setRevealed(merged.revealed)
           setProgressUpdatedAt(merged.progressUpdatedAt)
           setQuestionSnapshots(merged.questionSnapshots)
+          setCompletedSimulations(merged.completedSimulations)
           setSyncStatus('synced')
         })
         .catch((error: unknown) => {
@@ -163,7 +164,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         })
     }, 450)
     return () => { active = false; window.clearTimeout(timer) }
-  }, [progressRestored, accountUser, isOnline, answers, favorites, revealed, progressUpdatedAt, questionSnapshots, manualSyncRevision])
+  }, [progressRestored, accountUser, isOnline, answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, manualSyncRevision])
 
   useEffect(() => {
     if (!questions.length) return
