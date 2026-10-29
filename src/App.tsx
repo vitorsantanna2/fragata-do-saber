@@ -296,6 +296,7 @@ function App() {
   const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
   const [showQuestionList, setShowQuestionList] = useState(false)
   const [reviewQuestionId, setReviewQuestionId] = useState<string | null>(null)
+  const [reviewingFromDashboard, setReviewingFromDashboard] = useState(false)
   const [simulationAnswers, setSimulationAnswers] = useState<Record<string, number>>({})
   const reviewQuestionIdRef = useRef<string | null>(null)
   const lastCompletedSimulationRef = useRef<{ examId: string; updatedAt: string } | null>(null)
@@ -567,8 +568,9 @@ function App() {
     setSelectedStudyMode(null)
     setSimulationIds(null)
     setShowQuestionList(false)
+    setReviewingFromDashboard(false)
     setShowPerformance(false)
-  }, [setTopic, setYear, setSelectedExamId, setSelectedStudyMode, setSimulationIds, setShowQuestionList, setShowPerformance])
+  }, [setTopic, setYear, setSelectedExamId, setSelectedStudyMode, setSimulationIds, setShowQuestionList, setReviewingFromDashboard, setShowPerformance])
 
   useEffect(() => {
     if (!reviewQuestionId) return
@@ -716,6 +718,7 @@ function App() {
     setSelectedStudyMode(examId === 'cp-t-informatica' ? null : 'exam-questions')
     setSimulationIds(null)
     setShowQuestionList(false)
+    setReviewingFromDashboard(false)
   }
 
   function continueStudying() {
@@ -767,6 +770,7 @@ function App() {
     setSimulationIds(null)
     setShowQuestionList(true)
     setReviewQuestionId(questionId)
+    setReviewingFromDashboard(true)
     setShowPerformance(false)
   }
 
@@ -1193,31 +1197,61 @@ function App() {
                     {loading && <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando questões...</p>}
                     {!loading && usingOfflineCache && <p className="rounded-xl border border-[#ead7be] bg-[#fff8ed] p-4 text-sm leading-6 text-[#805b2d]">Sem conexão: estas questões foram carregadas do aparelho. O conteúdo será atualizado quando a internet voltar.</p>}
                     {!loading && loadError && <p className="rounded-xl border border-red-200 bg-white p-5 text-sm leading-6 text-red-800">{loadError}</p>}
-                    {showQuestionList && simulationIds === null && !loading && !loadError && (reviewQuestionId ? filteredQuestions.filter((q) => q.id === reviewQuestionId) : filteredQuestions).length > 0 && (reviewQuestionId ? filteredQuestions.filter((q) => q.id === reviewQuestionId) : filteredQuestions).map((question) => (
-                      <div key={question.id} id={`question-${question.id}`} className={reviewQuestionId === question.id ? 'ring-2 ring-sea rounded-lg' : ''}>
-                        <QuestionCard
-                          key={question.id}
-                          question={question}
-                          answerState={answers}
-                          revealedState={revealed}
-                          favorites={favorites}
-                          setAnswers={(value) => setAnswers(value)}
-                          setRevealed={(value) => setRevealed(value)}
-                          setFavorites={(value) => setFavorites(value)}
-                          simulationIds={null}
-                          recordSimulationAnswer={recordSimulationAnswer}
-                          recordSimulationReveal={recordSimulationReveal}
-                          conciseSource={conciseSource}
-                        />
-                        {reviewQuestionId ? <button key={`back-${question.id}`} type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewQuestionId(null); setShowQuestionList(true) }}>Voltar à lista de questões para revisar</button> : null}
-                      </div>
-                    ))}
-                    {showQuestionList && simulationIds === null && !loading && !loadError && (reviewQuestionId ? filteredQuestions.filter((q) => q.id === reviewQuestionId) : filteredQuestions).length === 0 && reviewQuestionId === null && <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>}
-                    {showQuestionList && simulationIds === null && !loading && !loadError && (reviewQuestionId ? filteredQuestions.filter((q) => q.id === reviewQuestionId) : filteredQuestions).length === 0 && reviewQuestionId !== null && <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
-                      <p className="font-bold">Questão não encontrada</p>
-                      <p className="mt-2 text-muted">Esta questão não está mais disponível nos filtros atuais.</p>
-                      <button type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewQuestionId(null); setShowQuestionList(false) }}>Voltar ao painel</button>
-                    </div>}
+                    {showQuestionList && simulationIds === null && !loading && !loadError && (() => {
+                      const questionsToShow = reviewQuestionId
+                        ? filteredQuestions.filter((q) => q.id === reviewQuestionId)
+                        : reviewingFromDashboard
+                          ? filteredQuestions.filter((q) => answers[q.id] !== undefined && answers[q.id] !== q.answer)
+                          : filteredQuestions
+                      if (questionsToShow.length > 0) {
+                        return questionsToShow.map((question) => (
+                          <div key={question.id} id={`question-${question.id}`} className={reviewQuestionId === question.id ? 'ring-2 ring-sea rounded-lg' : ''}>
+                            <QuestionCard
+                              key={question.id}
+                              question={question}
+                              answerState={answers}
+                              revealedState={revealed}
+                              favorites={favorites}
+                              setAnswers={(value) => setAnswers(value)}
+                              setRevealed={(value) => setRevealed(value)}
+                              setFavorites={(value) => setFavorites(value)}
+                              simulationIds={null}
+                              recordSimulationAnswer={recordSimulationAnswer}
+                              recordSimulationReveal={recordSimulationReveal}
+                              conciseSource={conciseSource}
+                            />
+                            {reviewQuestionId ? <button key={`back-${question.id}`} type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewQuestionId(null); setShowQuestionList(true); setReviewingFromDashboard(true) }}>Voltar à lista de questões para revisar</button> : null}
+                            {!reviewQuestionId && reviewingFromDashboard ? <button key={`back-dash-${question.id}`} type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewingFromDashboard(false) }}>Voltar ao painel de desempenho</button> : null}
+                          </div>
+                        ))
+                      }
+                      return null
+                    })()}
+                    {showQuestionList && simulationIds === null && !loading && !loadError && (() => {
+                      const questionsToShow = reviewQuestionId
+                        ? filteredQuestions.filter((q) => q.id === reviewQuestionId)
+                        : reviewingFromDashboard
+                          ? filteredQuestions.filter((q) => answers[q.id] !== undefined && answers[q.id] !== q.answer)
+                          : filteredQuestions
+                      if (questionsToShow.length === 0) {
+                        if (reviewQuestionId) {
+                          return <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
+                            <p className="font-bold">Questão não encontrada</p>
+                            <p className="mt-2 text-muted">Esta questão não está mais disponível nos filtros atuais.</p>
+                            <button type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewQuestionId(null); setShowQuestionList(false); setReviewingFromDashboard(false) }}>Voltar ao painel</button>
+                          </div>
+                        }
+                        if (reviewingFromDashboard) {
+                          return <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
+                            <p className="font-bold">Nenhuma questão para revisar</p>
+                            <p className="mt-2 text-muted">Não há questões erradas com esses filtros.</p>
+                            <button type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewingFromDashboard(false) }}>Voltar ao painel de desempenho</button>
+                          </div>
+                        }
+                        return <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>
+                      }
+                      return null
+                    })()}
                     {!showQuestionList && simulationIds === null && !loading && !loadError && <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
                       <p className="font-bold">Questões ainda não carregadas</p>
                       <p className="mt-2 text-muted">Use os filtros acima para selecionar concurso, matéria, tópico e ano, depois toque em "Gerar simulado" para começar a estudar.</p>
