@@ -714,14 +714,6 @@ function App() {
   }
 
   useEffect(() => {
-    console.log('[DEBUG] useEffect simulação:', {
-      simulationComplete,
-      simulationIds,
-      savedSimulationExamId: savedSimulation?.examId,
-      simulationTotal,
-      simulationAnsweredCount,
-      lastCompletedRef: lastCompletedSimulationRef.current,
-    })
     if (!simulationComplete || !savedSimulation || simulationIds === null) return
 
     const currentKey = { examId: savedSimulation.examId, updatedAt: savedSimulation.updatedAt }
@@ -745,15 +737,6 @@ function App() {
       completedAt: new Date().toISOString(),
       isSimulation: true,
     }
-    console.log('[DEBUG] Simulação concluída:', {
-      examId: savedSimulation.examId,
-      studyMode: savedSimulation.studyMode,
-      simulationTotal,
-      simulationAnsweredCount,
-      simulationCorrectCount,
-      simulationScore,
-      completed,
-    })
     lastCompletedSimulationRef.current = currentKey
     recordCompletedSimulation(completed)
     void registerOffensiveSimulation().then((state) => setOffensiveState(state))
