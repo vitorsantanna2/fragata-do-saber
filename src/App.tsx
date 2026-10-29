@@ -247,6 +247,8 @@ function App() {
     syncStatus,
     offensiveState,
     offensiveLoaded,
+    theme,
+    setTheme,
     setOffensiveState,
     setAnswers,
     setRevealed,
@@ -857,6 +859,9 @@ function App() {
                 </div>
               </div>
             )}
+            <button className="rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold transition hover:border-sea hover:text-sea sm:px-3 sm:text-sm" type="button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}>
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
             <div className="flex w-full gap-2 sm:w-auto"><button className="flex-1 whitespace-nowrap rounded-lg border border-sea bg-white px-2 py-2 text-xs font-bold text-sea transition hover:bg-sea hover:text-white sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowPerformance(true)}>Meu desempenho</button><button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold transition hover:border-sea hover:text-sea sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowAccountSync(true)}>{accountUser && !accountUser.is_anonymous ? 'Conta' : 'Sincronizar'}</button>{accountUser && !accountUser.is_anonymous ? <button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50 hover:text-red-700 sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={handleLogout}>Sair</button> : null}</div>
           </div>
         </header>

@@ -29,6 +29,9 @@ type UseProgressReturn = {
   offensiveState: OffensiveState | null
   offensiveLoaded: boolean
   setOffensiveState: (value: OffensiveState | null) => void
+  theme: 'light' | 'dark'
+  setTheme: (value: 'light' | 'dark') => void
+  themeLoaded: boolean
   setAnswers: (value: Record<string, number>) => void
   setRevealed: (value: string[]) => void
   setFavorites: (value: string[]) => void
@@ -65,6 +68,8 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   const [syncStatus, setSyncStatus] = useState<'local' | 'offline' | 'syncing' | 'synced' | 'error'>('local')
   const [offensiveState, setOffensiveState] = useState<OffensiveState | null>(null)
   const [offensiveLoaded, setOffensiveLoaded] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [themeLoaded, setThemeLoaded] = useState(false)
 
   function recordCompletedSimulation(simulation: CompletedSimulation) {
     setCompletedSimulations((current) => {
@@ -107,6 +112,12 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
       if (!active) return
       setOffensiveState(state)
       setOffensiveLoaded(true)
+    })
+    void loadTheme().then((savedTheme) => {
+      if (!active) return
+      setTheme(savedTheme)
+      document.documentElement.setAttribute('data-theme', savedTheme)
+      setThemeLoaded(true)
     })
     return () => { active = false }
   }, [])
@@ -227,6 +238,25 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
     })
   }, [questions])
 
+  function loadTheme(): Promise<'light' | 'dark'> {
+    return Promise.resolve(
+      (window.localStorage.getItem('theme') as 'light' | 'dark' | null) ?? 'light',
+    )
+  }
+
+  function saveTheme(next: 'light' | 'dark') {
+    try {
+      window.localStorage.setItem('theme', next)
+    } catch {
+      // ignorar falha de storage
+    }
+  }
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    saveTheme(theme)
+  }, [theme])
+
   return {
     answers,
     revealed,
@@ -241,6 +271,9 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
     syncStatus,
     offensiveState,
     offensiveLoaded,
+    theme,
+    themeLoaded,
+    setTheme,
     setOffensiveState,
     setAnswers,
     setRevealed,
