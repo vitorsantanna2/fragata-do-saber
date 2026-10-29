@@ -1193,7 +1193,7 @@ function App() {
                     {loading && <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando questões...</p>}
                     {!loading && usingOfflineCache && <p className="rounded-xl border border-[#ead7be] bg-[#fff8ed] p-4 text-sm leading-6 text-[#805b2d]">Sem conexão: estas questões foram carregadas do aparelho. O conteúdo será atualizado quando a internet voltar.</p>}
                     {!loading && loadError && <p className="rounded-xl border border-red-200 bg-white p-5 text-sm leading-6 text-red-800">{loadError}</p>}
-                    {showQuestionList && simulationIds === null && !loading && !loadError && filteredQuestions.length > 0 && filteredQuestions.map((question) => (
+                    {showQuestionList && simulationIds === null && !loading && !loadError && (reviewQuestionId ? filteredQuestions.filter((q) => q.id === reviewQuestionId) : filteredQuestions).length > 0 && (reviewQuestionId ? filteredQuestions.filter((q) => q.id === reviewQuestionId) : filteredQuestions).map((question) => (
                       <div key={question.id} id={`question-${question.id}`} className={reviewQuestionId === question.id ? 'ring-2 ring-sea rounded-lg' : ''}>
                         <QuestionCard
                           key={question.id}
@@ -1209,12 +1209,14 @@ function App() {
                           recordSimulationReveal={recordSimulationReveal}
                           conciseSource={conciseSource}
                         />
+                        {reviewQuestionId ? <button key={`back-${question.id}`} type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewQuestionId(null); setShowQuestionList(true) }}>Voltar à lista de questões para revisar</button> : null}
                       </div>
                     ))}
-                    {showQuestionList && simulationIds === null && !loading && !loadError && filteredQuestions.length === 0 && reviewQuestionId === null && <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>}
-                    {showQuestionList && simulationIds === null && !loading && !loadError && filteredQuestions.length === 0 && reviewQuestionId !== null && <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
-                      <p className="font-bold">Carregando questões para revisão…</p>
-                      <p className="mt-2 text-muted">As questões serão exibidas assim que o concurso for carregado.</p>
+                    {showQuestionList && simulationIds === null && !loading && !loadError && (reviewQuestionId ? filteredQuestions.filter((q) => q.id === reviewQuestionId) : filteredQuestions).length === 0 && reviewQuestionId === null && <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>}
+                    {showQuestionList && simulationIds === null && !loading && !loadError && (reviewQuestionId ? filteredQuestions.filter((q) => q.id === reviewQuestionId) : filteredQuestions).length === 0 && reviewQuestionId !== null && <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
+                      <p className="font-bold">Questão não encontrada</p>
+                      <p className="mt-2 text-muted">Esta questão não está mais disponível nos filtros atuais.</p>
+                      <button type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewQuestionId(null); setShowQuestionList(false) }}>Voltar ao painel</button>
                     </div>}
                     {!showQuestionList && simulationIds === null && !loading && !loadError && <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
                       <p className="font-bold">Questões ainda não carregadas</p>
