@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PerformanceInfographic } from './PerformanceInfographic'
 
 type StudyQuestionSnapshot = {
   exam: string
@@ -100,6 +101,7 @@ export function PerformanceDashboard({
           {wrong.length ? <div className="mt-3 max-h-80 space-y-2 overflow-y-auto">{wrong.slice(0, 30).map(([id, question]) => <button key={id} type="button" className="w-full rounded-lg border border-line p-3 text-left hover:border-sea" onClick={() => onReview(id, question)}><span className="block text-xs font-bold text-sea">{question.exam} · {question.subject}{question.topic ? ` · ${question.topic}` : ''}</span><span className="mt-1 block text-sm leading-5">{question.prompt}</span><span className="mt-1 block text-xs font-bold text-muted">Toque para revisar</span></button>)}</div> : <p className="mt-3 text-sm leading-6 text-muted">Nenhuma questão errada neste filtro. Questões respondidas são guardadas neste aparelho.</p>}
         </section>
       </div>
+      <PerformanceInfographic snapshots={snapshots} answers={answers} />
       <section className="mt-6 rounded-xl border border-line bg-white p-4 sm:p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3 className="font-display text-lg font-extrabold">Simulados concluídos</h3>
