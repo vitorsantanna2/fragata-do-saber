@@ -1,5 +1,8 @@
 import { useMemo } from 'react'
 
+import shipImage from '/logo_embarque.png'
+import waveImage from '/logo_mar.png'
+
 type OffensiveCounterProps = {
   totalOffensives: number
   currentStreak: number
@@ -26,14 +29,14 @@ export function OffensiveCounter({
       <div className="grid gap-3 sm:grid-cols-2">
         <article className="rounded-lg border border-line bg-white p-3 flex flex-col items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-sea-light flex items-center justify-center">
-            <img src="/logo_embarque.png" alt="Navio" className="w-6 h-6 object-contain" />
+            <img src={shipImage} alt="Navio" className="w-6 h-6 object-contain" />
           </div>
           <p className="text-xs font-bold uppercase tracking-wide text-muted">Dias a bordo</p>
           <p className="font-display text-2xl font-extrabold text-ink">{daysSinceJoin}</p>
         </article>
         <article className="rounded-lg border border-line bg-white p-3 flex flex-col items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-[#fff2e8] flex items-center justify-center">
-            <img src="/logo_mar.png" alt="Mar" className="w-6 h-6 object-contain" />
+            <img src={waveImage} alt="Mar" className="w-6 h-6 object-contain" />
           </div>
           <p className="text-xs font-bold uppercase tracking-wide text-muted">Ofensivas</p>
           <p className="font-display text-2xl font-extrabold text-ink">{totalOffensives}</p>
