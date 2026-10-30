@@ -18,11 +18,18 @@ export function conciseSource(source: string) {
   const normalized = source.replace(/\s+/g, ' ').trim()
   const withoutChapter = normalized.replace(/^cap[íi]tulo\s*\d+[^a-zA-Záàâãéèêíìîóòôõúùûç]*(?:[-:–—]\s*)?/iu, '')
   const cleaned = withoutChapter.replace(/^[\s:;-]+/, '').trim() || normalized
-  const edition = /\b\d+\s*(?:[ªaºo])?\s*\.?\s*(?:ed\.?|edição)(?![\p{L}])/iu.exec(cleaned)
-  if (!edition || edition.index === undefined) return cleaned
+
+  const metaMatch = /\b(?:versão|cap\.?|capítulo)\b\s*[\d.,–—]/iu.exec(cleaned)
+  let result = cleaned
+  if (metaMatch && metaMatch.index !== undefined) {
+    result = cleaned.slice(0, metaMatch.index).replace(/[\s.,;:]+$/, '').trim()
+  }
+
+  const edition = /\b\d+\s*(?:[ªaºo])?\s*\.?\s*(?:ed\.?|edição)(?![\p{L}])/iu.exec(result)
+  if (!edition || edition.index === undefined) return result
 
   const end = edition.index + edition[0].length
-  return `${cleaned.slice(0, end).replace(/[\s.,;:]+$/, '')}.`
+  return `${result.slice(0, end).replace(/[\s.,;:]+$/, '')}.`
 }
 
 export function conciseTopic(topic: string) {
