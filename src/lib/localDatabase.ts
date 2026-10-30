@@ -230,7 +230,14 @@ export async function saveOffensiveState(state: OffensiveState) {
 export async function registerOffensiveAccess(): Promise<OffensiveState> {
   const state = await loadOffensiveState()
   const today = todayKey()
-  if (state.offensiveLoggedToday && state.lastOffensiveDate === today) return state
+  if (state.lastOffensiveDate === today) {
+    if (state.offensiveLoggedToday !== true || state.lastOffensiveDate !== today) {
+      const fixed: OffensiveState = { ...state, offensiveLoggedToday: true, lastOffensiveDate: today }
+      await saveOffensiveState(fixed)
+      return fixed
+    }
+    return state
+  }
 
   const next: OffensiveState = {
     ...state,
@@ -242,8 +249,6 @@ export async function registerOffensiveAccess(): Promise<OffensiveState> {
   if (state.lastOffensiveDate === null) {
     next.currentStreak = 1
     next.bestStreak = 1
-  } else if (state.lastOffensiveDate === today) {
-    // já contado, não altera streak
   } else {
     const yesterdayKeyValue = yesterdayKey()
     if (state.lastOffensiveDate === yesterdayKeyValue) {
@@ -262,7 +267,14 @@ export async function registerOffensiveAccess(): Promise<OffensiveState> {
 export async function registerOffensiveSimulation(): Promise<OffensiveState> {
   const state = await loadOffensiveState()
   const today = todayKey()
-  if (state.offensiveLoggedToday && state.lastOffensiveDate === today) return state
+  if (state.lastOffensiveDate === today) {
+    if (state.offensiveLoggedToday !== true) {
+      const fixed: OffensiveState = { ...state, offensiveLoggedToday: true }
+      await saveOffensiveState(fixed)
+      return fixed
+    }
+    return state
+  }
 
   const next: OffensiveState = {
     ...state,
@@ -274,8 +286,6 @@ export async function registerOffensiveSimulation(): Promise<OffensiveState> {
   if (state.lastOffensiveDate === null) {
     next.currentStreak = 1
     next.bestStreak = 1
-  } else if (state.lastOffensiveDate === today) {
-    // não altera streak
   } else {
     const yesterdayKeyValue = yesterdayKey()
     if (state.lastOffensiveDate === yesterdayKeyValue) {

@@ -240,7 +240,11 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
 
   const remoteRow = remote as CloudOffensiveStateRow | null
   const now = new Date().toISOString()
-  let updatedAt = now
+  const updatedAt = now
+
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
+  const localDate = toIsoDate(state.lastOffensiveDate)
+  const remoteDate = remoteRow ? toIsoDate(remoteRow.last_offensive_date) : null
 
   let next: OffensiveState = { ...state }
   let shouldUpload = false
@@ -253,25 +257,44 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
     }
     shouldUpload = true
   } else {
-    const remoteUpdated = Date.parse(remoteRow.updated_at)
-    const localUpdated = Date.parse(toIsoDate(state.lastOffensiveDate) ?? state.joinedAt ?? now)
-
-    if (remoteUpdated > localUpdated) {
+    if (localDate === today && remoteDate !== today) {
+      next = {
+        ...state,
+        joinedAt: state.joinedAt ?? remoteRow.joined_at,
+        lastOffensiveDate: toIsoDate(state.lastOffensiveDate),
+        offensiveLoggedToday: true,
+      }
+      shouldUpload = true
+    } else if (remoteDate === today && localDate !== today) {
       next = {
         totalOffensives: remoteRow.total_offensives,
         currentStreak: remoteRow.current_streak,
         bestStreak: remoteRow.best_streak,
         lastOffensiveDate: remoteRow.last_offensive_date,
-        offensiveLoggedToday: remoteRow.offensive_logged_today,
+        offensiveLoggedToday: true,
         joinedAt: remoteRow.joined_at,
       }
     } else {
-      next = {
-        ...state,
-        joinedAt: state.joinedAt ?? remoteRow.joined_at,
-        lastOffensiveDate: toIsoDate(state.lastOffensiveDate),
+      const remoteUpdated = Date.parse(remoteRow.updated_at)
+      const localUpdated = Date.parse((toIsoDate(state.lastOffensiveDate) ?? state.joinedAt ?? now) + 'T00:00:00-03:00') || Date.parse(remoteRow.updated_at)
+
+      if (remoteUpdated > localUpdated) {
+        next = {
+          totalOffensives: remoteRow.total_offensives,
+          currentStreak: remoteRow.current_streak,
+          bestStreak: remoteRow.best_streak,
+          lastOffensiveDate: remoteRow.last_offensive_date,
+          offensiveLoggedToday: remoteRow.offensive_logged_today,
+          joinedAt: remoteRow.joined_at,
+        }
+      } else {
+        next = {
+          ...state,
+          joinedAt: state.joinedAt ?? remoteRow.joined_at,
+          lastOffensiveDate: toIsoDate(state.lastOffensiveDate),
+        }
+        shouldUpload = true
       }
-      shouldUpload = true
     }
   }
 
