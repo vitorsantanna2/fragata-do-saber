@@ -5,7 +5,7 @@ import {
   readCachedQuestions,
   type CachedQuestionRow,
 } from '../lib/localDatabase'
-import { normalizeSearchText, conciseSource } from '../lib/utils'
+import { normalizeSearchText, conciseSource, conciseTopic } from '../lib/utils'
 
 export type Question = {
   id: string
@@ -188,7 +188,7 @@ export function useQuestions({
   }, [selectedExamId, selectedStudyMode, examChoices, toQuestion])
 
   const topics = useMemo(
-    () => ['Todos', ...new Set(questions.flatMap((question) => question.topic ? [question.topic] : []))],
+    () => ['Todos', ...new Set(questions.flatMap((question) => question.topic ? [conciseTopic(question.topic)] : []))],
     [questions],
   )
   const years = useMemo(
@@ -217,7 +217,7 @@ export function useQuestions({
       const matchesSearch = !normalizedSearch || normalizeSearchText(searchableText).includes(normalizedSearch)
 
       return matchesSearch &&
-        (topic === 'Todos' || question.topic === topic) &&
+        (topic === 'Todos' || conciseTopic(question.topic ?? '') === topic) &&
         (selectedStudyMode !== 'bibliography-questions' || bibliographySource === 'Todos' || (question.source !== null && conciseSource(question.source) === bibliographySource)) &&
         (year === 'Todos' || question.year === year)
     })

@@ -22,3 +22,12 @@ export function conciseSource(source: string) {
   const end = edition.index + edition[0].length
   return `${normalized.slice(0, end).replace(/[\s.,;:]+$/, '')}.`
 }
+
+export function conciseTopic(topic: string) {
+  const normalized = topic.replace(/\s+/g, ' ').trim()
+  const chapter = /^cap[íi]tulo\s*\d+[^a-zA-Záàâãéèêíìîóòôõúùûç]*(?:[-:–—]\s*)?/iu.exec(normalized)
+  if (!chapter || chapter.index === undefined) return normalized
+
+  const after = normalized.slice(chapter[0].length).replace(/^[\s:;-]+/, '')
+  return after || normalized
+}

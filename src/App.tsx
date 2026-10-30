@@ -26,7 +26,7 @@ import { ExamChoiceGrid, examChoices } from './components/ExamChoiceGrid'
 import { QuestionFilters } from './components/QuestionFilters'
 import { QuestionCard } from './components/QuestionCard'
 import { MindMapViewer } from './components/MindMapViewer'
-import { shuffle, conciseSource } from './lib/utils'
+import { shuffle, conciseSource, conciseTopic } from './lib/utils'
 import { useQuestions } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
 
@@ -921,7 +921,7 @@ function App() {
                   <span className="min-w-0 flex-1">
                     <span className="block text-xs font-bold uppercase tracking-[0.12em] text-sea">Continue estudando</span>
                     <span className="mt-1 block truncate font-display text-lg font-extrabold text-ink">{resumeSavedSimulation && savedSimulation ? examChoices.find((choice) => choice.id === savedSimulation.examId)?.title ?? 'Seu simulado' : lastStudiedQuestion?.examChoice.title}</span>
-                    <span className="mt-1 block truncate text-sm text-muted">{resumeSavedSimulation && savedSimulation ? `${savedSimulation.ids.length} questões no último simulado · retome de onde parou` : `${lastStudiedQuestion?.snapshot.subject} · ${lastStudiedQuestion?.snapshot.topic || 'Última questão estudada'}`}</span>
+                    <span className="mt-1 block truncate text-sm text-muted">{resumeSavedSimulation && savedSimulation ? `${savedSimulation.ids.length} questões no último simulado · retome de onde parou` : `${lastStudiedQuestion?.snapshot.subject} · ${lastStudiedQuestion?.snapshot.topic ? conciseTopic(lastStudiedQuestion.snapshot.topic) : 'Última questão estudada'}`}</span>
                   </span>
                   <span className="hidden shrink-0 rounded-lg bg-white px-4 py-2 text-sm font-bold text-sea sm:block">Retomar →</span>
                 </button>
