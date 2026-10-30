@@ -105,6 +105,12 @@ function todayKey() {
   return now.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
 }
 
+function yesterdayKey() {
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  return yesterday.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
+}
+
 function blankOffensiveState(): OffensiveState {
   return { totalOffensives: 0, currentStreak: 0, bestStreak: 0, lastOffensiveDate: null, offensiveLoggedToday: false, joinedAt: null }
 }
@@ -239,10 +245,8 @@ export async function registerOffensiveAccess(): Promise<OffensiveState> {
   } else if (state.lastOffensiveDate === today) {
     // já contado, não altera streak
   } else {
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayKey = yesterday.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
-    if (state.lastOffensiveDate === yesterdayKey) {
+    const yesterdayKeyValue = yesterdayKey()
+    if (state.lastOffensiveDate === yesterdayKeyValue) {
       next.currentStreak = state.currentStreak + 1
       if (next.currentStreak > next.bestStreak) next.bestStreak = next.currentStreak
     } else {
@@ -273,10 +277,8 @@ export async function registerOffensiveSimulation(): Promise<OffensiveState> {
   } else if (state.lastOffensiveDate === today) {
     // não altera streak
   } else {
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayKey = yesterday.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
-    if (state.lastOffensiveDate === yesterdayKey) {
+    const yesterdayKeyValue = yesterdayKey()
+    if (state.lastOffensiveDate === yesterdayKeyValue) {
       next.currentStreak = state.currentStreak + 1
       if (next.currentStreak > next.bestStreak) next.bestStreak = next.currentStreak
     } else {
