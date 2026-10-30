@@ -16,11 +16,13 @@ export function normalizeSearchText(value: string) {
 
 export function conciseSource(source: string) {
   const normalized = source.replace(/\s+/g, ' ').trim()
-  const edition = /\b\d+\s*(?:[ªaºo])?\s*\.?\s*(?:ed\.?|edição)(?![\p{L}])/iu.exec(normalized)
-  if (!edition || edition.index === undefined) return normalized
+  const withoutChapter = normalized.replace(/^cap[íi]tulo\s*\d+[^a-zA-Záàâãéèêíìîóòôõúùûç]*(?:[-:–—]\s*)?/iu, '')
+  const cleaned = withoutChapter.replace(/^[\s:;-]+/, '').trim() || normalized
+  const edition = /\b\d+\s*(?:[ªaºo])?\s*\.?\s*(?:ed\.?|edição)(?![\p{L}])/iu.exec(cleaned)
+  if (!edition || edition.index === undefined) return cleaned
 
   const end = edition.index + edition[0].length
-  return `${normalized.slice(0, end).replace(/[\s.,;:]+$/, '')}.`
+  return `${cleaned.slice(0, end).replace(/[\s.,;:]+$/, '')}.`
 }
 
 export function conciseTopic(topic: string) {
