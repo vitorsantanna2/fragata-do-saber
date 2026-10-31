@@ -204,7 +204,7 @@ export async function loadOffensiveState(): Promise<OffensiveState> {
       return initial
     }
     const state = JSON.parse(stored) as Partial<OffensiveState>
-    return {
+    const loaded: OffensiveState = {
       totalOffensives: state.totalOffensives ?? 0,
       currentStreak: state.currentStreak ?? 0,
       bestStreak: state.bestStreak ?? 0,
@@ -212,6 +212,13 @@ export async function loadOffensiveState(): Promise<OffensiveState> {
       offensiveLoggedToday: state.offensiveLoggedToday ?? false,
       joinedAt: state.joinedAt ?? null,
     }
+    const today = todayKey()
+    if (loaded.lastOffensiveDate === today) {
+      if (loaded.offensiveLoggedToday !== true) loaded.offensiveLoggedToday = true
+      if ((loaded.currentStreak ?? 0) < 1 && (loaded.totalOffensives ?? 0) >= 1) loaded.currentStreak = 1
+      if ((loaded.bestStreak ?? 0) < (loaded.currentStreak ?? 0)) loaded.bestStreak = loaded.currentStreak ?? 0
+    }
+    return loaded
   } catch {
     return blankOffensiveState()
   }
@@ -231,12 +238,14 @@ export async function registerOffensiveAccess(): Promise<OffensiveState> {
   const state = await loadOffensiveState()
   const today = todayKey()
   if (state.lastOffensiveDate === today) {
-    if (state.offensiveLoggedToday !== true || state.lastOffensiveDate !== today) {
-      const fixed: OffensiveState = { ...state, offensiveLoggedToday: true, lastOffensiveDate: today }
+    const fixed: OffensiveState = { ...state }
+    if (fixed.offensiveLoggedToday !== true) fixed.offensiveLoggedToday = true
+    if ((fixed.currentStreak ?? 0) < 1) fixed.currentStreak = 1
+    if ((fixed.bestStreak ?? 0) < (fixed.currentStreak ?? 1)) fixed.bestStreak = fixed.currentStreak ?? 1
+    if (JSON.stringify(fixed) !== JSON.stringify(state)) {
       await saveOffensiveState(fixed)
-      return fixed
     }
-    return state
+    return fixed
   }
 
   const next: OffensiveState = {
@@ -252,13 +261,17 @@ export async function registerOffensiveAccess(): Promise<OffensiveState> {
   } else {
     const yesterdayKeyValue = yesterdayKey()
     if (state.lastOffensiveDate === yesterdayKeyValue) {
-      next.currentStreak = state.currentStreak + 1
-      if (next.currentStreak > next.bestStreak) next.bestStreak = next.currentStreak
+      next.currentStreak = (state.currentStreak ?? 0) + 1
+      if ((next.currentStreak ?? 0) > (next.bestStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
     } else {
       next.currentStreak = 1
-      if (next.currentStreak > next.bestStreak) next.bestStreak = next.currentStreak
+      if ((next.currentStreak ?? 0) > (next.bestStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
     }
   }
+
+  if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
+  if ((next.currentStreak ?? 0) < 1) next.currentStreak = 1
+  if ((next.bestStreak ?? 0) < 1) next.bestStreak = 1
 
   await saveOffensiveState(next)
   return next
@@ -268,12 +281,14 @@ export async function registerOffensiveSimulation(): Promise<OffensiveState> {
   const state = await loadOffensiveState()
   const today = todayKey()
   if (state.lastOffensiveDate === today) {
-    if (state.offensiveLoggedToday !== true) {
-      const fixed: OffensiveState = { ...state, offensiveLoggedToday: true }
+    const fixed: OffensiveState = { ...state }
+    if (fixed.offensiveLoggedToday !== true) fixed.offensiveLoggedToday = true
+    if ((fixed.currentStreak ?? 0) < 1) fixed.currentStreak = 1
+    if ((fixed.bestStreak ?? 0) < (fixed.currentStreak ?? 1)) fixed.bestStreak = fixed.currentStreak ?? 1
+    if (JSON.stringify(fixed) !== JSON.stringify(state)) {
       await saveOffensiveState(fixed)
-      return fixed
     }
-    return state
+    return fixed
   }
 
   const next: OffensiveState = {
@@ -289,13 +304,17 @@ export async function registerOffensiveSimulation(): Promise<OffensiveState> {
   } else {
     const yesterdayKeyValue = yesterdayKey()
     if (state.lastOffensiveDate === yesterdayKeyValue) {
-      next.currentStreak = state.currentStreak + 1
-      if (next.currentStreak > next.bestStreak) next.bestStreak = next.currentStreak
+      next.currentStreak = (state.currentStreak ?? 0) + 1
+      if ((next.currentStreak ?? 0) > (next.bestStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
     } else {
       next.currentStreak = 1
-      if (next.currentStreak > next.bestStreak) next.bestStreak = next.currentStreak
+      if ((next.currentStreak ?? 0) > (next.bestStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
     }
   }
+
+  if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
+  if ((next.currentStreak ?? 0) < 1) next.currentStreak = 1
+  if ((next.bestStreak ?? 0) < 1) next.bestStreak = 1
 
   await saveOffensiveState(next)
   return next
