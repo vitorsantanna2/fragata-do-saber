@@ -112,7 +112,7 @@ function yesterdayKey() {
 }
 
 function blankOffensiveState(): OffensiveState {
-  return { totalOffensives: 0, currentStreak: 0, bestStreak: 0, lastOffensiveDate: null, offensiveLoggedToday: false, joinedAt: null }
+  return { totalOffensives: 0, currentStreak: 0, bestStreak: 0, lastOffensiveDate: null, offensiveLoggedToday: false, joinedAt: new Date().toISOString() }
 }
 
 function deduplicateCompletedSimulations(simulations: CompletedSimulation[]): CompletedSimulation[] {
@@ -210,7 +210,7 @@ export async function loadOffensiveState(): Promise<OffensiveState> {
       bestStreak: state.bestStreak ?? 0,
       lastOffensiveDate: state.lastOffensiveDate ?? null,
       offensiveLoggedToday: state.offensiveLoggedToday ?? false,
-      joinedAt: state.joinedAt ?? null,
+      joinedAt: state.joinedAt ?? new Date().toISOString(),
     }
     const today = todayKey()
     if (loaded.lastOffensiveDate === today) {

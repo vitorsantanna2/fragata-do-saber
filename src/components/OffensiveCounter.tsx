@@ -24,7 +24,13 @@ export function OffensiveCounter({
 }: OffensiveCounterProps) {
   const daysSinceJoin = useMemo(() => {
     if (!joinedAt) return 0
-    return Math.max(0, Math.ceil((Date.now() - Date.parse(joinedAt)) / (1000 * 60 * 60 * 24)))
+    const start = Date.parse(joinedAt)
+    if (Number.isNaN(start)) return 0
+    const now = Date.now()
+    const diffMs = now - start
+    if (diffMs < 0) return 0
+    const days = diffMs / (1000 * 60 * 60 * 24)
+    return Math.max(0, Math.floor(days) + 1)
   }, [joinedAt])
 
   const sectionClass = compact
