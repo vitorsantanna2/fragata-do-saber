@@ -10,6 +10,7 @@ import { normalizeSearchText, conciseSource, conciseTopic } from '../lib/utils'
 import { loadOfflineQuestionAnswers } from '../lib/questionAnswers'
 import { loadQuestionCatalog, toStudyQuestion } from '../lib/questionCatalog'
 import type { ExamChoice } from '../lib/exams'
+import { matchesTrackStep, type TrackStep } from '../lib/studyTracks'
 
 export type Question = {
   id: string
@@ -31,6 +32,7 @@ export type Question = {
 }
 
 type UseQuestionsProps = {
+  trackStep?: TrackStep | null
   selectedExamId: string | null
   selectedStudyMode: 'exam-questions' | 'bibliography-questions' | null
   examChoices: ExamChoice[]
@@ -57,10 +59,12 @@ type UseQuestionsReturn = {
 }
 
 export function useQuestions({
+  trackStep,
   selectedExamId,
   selectedStudyMode,
   examChoices,
 }: UseQuestionsProps): UseQuestionsReturn {
+  const mixedPractice = !!trackStep
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -90,6 +94,7 @@ export function useQuestions({
     const questionType: 'exam' | 'bibliography' = selectedStudyMode === 'bibliography-questions'
       ? 'bibliography'
       : 'exam'
+    const questionTypes: ('exam' | 'bibliography')[] = mixedPractice ? ['exam', 'bibliography'] : [questionType]
 
     const selectedExam = examChoices.find((choice) => choice.id === selectedExamId)
     if (!selectedExam) {
@@ -108,7 +113,7 @@ export function useQuestions({
       setUsingOfflineCache(false)
 
       try {
-        cachedRows = await readCachedQuestions(exam.exam, exam.subject, questionType)
+        cachedRows = (await Promise.all(questionTypes.map((type) => readCachedQuestions(exam.exam, exam.subject, type)))).flat()
         if (!active) return
         if (cachedRows.length > 0) {
           setQuestions(cachedRows.map(toQuestion))
@@ -131,8 +136,9 @@ export function useQuestions({
         return
       }
 
-      const questionRows = await loadQuestionCatalog(exam.exam, exam.subject, questionType, () => active)
-      if (!active || !questionRows) return
+      const catalogs = await Promise.all(questionTypes.map((type) => loadQuestionCatalog(exam.exam, exam.subject, type, () => active)))
+      if (!active || catalogs.some((catalog) => !catalog)) return
+      const questionRows = catalogs.flatMap((catalog) => catalog ?? [])
       const questionIds = questionRows.map((question) => question.id)
       const native = isNativeApp()
       let attemptsByQuestionId = new Map<string, { correct_option: number; explanation: string | null }>()
@@ -170,7 +176,9 @@ export function useQuestions({
         }
       }) as CachedQuestionRow[]
       if (native) {
-        await cacheQuestions(safeQuestionRows, exam.exam, exam.subject, questionType)
+        for (const type of questionTypes) {
+          await cacheQuestions(safeQuestionRows.filter((row) => row.question_type === type), exam.exam, exam.subject, type)
+        }
         if (!active) return
       }
       setUsingOfflineCache(false)
@@ -193,19 +201,20 @@ export function useQuestions({
     })
 
     return () => { active = false }
-  }, [selectedExamId, selectedStudyMode, examChoices, toQuestion])
+  }, [selectedExamId, selectedStudyMode, examChoices, toQuestion, mixedPractice])
 
+  const trackQuestions = useMemo(() => trackStep ? questions.filter((question) => matchesTrackStep(question, trackStep)) : questions, [questions, trackStep])
   const topics = useMemo(
-    () => ['Todos', ...new Set(questions.flatMap((question) => question.topic ? [conciseTopic(question.topic)] : []))],
-    [questions],
+    () => ['Todos', ...new Set(trackQuestions.flatMap((question) => question.topic ? [conciseTopic(question.topic)] : []))],
+    [trackQuestions],
   )
   const years = useMemo(
-    () => ['Todos', ...new Set(questions.map((question) => question.year).filter(Boolean))],
-    [questions],
+    () => ['Todos', ...new Set(trackQuestions.map((question) => question.year).filter(Boolean))],
+    [trackQuestions],
   )
   const bibliographySources = useMemo(
-    () => ['Todos', ...new Set(questions.flatMap((question) => question.source ? [conciseSource(question.source)] : []))],
-    [questions],
+    () => ['Todos', ...new Set(trackQuestions.flatMap((question) => question.source ? [conciseSource(question.source)] : []))],
+    [trackQuestions],
   )
 
   const filteredQuestions = useMemo(() => {
@@ -225,11 +234,12 @@ export function useQuestions({
       const matchesSearch = !normalizedSearch || normalizeSearchText(searchableText).includes(normalizedSearch)
 
       return matchesSearch &&
+        (!trackStep || matchesTrackStep(question, trackStep)) &&
         (topic === 'Todos' || conciseTopic(question.topic ?? '') === topic) &&
         (selectedStudyMode !== 'bibliography-questions' || bibliographySource === 'Todos' || (question.source !== null && conciseSource(question.source) === bibliographySource)) &&
         (year === 'Todos' || question.year === year)
     })
-  }, [questions, topic, year, bibliographySource, selectedStudyMode, questionSearch])
+  }, [questions, topic, year, bibliographySource, selectedStudyMode, questionSearch, trackStep])
 
   const setQuestionAnswerResult = useCallback((questionId: string, result: { correctOption: number; explanation: string | null }) => {
     setQuestions((current) => current.map((question) => question.id === questionId

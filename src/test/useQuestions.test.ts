@@ -52,6 +52,7 @@ vi.mock('../lib/localDatabase', () => ({
 
 import { useQuestions } from '../hooks/useQuestions'
 import { readCachedQuestions } from '../lib/localDatabase'
+import { studyTracks } from '../lib/studyTracks'
 
 function renderUseQuestions({
   selectedExamId = 'cp-t-informatica',
@@ -66,6 +67,22 @@ function renderUseQuestions({
 }
 
 describe('useQuestions', () => {
+  it('restricts track practice and filter options to mapped topics from the correct contest', async () => {
+    vi.mocked(readCachedQuestions).mockImplementation(async (_exam, _subject, type) => type === 'exam'
+      ? mockCachedRows.map((row, index) => ({ ...row, exam: 'CP-T', topic: index === 0 ? 'Memória cache' : 'SQL / consultas' }))
+      : [{ ...mockCachedRows[0], id: 'book1', exam: 'CP-T', topic: 'Memória cache', question_type: 'bibliography' }])
+    const choices = [{ id: 'cp-t-informatica', group: 'Concursos', title: 'CP-T', description: '', exam: 'CP-T', subject: 'Informática', image: '' }]
+    const { result } = renderHook(() => useQuestions({ selectedExamId: 'cp-t-informatica', selectedStudyMode: 'exam-questions', examChoices: choices, trackStep: studyTracks[0].steps[0] }))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.filteredQuestions.map((question) => question.id)).toEqual(['q1', 'book1'])
+    expect(readCachedQuestions).toHaveBeenCalledWith('CP-T', 'Informática', 'exam')
+    expect(readCachedQuestions).toHaveBeenCalledWith('CP-T', 'Informática', 'bibliography')
+    expect(result.current.topics).toEqual(['Todos', 'Memória cache'])
+    expect(result.current.years).toEqual(['Todos', '2020', 'Bibliografia'])
+    act(() => result.current.setQuestionSearch('banco de dados'))
+    expect(result.current.filteredQuestions).toEqual([])
+    expect(result.current.questions).toHaveLength(3)
+  })
   it('waits for a study resource to be chosen in every contest focus home', () => {
     const { result } = renderUseQuestions({
       selectedExamId: 'ea-hsg', selectedStudyMode: null,

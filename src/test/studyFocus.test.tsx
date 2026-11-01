@@ -45,7 +45,7 @@ describe('contest study focus', () => {
   })
 
   it('offers only resources that are available for the chosen contest', () => {
-    expect(getFocusResources(cpt).map((resource) => resource.id)).toEqual(['exam-questions', 'bibliography-questions', 'mind-maps', 'scheduled-reviews', 'performance'])
+    expect(getFocusResources(cpt).map((resource) => resource.id)).toEqual(['exam-questions', 'study-tracks', 'bibliography-questions', 'mind-maps', 'scheduled-reviews', 'performance'])
     expect(getFocusResources(hsg).map((resource) => resource.id)).toEqual(['exam-questions', 'scheduled-reviews', 'performance'])
   })
 

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { getSimulationResult } from '../lib/simulationResults'
 import { ReviewConfidencePicker } from './ReviewConfidencePicker'
 import type { ReviewConfidence, ReviewSchedules } from '../lib/scheduledReviews'
@@ -47,6 +47,7 @@ export function Simulation({
   reviewSchedules,
   onReviewConfidence,
 }: SimulationProps) {
+  const resultRef = useRef<HTMLElement>(null)
   const byId = useMemo(() => new Map(questions.map((q) => [q.id, q])), [questions])
   const visibleQuestions = useMemo(() => {
     if (!simulationIds) return questions
@@ -61,6 +62,12 @@ export function Simulation({
     score: simulationScore,
   } = getSimulationResult(questions, simulationIds, simulationAnswers)
 
+  useEffect(() => {
+    if (!simulationComplete) return
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    resultRef.current?.scrollIntoView?.({ behavior: reducedMotion ? 'instant' : 'smooth', block: 'start' })
+  }, [simulationComplete])
+
   if (!simulationIds) return null
 
   if (visibleQuestions.length === 0) {
@@ -74,7 +81,7 @@ export function Simulation({
   return (
     <>
       {simulationComplete && (
-        <section className="rounded-xl border border-sea/20 bg-sea-light p-5" aria-live="polite">
+        <section ref={resultRef} className="scroll-mt-6 rounded-xl border border-sea/20 bg-sea-light p-5" aria-live="polite">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Simulado concluído</p>
           <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
             <div>

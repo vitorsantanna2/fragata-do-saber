@@ -49,6 +49,8 @@ export type StudyProgress = {
 }
 
 export type SavedSimulation = {
+  trackId?: string
+  trackStepId?: string
   id?: string
   ids: string[]
   answers: Record<string, number>

@@ -41,15 +41,28 @@ afterEach(() => { cleanup(); vi.clearAllMocks() })
 
 describe('offline simulation', () => {
   it('finishes, calculates the score and shows downloaded explanations without network requests', async () => {
+    const scroll = vi.fn()
+    const originalScroll = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView')
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scroll })
+    try {
     const user = userEvent.setup()
     render(<OfflineSimulation />)
     await user.click(screen.getByRole('button', { name: /Primeira correta/ }))
+    expect(scroll).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: /Segunda errada/ }))
     const summary = screen.getByText('Simulado concluído').closest('section')!
+    expect(scroll).toHaveBeenCalledTimes(1)
+    expect(scroll.mock.instances[0]).toBe(summary)
+    expect(scroll).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
     expect(within(summary).getByText('1 de 2 questões corretas')).not.toBeNull()
     expect(summary.textContent).toContain('50')
     await user.click(screen.getAllByRole('button', { name: 'Ver gabarito' })[0])
     expect(screen.getByText('Explicação baixada')).not.toBeNull()
     expect(mocks.rpc).not.toHaveBeenCalled()
+    expect(scroll).toHaveBeenCalledTimes(1)
+    } finally {
+      if (originalScroll) Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', originalScroll)
+      else Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView')
+    }
   })
 })

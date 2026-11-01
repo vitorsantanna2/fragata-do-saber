@@ -2,7 +2,7 @@ import type { ExamChoice } from './exams'
 import type { StudyProgress } from './localDatabaseTypes'
 import type { ReviewSchedules } from './scheduledReviews'
 
-export type FocusResource = 'exam-questions' | 'bibliography-questions' | 'mind-maps' | 'scheduled-reviews' | 'performance'
+export type FocusResource = 'exam-questions' | 'bibliography-questions' | 'mind-maps' | 'scheduled-reviews' | 'performance' | 'study-tracks'
 type FocusResourceInfo = { id: FocusResource; title: string; description: string; icon: string }
 type FocusData = Pick<StudyProgress, 'answers' | 'questionSnapshots' | 'progressUpdatedAt' | 'completedSimulations'> & { reviewSchedules: ReviewSchedules }
 
@@ -25,6 +25,7 @@ export function getFocusResources(exam: ExamChoice): FocusResourceInfo[] {
     { id: 'exam-questions', title: 'Questões de provas', description: 'Pratique as matérias deste concurso e monte seus simulados.', icon: '✓' },
   ]
   if (exam.id === 'cp-t-informatica') resources.push(
+    { id: 'study-tracks', title: 'Trilhas de estudo', description: 'Estude a bibliografia do CP-T/2026 por etapas e acompanhe seu progresso.', icon: '↗' },
     { id: 'bibliography-questions', title: 'Apostilas e livros', description: 'Questões baseadas na bibliografia do CP-T de Informática.', icon: '▤' },
     { id: 'mind-maps', title: 'Mapas mentais', description: 'Consulte os mapas do Quadro Técnico e baixe-os para estudar offline.', icon: '✦' },
   )

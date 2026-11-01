@@ -74,8 +74,8 @@ export function StudyScreen({
             )}
             {!showQuestionList && simulationIds === null && !loading && !loadError && (
               <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
-                <p className="font-bold">Questões ainda não carregadas</p>
-                <p className="mt-2 text-muted">Use os filtros acima para selecionar concurso, matéria, tópico e ano, depois toque em "Gerar simulado" para começar a estudar.</p>
+                <p className="font-bold">Escolha como praticar</p>
+                <p className="mt-2 text-muted">Gere um simulado rápido ou completo, ou use a busca e os filtros para encontrar questões.</p>
               </div>
             )}
           </div>

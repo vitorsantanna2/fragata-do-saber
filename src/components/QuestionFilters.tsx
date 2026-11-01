@@ -13,7 +13,7 @@ type QuestionFiltersProps = {
   topics: string[]
   years: string[]
   bibliographySources: string[]
-  selectedStudyMode: 'exam-questions' | 'bibliography-questions' | null
+  selectedStudyMode: 'exam-questions' | 'bibliography-questions' | 'mixed' | null
   filteredQuestionsLength: number
   simulationIds: string[] | null
   startSimulation: () => void
@@ -73,7 +73,7 @@ export function QuestionFilters({
           <FilterSelect label="Apostila ou livro" value={bibliographySource} options={bibliographySources} onChange={setBibliographySource} />
         )}
         {selectedStudyMode !== 'bibliography-questions' && (
-          <FilterSelect label="Ano da prova" value={year} options={years} onChange={setYear} />
+          <FilterSelect label={selectedStudyMode === 'mixed' ? 'Ano / bibliografia' : 'Ano da prova'} value={year} options={years} onChange={setYear} />
         )}
         <div className="mt-5 space-y-2">
           <button

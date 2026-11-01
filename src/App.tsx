@@ -35,6 +35,7 @@ import { MindMapViewer } from './components/MindMapViewer'
 import { shuffle, conciseTopic } from './lib/utils'
 import { useQuestions, type Question } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
+import { useTrackProgress } from './hooks/useTrackProgress'
 import { useAdminRoute } from './hooks/useAdminRoute'
 import { resolveQuestionAnswer } from './lib/questionAnswers'
 import { getSimulationResult } from './lib/simulationResults'
@@ -43,6 +44,8 @@ import { ScheduledReviews } from './components/ScheduledReviews'
 import { useStudyFocus } from './hooks/useStudyFocus'
 import { scopeStudyData, type FocusResource } from './lib/studyFocus'
 import { ExamFocusHome } from './components/ExamFocusHome'
+import { StudyTracks } from './components/StudyTracks'
+import { studyTracks, type StudyTrack, type TrackStep } from './lib/studyTracks'
 import { ExamFocusBar } from './components/ExamFocusBar'
 
 const AdminQuestionsPanel = lazy(() => import('./components/AdminQuestionsPanel').then((mod) => ({ default: mod.default })))
@@ -73,6 +76,9 @@ function App() {
   const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine)
   const [showPerformance, setShowPerformance] = useState(false)
   const [showScheduledReviews, setShowScheduledReviews] = useState(false)
+  const [showTracks, setShowTracks] = useState(false)
+  const [trackPractice, setTrackPractice] = useState<{ track: StudyTrack; step: TrackStep } | null>(null)
+  const [lastTrackId, setLastTrackId] = useState<string | null>(null)
   const { selectedExamId, setSelectedExamId } = useStudyFocus()
   const focusedExam = examChoices.find((exam) => exam.id === selectedExamId) ?? null
   const [selectedStudyMode, setSelectedStudyMode] = useState<'exam-questions' | 'bibliography-questions' | 'mind-maps' | null>(null)
@@ -93,6 +99,7 @@ function App() {
   const [openMindMap, setOpenMindMap] = useState<{ map: MindMap; url: string } | null>(null)
   const [accountUser, setAccountUser] = useState<{ id: string; email: string | null; is_anonymous: boolean; created_at: string } | null>(null)
   const [logoutError, setLogoutError] = useState('')
+  const trackProgressState = useTrackProgress(accountUser?.id ?? null, Boolean(accountUser && !accountUser.is_anonymous), isOnline)
 
   const {
     questions,
@@ -113,6 +120,7 @@ function App() {
     bibliographySource,
     questionSearch,
   } = useQuestions({
+    trackStep: trackPractice?.step,
     selectedExamId,
     selectedStudyMode: selectedStudyMode === 'mind-maps' ? null : selectedStudyMode,
     examChoices,
@@ -369,6 +377,8 @@ function App() {
   }
 
   const returnToFocus = useCallback(() => {
+    setShowTracks(false)
+    setTrackPractice(null)
     setShowScheduledReviews(false)
     setTopic('Todos')
     setYear('Todos')
@@ -417,6 +427,8 @@ function App() {
         setShowAccountSync(false)
       } else if (showScheduledReviews) {
         setShowScheduledReviews(false)
+      } else if (showTracks) {
+        returnToFocus()
       } else if (showPerformance) {
         setShowPerformance(false)
       } else if (openMindMap) {
@@ -425,12 +437,13 @@ function App() {
         setSimulationIds(null)
       } else if (selectedExamId !== null && selectedStudyMode !== null) {
         returnToFocus()
+        if (trackPractice) setShowTracks(true)
       } else {
         void CapacitorApp.exitApp()
       }
     })
     return () => { void listener.then((handle) => handle.remove()) }
-  }, [adminMode, closeAdmin, showAccountSync, showScheduledReviews, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToFocus])
+  }, [adminMode, closeAdmin, showAccountSync, showScheduledReviews, showTracks, trackPractice, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToFocus])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSplashElapsed(true), 900)
@@ -506,13 +519,14 @@ function App() {
     score: simulationScore,
   } = getSimulationResult(questionsWithResults, simulationIds, simulationIds !== null ? simulationAnswers : answers)
 
-  const correctCount = questions.filter(
+  const practiceQuestions = trackPractice ? questionsWithResults : questions
+  const correctCount = practiceQuestions.filter(
     (question) => question.answer !== null && answers[question.id] === question.answer,
   ).length
   const performanceCorrectCount = simulationIds !== null ? simulationCorrectCount : correctCount
   const performanceAnsweredCount = simulationIds !== null
     ? simulationAnsweredCount
-    : questions.filter((question) => question.answer !== null && answers[question.id] !== undefined).length
+    : practiceQuestions.filter((question) => question.answer !== null && answers[question.id] !== undefined).length
 
   const lastStudiedQuestion = useMemo(() => {
     const latest = Object.entries(focusedStudy.progressUpdatedAt)
@@ -541,6 +555,7 @@ function App() {
   function openFocusResource(resource: FocusResource) {
     returnToFocus()
     if (resource === 'scheduled-reviews') setShowScheduledReviews(true)
+    else if (resource === 'study-tracks') setShowTracks(true)
     else if (resource === 'performance') setShowPerformance(true)
     else setSelectedStudyMode(resource)
   }
@@ -549,6 +564,10 @@ function App() {
     if (resumeSavedSimulation && savedSimulation && savedSimulation.ids.length > 0) {
       const examChoice = examChoices.find((choice) => choice.id === savedSimulation.examId)
       if (examChoice) {
+        const track = studyTracks.find((item) => item.examId === examChoice.id && item.id === savedSimulation.trackId)
+        const step = track?.steps.find((item) => item.id === savedSimulation.trackStepId)
+        setTrackPractice(track && step ? { track, step } : null)
+        if (track) setLastTrackId(track.id)
         skipSelectionReset.current = true
         setTopic('Todos')
         setYear('Todos')
@@ -565,6 +584,7 @@ function App() {
       }
     }
     if (!lastStudiedQuestion) return
+    setTrackPractice(null)
     const { questionId, snapshot, examChoice } = lastStudiedQuestion
     setTopic('Todos')
     setYear('Todos')
@@ -581,6 +601,7 @@ function App() {
   }
 
   function reviewQuestion(questionId: string, snapshot: StudyQuestionSnapshot) {
+    setTrackPractice(null)
     const examChoice = examChoices.find((choice) => choice.exam === snapshot.exam && (!choice.subject || choice.subject === snapshot.subject))
     if (!examChoice) return
     const nextMode = examChoice.id === 'cp-t-informatica'
@@ -604,6 +625,8 @@ function App() {
     const ids = picked.map((question) => question.id)
     const simulation: SavedSimulation = {
       id: crypto.randomUUID(),
+      trackId: trackPractice?.track.id,
+      trackStepId: trackPractice?.step.id,
       ids,
       answers: {},
       revealed: [],
@@ -626,6 +649,8 @@ function App() {
     const ids = picked.map((question) => question.id)
     const simulation: SavedSimulation = {
       id: crypto.randomUUID(),
+      trackId: trackPractice?.track.id,
+      trackStepId: trackPractice?.step.id,
       ids,
       answers: {},
       revealed: [],
@@ -914,6 +939,13 @@ function App() {
                 offensiveLoaded={offensiveLoaded}
               />
             </Suspense>
+          ) : showTracks && focusedExam ? (
+            <StudyTracks key={`${focusedExam.id}:${accountUser?.id ?? 'guest'}`} examId={focusedExam.id} progressState={trackProgressState} initialTrackId={lastTrackId} snapshots={focusedStudy.questionSnapshots} answers={focusedStudy.answers} onClose={returnToFocus} onPractice={(track, step) => {
+              returnToFocus()
+              setLastTrackId(track.id)
+              setTrackPractice({ track, step })
+              setSelectedStudyMode('exam-questions')
+            }} />
           ) : !selectedExamId ? (
             <section className="mt-7" id="questoes">
               {((resumeSavedSimulation && savedSimulation?.ids.length) || lastStudiedQuestion) && (
@@ -1026,8 +1058,10 @@ function App() {
               )}
             </section>
           ) : (
+            <>
+            {trackPractice && <div className="mt-5 rounded-xl border border-line bg-sea-light p-4"><p className="font-bold text-sea">{trackPractice.track.title} · {trackPractice.step.title}</p><p className="mt-1 text-sm text-muted">Questões dos assuntos vinculados a esta etapa.{!loading && !filteredQuestions.length ? ' Nenhuma questão encontrada para esta etapa com os filtros atuais.' : ''}</p><button type="button" className="mt-3 text-sm font-bold text-sea" onClick={() => { returnToFocus(); setShowTracks(true) }}>← Voltar à trilha</button></div>}
             <StudyScreen
-              examTitle={selectedStudyMode === 'bibliography-questions' ? 'Questões de bibliografia' : 'Questões de provas'}
+              examTitle={trackPractice ? 'Prática · Provas e bibliografia' : selectedStudyMode === 'bibliography-questions' ? 'Questões de bibliografia' : 'Questões de provas'}
               filters={{
                 questionSearch,
                 setQuestionSearch,
@@ -1040,7 +1074,7 @@ function App() {
                 topics,
                 years,
                 bibliographySources,
-                selectedStudyMode: selectedStudyMode === 'bibliography-questions' ? 'bibliography-questions' : null,
+                selectedStudyMode: trackPractice ? 'mixed' : selectedStudyMode === 'bibliography-questions' ? 'bibliography-questions' : null,
                 filteredQuestionsLength: filteredQuestions.length,
                 simulationIds,
                 startSimulation,
@@ -1055,7 +1089,7 @@ function App() {
               loading={loading}
               loadError={loadError}
               usingOfflineCache={usingOfflineCache}
-              showQuestionList={showQuestionList}
+              showQuestionList={trackPractice ? Boolean(questionSearch.trim() || topic !== 'Todos' || year !== 'Todos' || bibliographySource !== 'Todos') : showQuestionList}
               simulation={{
                 simulationAnswers,
                 simulationRevealed,
@@ -1085,9 +1119,10 @@ function App() {
                 onMissingQuestion: () => { setReviewQuestionId(null); setShowQuestionList(false); setReviewingFromDashboard(false) },
               }}
             />
+            </>
           )}
         </main>
-        {showAccountSync && <AccountSyncPanel onClose={() => setShowAccountSync(false)} onSync={() => setManualSyncRevision((revision) => revision + 1)} onUseExistingAccount={(email) => { setAccountLoginEmail(email); setShowAccountLogin(true); setAccessState('locked'); setShowAccountSync(false) }} syncStatus={syncStatus} />}
+        {showAccountSync && <AccountSyncPanel onClose={() => setShowAccountSync(false)} onSync={() => { setManualSyncRevision((revision) => revision + 1); trackProgressState.retrySync() }} onUseExistingAccount={(email) => { setAccountLoginEmail(email); setShowAccountLogin(true); setAccessState('locked'); setShowAccountSync(false) }} syncStatus={syncStatus} />}
         <footer className="flex flex-wrap items-center justify-center gap-2 border-t border-line bg-white/70 px-5 py-6 text-xs text-muted"><span>Fragata do Saber <span className="px-1 text-coral">·</span> Preparação feita com propósito</span><span className="px-1 text-coral">·</span><span>@vitorsantanna2</span></footer>
       </div>
     </ErrorBoundary>
