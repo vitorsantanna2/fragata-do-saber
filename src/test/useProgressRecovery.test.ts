@@ -81,4 +81,15 @@ describe('progress recovery', () => {
     expect(loadValidatedAnswers).toHaveBeenCalledWith(user.id)
     expect(result.current.questionSnapshots.q1).toEqual(snapshot)
   })
+
+  it('preserves a newer offline choice when restoring an older server attempt', async () => {
+    const progress = storedProgress()
+    progress.answers = { q1: 1 }
+    window.localStorage.setItem('study_progress_v1', JSON.stringify(progress))
+    vi.mocked(loadValidatedAnswers).mockResolvedValue([{ question_id: 'q1', selected_option: 0, correct_option: 0, explanation: snapshot.explanation, submitted_at: simulation.completedAt }])
+    const anonymousUser = { ...user, email: null, is_anonymous: true }
+    const { result } = renderHook(() => useProgress({ questions: noQuestions, accountUser: anonymousUser, isOnline: true }))
+    await act(async () => {})
+    expect(result.current.answers.q1).toBe(1)
+  })
 })

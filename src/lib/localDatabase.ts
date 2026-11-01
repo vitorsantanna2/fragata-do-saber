@@ -70,8 +70,8 @@ export async function readCachedQuestions(exam: string, subject: string | null, 
     ...row,
     year: Number(row.year),
     question_number: Number(row.question_number),
-    correct_option: -1,
-    explanation: null,
+    correct_option: row.correct_option == null ? -1 : Number(row.correct_option),
+    explanation: row.explanation ?? null,
     options: typeof row.options === 'string' ? JSON.parse(row.options) as string[] : row.options as string[],
   })) as CachedQuestionRow[]
 }
@@ -103,8 +103,8 @@ export async function cacheQuestions(rows: CachedQuestionRow[], exam: string, su
         image_url = excluded.image_url,
         image_alt = excluded.image_alt,
         options = excluded.options,
-          correct_option = excluded.correct_option ?? -1,
-          explanation = excluded.explanation ?? null,
+        correct_option = excluded.correct_option,
+        explanation = excluded.explanation,
         source = excluded.source
     `,
     values: [
@@ -121,8 +121,8 @@ export async function cacheQuestions(rows: CachedQuestionRow[], exam: string, su
       row.image_url,
       row.image_alt,
       JSON.stringify(row.options),
-      -1,
-      null,
+      row.correct_option ?? -1,
+      row.explanation ?? null,
       row.source,
     ],
   }))

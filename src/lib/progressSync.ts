@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 import type { StudyProgress, StudyQuestionSnapshot, OffensiveState } from './localDatabase'
 import { getSaoPauloDateKey, normalizeOffensiveDate } from './offensiveDates'
 import { mergeCompletedSimulations } from './simulationHistory'
+import { loadOfflineQuestionAnswers } from './questionAnswers'
 
 type ValidatedAnswer = {
   question_id: string
@@ -170,6 +171,8 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
   }
 
   const questionSnapshots = { ...progress.questionSnapshots }
+  const missingAnswerIds = Object.keys(answers).filter((id) => !attemptsById.has(id) && questionSnapshots[id]?.correctOption == null)
+  const offlineAnswers = await loadOfflineQuestionAnswers(missingAnswerIds)
   for (const attempt of attempts) {
     const snapshot = questionSnapshots[attempt.question_id]
     if (!snapshot) continue
@@ -189,8 +192,8 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
         year: row.question_type === 'bibliography' ? 'Bibliografia' : String(row.year ?? ''),
         questionType: row.question_type,
         prompt: row.statement.slice(0, 400),
-        correctOption: attemptsById.get(row.id)?.correct_option ?? questionSnapshots[row.id]?.correctOption ?? null,
-        explanation: attemptsById.has(row.id) ? attemptsById.get(row.id)!.explanation : questionSnapshots[row.id]?.explanation ?? null,
+        correctOption: attemptsById.get(row.id)?.correct_option ?? offlineAnswers.get(row.id)?.correct_option ?? questionSnapshots[row.id]?.correctOption ?? null,
+        explanation: attemptsById.has(row.id) ? attemptsById.get(row.id)!.explanation : offlineAnswers.get(row.id)?.explanation ?? questionSnapshots[row.id]?.explanation ?? null,
       }
     }
   }

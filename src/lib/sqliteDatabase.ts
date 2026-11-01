@@ -191,7 +191,6 @@ async function openDatabase() {
   if (!existingQuestionColumns.has('source')) {
     await database.execute('ALTER TABLE questions ADD COLUMN source TEXT')
   }
-  await database.run('UPDATE questions SET correct_option = -1, explanation = NULL WHERE correct_option != -1 OR explanation IS NOT NULL')
   await database.execute(`
     CREATE INDEX IF NOT EXISTS questions_exam_subject_year_idx
       ON questions (exam, subject, year DESC)

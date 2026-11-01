@@ -34,6 +34,7 @@ import { MindMapViewer } from './components/MindMapViewer'
 import { shuffle, conciseTopic } from './lib/utils'
 import { useQuestions } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
+import { resolveQuestionAnswer } from './lib/questionAnswers'
 
 const AdminQuestionsPanel = lazy(() => import('./components/AdminQuestionsPanel').then((mod) => ({ default: mod.default })))
 const PerformanceDashboard = lazy(() => import('./components/PerformanceDashboard').then((mod) => ({ default: mod.PerformanceDashboard })))
@@ -187,6 +188,16 @@ function App() {
       await getLocalDatabase()
     } catch (error) {
       console.warn('Não foi possível iniciar o banco local.', error)
+    }
+
+    if (!navigator.onLine) {
+      if (await canContinueOffline()) {
+        setAccessState('granted')
+      } else {
+        setAccessError('Conecte-se à internet para validar o acesso e baixar as questões antes de estudar offline.')
+        setAccessState('locked')
+      }
+      return
     }
 
     if (!supabase) {
@@ -609,14 +620,6 @@ function App() {
 
   async function submitQuestionAnswer(questionId: string, optionIndex: number): Promise<number | null> {
     if (pendingAnswerIds.includes(questionId)) return null
-    if (!supabase) {
-      setAnswerErrors((current) => ({ ...current, [questionId]: 'A validação online da resposta não está disponível.' }))
-      return null
-    }
-    if (!isOnline) {
-      setAnswerErrors((current) => ({ ...current, [questionId]: 'Conecte-se à internet para validar esta resposta.' }))
-      return null
-    }
 
     setPendingAnswerIds((current) => current.includes(questionId) ? current : [...current, questionId])
     setAnswerErrors((current) => {
@@ -626,19 +629,14 @@ function App() {
     })
 
     try {
-      const { data, error } = await supabase.rpc('submit_question_answer', {
-        p_question_id: questionId,
-        p_selected_option: optionIndex,
-      })
-      if (error) throw error
-
-      const attempt = Array.isArray(data) ? data[0] : data
-      if (!attempt) throw new Error('O servidor não retornou o resultado da resposta.')
-
-      const selectedOption = Number(attempt.selected_option)
-      const correctOption = Number(attempt.correct_option)
-      const explanation = attempt.explanation ?? null
       const question = questions.find((item) => item.id === questionId)
+      if (!question) throw new Error('Questão não encontrada.')
+      const savedResult = questionSnapshots[questionId]
+      const { selectedOption, correctOption, explanation } = await resolveQuestionAnswer({
+        ...question,
+        answer: question.answer ?? savedResult?.correctOption ?? null,
+        explanation: question.explanation ?? savedResult?.explanation ?? null,
+      }, optionIndex, isOnline)
 
       setQuestionAnswerResult(questionId, { correctOption, explanation })
       setAnswers((current) => ({ ...current, [questionId]: selectedOption }))

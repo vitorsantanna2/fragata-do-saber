@@ -47,6 +47,7 @@ vi.mock('../lib/supabase', () => ({
 vi.mock('../lib/localDatabase', () => ({
   readCachedQuestions: vi.fn(),
   cacheQuestions: vi.fn(),
+  isNativeApp: vi.fn(() => false),
 }))
 
 import { useQuestions } from '../hooks/useQuestions'

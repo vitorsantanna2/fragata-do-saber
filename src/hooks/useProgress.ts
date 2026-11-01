@@ -219,7 +219,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         }
         return next
       })
-      setAnswers((current) => ({ ...current, ...Object.fromEntries(attempts.map((attempt) => [attempt.question_id, attempt.selected_option])) }))
+      setAnswers((current) => ({ ...Object.fromEntries(attempts.map((attempt) => [attempt.question_id, attempt.selected_option])), ...current }))
     }).catch((error: unknown) => {
       if (active) console.warn('Não foi possível recuperar as respostas validadas.', error)
     })

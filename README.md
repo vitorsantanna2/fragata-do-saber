@@ -71,6 +71,7 @@ Execute os scripts pelo **SQL Editor** do Supabase nesta ordem:
 3. `supabase/supabase_user_progress_setup.sql` — tabela de progresso sincronizado e políticas RLS.
 4. `supabase/supabase_mind_maps_setup.sql` — catálogo de mapas e bucket privado `mind-maps`.
 5. `supabase/supabase_admin_questions_setup.sql` — painel administrativo, bucket de imagens de questões e permissões administrativas para questões e mapas.
+6. `supabase/supabase_offline_questions_setup.sql` — download autenticado de gabaritos para correção offline no Android.
 
 Habilite **Anonymous Sign-Ins**, o provedor **Email** e **Manual Linking** nas configurações de Auth do Supabase. Manual Linking é necessário para converter a sessão anônima existente em uma conta com e-mail. Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` em `.env.local` para desenvolvimento. No GitHub Pages, configure os mesmos valores em **Settings → Secrets and variables → Actions → Variables**.
 
@@ -119,11 +120,15 @@ As artes originais e os arquivos derivados ficam em `android/assets/`. Os recurs
 
 ## Modo offline e progresso local
 
-No Android, questões consultadas enquanto há conexão são armazenadas em SQLite. Para preparar o estudo offline, acesse online as questões que pretende revisar e use **Baixar para offline** nos mapas mentais. Os arquivos dos mapas são guardados no armazenamento privado do app; PDFs abrem em um leitor instalado e imagens abrem no próprio app.
+No Android, questões consultadas enquanto há conexão são armazenadas em SQLite junto com seus gabaritos e explicações. Execute `supabase/supabase_offline_questions_setup.sql` no Supabase para habilitar esse download. Para preparar o estudo offline, abra com internet cada concurso e modalidade que pretende estudar e aguarde o carregamento terminar. Os simulados e a lista de questões usam os gabaritos baixados para corrigir as alternativas no aparelho, sem consultar o Supabase a cada resposta, inclusive se o aparelho estiver conectado.
+
+Use **Baixar para offline** nos mapas mentais. Os arquivos dos mapas são guardados no armazenamento privado do app; PDFs abrem em um leitor instalado e imagens abrem no próprio app.
 
 O acesso offline pode continuar por até 30 dias após a última validação online, desde que haja questões ou mapas baixados no aparelho. Respostas, questões reveladas, favoritos, filtros e o concurso/modo de estudo atual são salvos localmente. O último simulado também preserva a lista de questões sorteadas, as respostas e os gabaritos vistos para continuar no mesmo aparelho; ao gerar outro, o contador do simulado começa em zero. Para contas vinculadas, respostas e favoritos são sincronizados quando a internet volta; sem conta, permanecem somente no aparelho. Imagens de questões carregadas por URL ainda precisam de conexão.
 
 O banco local `fragata_saber` e suas tabelas são criados automaticamente na primeira inicialização do app.
+
+Se o aparelho já tinha questões salvas por uma versão que não baixava gabaritos, abra os concursos novamente com internet depois de atualizar o app. As questões antigas sem gabarito precisam dessa atualização antes de poderem ser corrigidas offline. A versão web continua validando cada resposta online.
 
 ### Painel de desempenho
 

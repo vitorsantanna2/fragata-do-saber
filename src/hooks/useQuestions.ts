@@ -3,9 +3,11 @@ import { supabase } from '../lib/supabase'
 import {
   cacheQuestions,
   readCachedQuestions,
+  isNativeApp,
   type CachedQuestionRow,
 } from '../lib/localDatabase'
 import { normalizeSearchText, conciseSource, conciseTopic } from '../lib/utils'
+import { loadOfflineQuestionAnswers } from '../lib/questionAnswers'
 
 export type Question = {
   id: string
@@ -123,13 +125,13 @@ export function useQuestions({
     const exam = selectedExam
 
     let active = true
+    let cachedRows: CachedQuestionRow[] = []
 
     async function loadQuestions() {
       setLoading(true)
       setLoadError('')
       setUsingOfflineCache(false)
 
-      let cachedRows: CachedQuestionRow[] = []
       try {
         cachedRows = await readCachedQuestions(exam.exam, exam.subject, questionType)
         if (!active) return
@@ -142,8 +144,14 @@ export function useQuestions({
         console.warn('Não foi possível ler as questões salvas no aparelho.', error)
       }
 
+      if (!navigator.onLine) {
+        setLoadError(cachedRows.length ? '' : 'Nenhuma questão foi baixada para este concurso. Abra-o com internet antes de estudar offline.')
+        setLoading(false)
+        return
+      }
+
       if (!supabase) {
-        setLoadError('Configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY no arquivo .env.local.')
+        setLoadError(cachedRows.length ? '' : 'Configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY no arquivo .env.local.')
         setLoading(false)
         return
       }
@@ -174,8 +182,12 @@ export function useQuestions({
       } else {
         const questionRows = data as Omit<CachedQuestionRow, 'correct_option' | 'explanation'>[]
         const questionIds = questionRows.map((question) => question.id)
+        const native = isNativeApp()
         let attemptsByQuestionId = new Map<string, { correct_option: number; explanation: string | null }>()
-        if (questionIds.length > 0) {
+        if (native && questionIds.length > 0) {
+          attemptsByQuestionId = await loadOfflineQuestionAnswers(questionIds)
+          if (!active) return
+        } else if (questionIds.length > 0) {
           const { data: attempts, error: attemptsError } = await supabase
             .from('question_answer_attempts')
             .select('question_id,correct_option,explanation')
@@ -194,23 +206,38 @@ export function useQuestions({
 
         const safeQuestionRows = questionRows.map((question) => {
           const attempt = attemptsByQuestionId.get(question.id)
+          if (native && (!attempt || !Number.isInteger(attempt.correct_option) || attempt.correct_option < 0 || attempt.correct_option >= question.options.length)) {
+            throw new Error('O download das questões ficou incompleto. Conecte-se novamente para baixar os gabaritos antes de estudar offline.')
+          }
           return {
             ...question,
             correct_option: attempt?.correct_option ?? -1,
             explanation: attempt?.explanation ?? null,
           }
         }) as CachedQuestionRow[]
+        if (native) {
+          await cacheQuestions(safeQuestionRows, exam.exam, exam.subject, questionType)
+          if (!active) return
+        }
         setUsingOfflineCache(false)
-        void cacheQuestions(questionRows, exam.exam, exam.subject, questionType).catch((cacheError) => {
-          console.warn('Não foi possível atualizar o cache local de questões.', cacheError)
-        })
         setQuestions(safeQuestionRows.map(toQuestion))
       }
 
       setLoading(false)
     }
 
-    void loadQuestions()
+    void loadQuestions().catch((error: unknown) => {
+      if (!active) return
+      if (cachedRows.length) {
+        setQuestions(cachedRows.map(toQuestion))
+        setUsingOfflineCache(true)
+        setLoadError('')
+        console.warn('Não foi possível atualizar as questões; usando o conteúdo baixado.', error)
+      } else {
+        setLoadError(error instanceof Error ? error.message : 'Não foi possível carregar as questões. Verifique sua conexão.')
+      }
+      setLoading(false)
+    })
 
     return () => { active = false }
   }, [selectedExamId, selectedStudyMode, examChoices, toQuestion])
