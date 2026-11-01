@@ -17,12 +17,6 @@ type StudyScreenProps = {
   usingOfflineCache: boolean
   showQuestionList: boolean
   simulation: Omit<ComponentProps<typeof Simulation>, 'questions' | 'simulationIds'>
-  simulationResult: {
-    complete: boolean
-    score: number
-    correctCount: number
-    pointsPerQuestion: number
-  }
   questionList: Omit<StudyQuestionListProps, 'questions'>
 }
 
@@ -37,7 +31,6 @@ export function StudyScreen({
   usingOfflineCache,
   showQuestionList,
   simulation,
-  simulationResult,
   questionList,
 }: StudyScreenProps) {
   const { simulationIds, selectedStudyMode, filteredQuestionsLength } = filters
@@ -72,25 +65,6 @@ export function StudyScreen({
               <Suspense fallback={<div className="mt-4 p-8 text-center"><Skeleton className="w-32 mx-auto mb-2" /><SkeletonText className="w-64 mx-auto" /></div>}>
                 <Simulation {...simulation} questions={questions} simulationIds={simulationIds} />
               </Suspense>
-            )}
-            {simulationResult.complete && (
-              <section className="rounded-xl border border-sea/20 bg-sea-light p-5" aria-live="polite">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Simulado concluído</p>
-                <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-                  <div>
-                    <p className="font-display text-3xl font-extrabold text-ink">
-                      {simulationResult.score.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
-                      <span className="ml-1 text-base font-bold text-muted">/ 100 pontos</span>
-                    </p>
-                    <p className="mt-1 text-sm text-muted">
-                      {simulationResult.correctCount} de {simulationIds?.length ?? filteredQuestionsLength} questões corretas
-                    </p>
-                  </div>
-                  <p className="text-xs font-medium text-muted">
-                    Cada questão vale {simulationResult.pointsPerQuestion.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} pontos
-                  </p>
-                </div>
-              </section>
             )}
             {loading && <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando questões...</p>}
             {!loading && usingOfflineCache && <p className="rounded-xl border border-[#ead7be] bg-[#fff8ed] p-4 text-sm leading-6 text-[#805b2d]">Sem conexão: estas questões foram carregadas do aparelho. O conteúdo será atualizado quando a internet voltar.</p>}

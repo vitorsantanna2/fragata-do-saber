@@ -237,7 +237,16 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         .then((synced) => {
           if (!active) return
           if (synced) {
-            setOffensiveState(synced as OffensiveState)
+            setOffensiveState((current) => {
+              if (current
+                && current.totalOffensives === synced.totalOffensives
+                && current.currentStreak === synced.currentStreak
+                && current.bestStreak === synced.bestStreak
+                && current.lastOffensiveDate === synced.lastOffensiveDate
+                && current.offensiveLoggedToday === synced.offensiveLoggedToday
+                && current.joinedAt === synced.joinedAt) return current
+              return synced
+            })
           }
         })
         .catch((error: unknown) => {

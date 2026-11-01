@@ -15,6 +15,19 @@ const question: Question = {
 beforeEach(() => { vi.clearAllMocks(); mocks.native.mockReturnValue(true) })
 
 describe('question correction', () => {
+  it('validates repeated web questions independently for each simulation', async () => {
+    mocks.native.mockReturnValue(false)
+    mocks.rpc.mockImplementation(async (_name: string, params: { p_selected_option: number }) => ({
+      data: [{ selected_option: params.p_selected_option, correct_option: 0, explanation: 'Servidor' }], error: null,
+    }))
+    const first = await resolveQuestionAnswer(question, 1, true, 'sim-1')
+    const second = await resolveQuestionAnswer(question, 0, true, 'sim-2')
+    expect(first.selectedOption).toBe(1)
+    expect(second.selectedOption).toBe(0)
+    expect(mocks.rpc).toHaveBeenNthCalledWith(1, 'submit_simulation_answer', { p_question_id: 'q1', p_selected_option: 1, p_simulation_id: 'sim-1' })
+    expect(mocks.rpc).toHaveBeenNthCalledWith(2, 'submit_simulation_answer', { p_question_id: 'q1', p_selected_option: 0, p_simulation_id: 'sim-2' })
+  })
+
   it('corrects a native answer offline without calling Supabase, including alternative zero', async () => {
     expect(await resolveQuestionAnswer(question, 0, false)).toEqual({ selectedOption: 0, correctOption: 0, explanation: question.explanation })
     expect(mocks.rpc).not.toHaveBeenCalled()

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { useProgress } from '../hooks/useProgress'
 import { loadValidatedAnswers, syncOffensiveState, syncStudyProgress } from '../lib/progressSync'
-import type { CompletedSimulation, StudyProgress } from '../lib/localDatabaseTypes'
+import type { CompletedSimulation, StudyProgress, OffensiveState } from '../lib/localDatabaseTypes'
 
 vi.mock('../lib/progressSync', () => ({
   loadValidatedAnswers: vi.fn(), syncStudyProgress: vi.fn(), syncOffensiveState: vi.fn(),
@@ -32,6 +32,31 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.clearAllMocks(); window.localStorage.clear() })
 
 describe('progress recovery', () => {
+  it('stops offensive synchronization when the server returns the same values', async () => {
+    vi.mocked(syncOffensiveState).mockImplementation(async (state) => ({ ...state }))
+    const { result } = renderHook(() => useProgress({ questions: noQuestions, accountUser: user, isOnline: true }))
+    await act(async () => {})
+    for (let index = 0; index < 4; index++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(500) })
+    }
+    expect(syncOffensiveState).toHaveBeenCalledTimes(1)
+    act(() => result.current.setManualSyncRevision((revision) => revision + 1))
+    await act(async () => { await vi.advanceTimersByTimeAsync(500) })
+    expect(syncOffensiveState).toHaveBeenCalledTimes(2)
+  })
+
+  it('applies a remote offensive change and then stops repeating requests', async () => {
+    const remote: OffensiveState = { totalOffensives: 4, currentStreak: 2, bestStreak: 3, lastOffensiveDate: '2026-11-01', offensiveLoggedToday: true, joinedAt: user.created_at }
+    vi.mocked(syncOffensiveState).mockImplementation(async () => ({ ...remote }))
+    const { result } = renderHook(() => useProgress({ questions: noQuestions, accountUser: user, isOnline: true }))
+    await act(async () => {})
+    for (let index = 0; index < 4; index++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(500) })
+    }
+    expect(result.current.offensiveState).toEqual(remote)
+    expect(syncOffensiveState).toHaveBeenCalledTimes(2)
+  })
+
   it('keeps the validated result and explanation after restarting offline', async () => {
     window.localStorage.setItem('study_progress_v1', JSON.stringify(storedProgress()))
     const { result } = renderHook(() => useProgress({ questions: noQuestions, accountUser: null, isOnline: false }))

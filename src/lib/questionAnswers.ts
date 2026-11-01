@@ -17,7 +17,7 @@ export async function loadOfflineQuestionAnswers(questionIds: string[]) {
   return answers
 }
 
-export async function resolveQuestionAnswer(question: Question, optionIndex: number, isOnline: boolean) {
+export async function resolveQuestionAnswer(question: Question, optionIndex: number, isOnline: boolean, simulationId?: string) {
   if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= question.options.length) {
     throw new Error('Selecione uma alternativa válida.')
   }
@@ -32,9 +32,10 @@ export async function resolveQuestionAnswer(question: Question, optionIndex: num
       : 'Conecte-se à internet para validar esta resposta.')
   }
   if (!supabase) throw new Error('A validação online da resposta não está disponível.')
-  const { data, error } = await supabase.rpc('submit_question_answer', {
+  const { data, error } = await supabase.rpc(simulationId ? 'submit_simulation_answer' : 'submit_question_answer', {
     p_question_id: question.id,
     p_selected_option: optionIndex,
+    ...(simulationId ? { p_simulation_id: simulationId } : {}),
   })
   if (error) throw error
   const attempt = Array.isArray(data) ? data[0] : data

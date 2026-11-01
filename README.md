@@ -72,6 +72,7 @@ Execute os scripts pelo **SQL Editor** do Supabase nesta ordem:
 4. `supabase/supabase_mind_maps_setup.sql` — catálogo de mapas e bucket privado `mind-maps`.
 5. `supabase/supabase_admin_questions_setup.sql` — painel administrativo, bucket de imagens de questões e permissões administrativas para questões e mapas.
 6. `supabase/supabase_offline_questions_setup.sql` — download autenticado de gabaritos para correção offline no Android.
+7. `supabase/supabase_simulation_answers_setup.sql` — correção online com respostas independentes por simulado.
 
 Habilite **Anonymous Sign-Ins**, o provedor **Email** e **Manual Linking** nas configurações de Auth do Supabase. Manual Linking é necessário para converter a sessão anônima existente em uma conta com e-mail. Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` em `.env.local` para desenvolvimento. No GitHub Pages, configure os mesmos valores em **Settings → Secrets and variables → Actions → Variables**.
 
@@ -137,6 +138,8 @@ Se o aparelho já tinha questões salvas por uma versão que não baixava gabari
 Use **Meu desempenho** no cabeçalho para consultar questões respondidas, acertos, erros e aproveitamento, com filtros por concurso e matéria. A tela também lista questões erradas para abrir e revisar. O painel usa o progresso e as questões já carregadas neste aparelho, portanto funciona offline para o conteúdo estudado ou baixado anteriormente.
 
 Os resultados de respostas já validadas são preservados ao reabrir o app. Quando há conexão, o app também recupera as respostas registradas para a sessão ou conta atual. Cada simulado concluído tem um identificador próprio e aparece no histórico, mesmo que outros simulados tenham a mesma nota no mesmo dia. A ofensiva continua sendo contabilizada por dia.
+
+Na web, a correção de cada simulado usa respostas independentes: responder uma questão novamente em outro simulado não reutiliza a alternativa de uma tentativa anterior. Execute `supabase/supabase_simulation_answers_setup.sql` para habilitar essa correção no servidor. Os downloads de questões usam paginação e o cache offline só é substituído após a conclusão de todas as páginas e gabaritos.
 
 ### Sincronizar entre dispositivos
 

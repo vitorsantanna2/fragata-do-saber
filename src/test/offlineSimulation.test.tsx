@@ -29,7 +29,7 @@ function OfflineSimulation() {
       pendingAnswerIds={[]}
       answerErrors={{}}
       recordSimulationAnswer={async (id, option) => {
-        const result = await resolveQuestionAnswer(questions.find((question) => question.id === id)!, option, false)
+        const result = await resolveQuestionAnswer(questions.find((question) => question.id === id)!, option, false, 'sim-offline')
         setAnswers((current) => ({ ...current, [id]: result.selectedOption }))
       }}
       recordSimulationReveal={(id) => setRevealed((current) => [...current, id])}

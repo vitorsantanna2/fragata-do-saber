@@ -8,6 +8,7 @@ import {
 } from '../lib/localDatabase'
 import { normalizeSearchText, conciseSource, conciseTopic } from '../lib/utils'
 import { loadOfflineQuestionAnswers } from '../lib/questionAnswers'
+import { loadQuestionCatalog } from '../lib/questionCatalog'
 
 export type Question = {
   id: string
@@ -156,72 +157,50 @@ export function useQuestions({
         return
       }
 
-      let query = supabase
-        .from('questions')
-        .select('id, year, question_number, question_type, subject, topic, difficulty, exam, statement, statement_after_image, image_url, image_alt, options, source')
-        .eq('is_published', true)
-        .eq('is_annulled', false)
-        .eq('exam', exam.exam)
-        .eq('question_type', questionType)
-
-      if (exam.subject) {
-        query = query.eq('subject', exam.subject)
-      }
-
-      const { data, error } = await query.order('year', { ascending: false })
-
-      if (!active) return
-
-      if (error) {
-        if (cachedRows.length > 0) {
-          setLoadError('')
-          setLoading(false)
-          return
-        }
-        setLoadError(`Não foi possível carregar as questões. Confira se a tabela public.questions e a política de leitura estão configuradas. (${error.message})`)
-      } else {
-        const questionRows = data as Omit<CachedQuestionRow, 'correct_option' | 'explanation'>[]
-        const questionIds = questionRows.map((question) => question.id)
-        const native = isNativeApp()
-        let attemptsByQuestionId = new Map<string, { correct_option: number; explanation: string | null }>()
-        if (native && questionIds.length > 0) {
-          attemptsByQuestionId = await loadOfflineQuestionAnswers(questionIds)
-          if (!active) return
-        } else if (questionIds.length > 0) {
+      const questionRows = await loadQuestionCatalog(exam.exam, exam.subject, questionType, () => active)
+      if (!active || !questionRows) return
+      const questionIds = questionRows.map((question) => question.id)
+      const native = isNativeApp()
+      let attemptsByQuestionId = new Map<string, { correct_option: number; explanation: string | null }>()
+      if (native && questionIds.length > 0) {
+        attemptsByQuestionId = await loadOfflineQuestionAnswers(questionIds)
+        if (!active) return
+      } else if (questionIds.length > 0) {
+        // Busca as correções em lotes para evitar limites de URL e de resposta.
+        for (let offset = 0; offset < questionIds.length; offset += 100) {
           const { data: attempts, error: attemptsError } = await supabase
             .from('question_answer_attempts')
             .select('question_id,correct_option,explanation')
-            .in('question_id', questionIds)
+            .in('question_id', questionIds.slice(offset, offset + 100))
 
           if (!active) return
           if (attemptsError) {
             console.warn('Não foi possível restaurar as respostas já corrigidas.', attemptsError)
           } else {
-            attemptsByQuestionId = new Map((attempts ?? []).map((attempt) => [
-              attempt.question_id,
-              { correct_option: attempt.correct_option, explanation: attempt.explanation },
-            ]))
+            for (const attempt of attempts ?? []) {
+              attemptsByQuestionId.set(attempt.question_id, { correct_option: attempt.correct_option, explanation: attempt.explanation })
+            }
           }
         }
-
-        const safeQuestionRows = questionRows.map((question) => {
-          const attempt = attemptsByQuestionId.get(question.id)
-          if (native && (!attempt || !Number.isInteger(attempt.correct_option) || attempt.correct_option < 0 || attempt.correct_option >= question.options.length)) {
-            throw new Error('O download das questões ficou incompleto. Conecte-se novamente para baixar os gabaritos antes de estudar offline.')
-          }
-          return {
-            ...question,
-            correct_option: attempt?.correct_option ?? -1,
-            explanation: attempt?.explanation ?? null,
-          }
-        }) as CachedQuestionRow[]
-        if (native) {
-          await cacheQuestions(safeQuestionRows, exam.exam, exam.subject, questionType)
-          if (!active) return
-        }
-        setUsingOfflineCache(false)
-        setQuestions(safeQuestionRows.map(toQuestion))
       }
+
+      const safeQuestionRows = questionRows.map((question) => {
+        const attempt = attemptsByQuestionId.get(question.id)
+        if (native && (!attempt || !Number.isInteger(attempt.correct_option) || attempt.correct_option < 0 || attempt.correct_option >= question.options.length)) {
+          throw new Error('O download das questões ficou incompleto. Conecte-se novamente para baixar os gabaritos antes de estudar offline.')
+        }
+        return {
+          ...question,
+          correct_option: attempt?.correct_option ?? -1,
+          explanation: attempt?.explanation ?? null,
+        }
+      }) as CachedQuestionRow[]
+      if (native) {
+        await cacheQuestions(safeQuestionRows, exam.exam, exam.subject, questionType)
+        if (!active) return
+      }
+      setUsingOfflineCache(false)
+      setQuestions(safeQuestionRows.map(toQuestion))
 
       setLoading(false)
     }

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { getSimulationResult } from '../lib/simulationResults'
 
 type Question = {
   id: string
@@ -46,15 +47,13 @@ export function Simulation({
     return simulationIds.flatMap((id) => (byId.get(id) ? [byId.get(id)!] : []))
   }, [simulationIds, byId, questions])
 
-  const simulationCorrectCount = visibleQuestions.filter(
-    (question) => question.answer !== null && simulationAnswers[question.id] === question.answer,
-  ).length
-  const validatedAnswerCount = visibleQuestions.filter(
-    (question) => question.answer !== null && simulationAnswers[question.id] !== undefined,
-  ).length
-  const simulationComplete = visibleQuestions.length > 0 && validatedAnswerCount === visibleQuestions.length
-  const pointsPerQuestion = visibleQuestions.length ? 100 / visibleQuestions.length : 0
-  const simulationScore = simulationComplete ? (simulationCorrectCount / visibleQuestions.length) * 100 : 0
+  const {
+    total: simulationTotal,
+    correctCount: simulationCorrectCount,
+    complete: simulationComplete,
+    pointsPerQuestion,
+    score: simulationScore,
+  } = getSimulationResult(questions, simulationIds, simulationAnswers)
 
   if (!simulationIds) return null
 
@@ -78,7 +77,7 @@ export function Simulation({
                 <span className="ml-1 text-base font-bold text-muted">/ 100 pontos</span>
               </p>
               <p className="mt-1 text-sm text-muted">
-                {simulationCorrectCount} de {visibleQuestions.length} questões corretas
+                {simulationCorrectCount} de {simulationTotal} questões corretas
               </p>
             </div>
             <p className="text-xs font-medium text-muted">

@@ -36,6 +36,7 @@ import { useQuestions } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
 import { useAdminRoute } from './hooks/useAdminRoute'
 import { resolveQuestionAnswer } from './lib/questionAnswers'
+import { getSimulationResult } from './lib/simulationResults'
 
 const AdminQuestionsPanel = lazy(() => import('./components/AdminQuestionsPanel').then((mod) => ({ default: mod.default })))
 const PerformanceDashboard = lazy(() => import('./components/PerformanceDashboard').then((mod) => ({ default: mod.PerformanceDashboard })))
@@ -474,16 +475,13 @@ function App() {
     [filteredQuestions, questionSnapshots],
   )
 
-  const simulationTotal = simulationIds !== null ? simulationIds.length : questionsWithResults.length
-  const simulationAnsweredCount = simulationIds !== null
-    ? simulationIds.filter((id) => simulationAnswers[id] !== undefined && questionsWithResults.find((question) => question.id === id)?.answer !== null).length
-    : questionsWithResults.filter((question) => answers[question.id] !== undefined && question.answer !== null).length
-  const simulationCorrectCount = simulationIds !== null
-    ? simulationIds.filter((id) => simulationAnswers[id] !== undefined && simulationAnswers[id] === questionsWithResults.find((question) => question.id === id)?.answer).length
-    : questionsWithResults.filter((question) => answers[question.id] !== undefined && answers[question.id] === question.answer).length
-  const simulationComplete = simulationTotal > 0 && simulationAnsweredCount === simulationTotal
-  const pointsPerQuestion = simulationTotal ? 100 / simulationTotal : 0
-  const simulationScore = simulationComplete ? (simulationCorrectCount / simulationTotal) * 100 : 0
+  const {
+    total: simulationTotal,
+    answeredCount: simulationAnsweredCount,
+    correctCount: simulationCorrectCount,
+    complete: simulationComplete,
+    score: simulationScore,
+  } = getSimulationResult(questionsWithResults, simulationIds, simulationIds !== null ? simulationAnswers : answers)
 
   const correctCount = questions.filter(
     (question) => question.answer !== null && answers[question.id] === question.answer,
@@ -619,7 +617,7 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  async function submitQuestionAnswer(questionId: string, optionIndex: number): Promise<number | null> {
+  async function submitQuestionAnswer(questionId: string, optionIndex: number, simulationId?: string): Promise<number | null> {
     if (pendingAnswerIds.includes(questionId)) return null
 
     setPendingAnswerIds((current) => current.includes(questionId) ? current : [...current, questionId])
@@ -637,7 +635,7 @@ function App() {
         ...question,
         answer: question.answer ?? savedResult?.correctOption ?? null,
         explanation: question.explanation ?? savedResult?.explanation ?? null,
-      }, optionIndex, isOnline)
+      }, optionIndex, isOnline, simulationId)
 
       setQuestionAnswerResult(questionId, { correctOption, explanation })
       setAnswers((current) => ({ ...current, [questionId]: selectedOption }))
@@ -733,7 +731,9 @@ function App() {
   }, [simulationComplete, savedSimulation, simulationIds, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, completedSimulations, recordCompletedSimulation, recordCompletedOffensive, simulationAnswers, setAnswers])
 
   async function recordSimulationAnswer(questionId: string, optionIndex: number) {
-    const selectedOption = await submitQuestionAnswer(questionId, optionIndex)
+    if (!savedSimulation) return
+    const simulationId = savedSimulation.id ?? `${savedSimulation.examId}-${savedSimulation.updatedAt}`
+    const selectedOption = await submitQuestionAnswer(questionId, optionIndex, simulationId)
     if (selectedOption === null) return
     const nextAnswers = { ...simulationAnswers, [questionId]: selectedOption }
     const updatedAt = new Date().toISOString()
@@ -1047,12 +1047,6 @@ function App() {
                 answerErrors,
                 recordSimulationAnswer,
                 recordSimulationReveal,
-              }}
-              simulationResult={{
-                complete: simulationComplete,
-                score: simulationScore,
-                correctCount: simulationCorrectCount,
-                pointsPerQuestion,
               }}
               questionList={{
                 hasQuestions: questions.length > 0,
