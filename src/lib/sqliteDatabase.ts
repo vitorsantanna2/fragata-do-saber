@@ -48,6 +48,7 @@ export async function loadStudyProgress(): Promise<StudyProgress | null> {
         progressUpdatedAt: progress.progressUpdatedAt ?? {},
         savedSimulation,
         completedSimulations: validSimulations,
+        reviewSchedules: progress.reviewSchedules ?? {},
       })
     }
     return {
@@ -64,6 +65,7 @@ export async function loadStudyProgress(): Promise<StudyProgress | null> {
       progressUpdatedAt: progress.progressUpdatedAt ?? {},
       savedSimulation,
       completedSimulations: validSimulations,
+      reviewSchedules: progress.reviewSchedules ?? {},
     }
   } catch {
     return null

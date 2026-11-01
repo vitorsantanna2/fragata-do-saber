@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { getSimulationResult } from '../lib/simulationResults'
+import { ReviewConfidencePicker } from './ReviewConfidencePicker'
+import type { ReviewConfidence, ReviewSchedules } from '../lib/scheduledReviews'
 
 type Question = {
   id: string
@@ -29,6 +31,8 @@ type SimulationProps = {
   answerErrors: Record<string, string>
   recordSimulationAnswer: (questionId: string, optionIndex: number) => Promise<void>
   recordSimulationReveal: (questionId: string) => void
+  reviewSchedules?: ReviewSchedules
+  onReviewConfidence?: (questionId: string, confidence: ReviewConfidence) => void
 }
 
 export function Simulation({
@@ -40,6 +44,8 @@ export function Simulation({
   answerErrors,
   recordSimulationAnswer,
   recordSimulationReveal,
+  reviewSchedules,
+  onReviewConfidence,
 }: SimulationProps) {
   const byId = useMemo(() => new Map(questions.map((q) => [q.id, q])), [questions])
   const visibleQuestions = useMemo(() => {
@@ -153,6 +159,7 @@ export function Simulation({
               <p className="mt-4 rounded-lg bg-sea-light/70 p-3 text-sm leading-6 text-ink"><strong className="text-sea">Comentário: </strong>{question.explanation}</p>
             )}
             {answerErrors[question.id] && <p className="mt-3 text-sm leading-5 text-red-700" role="alert">{answerErrors[question.id]}</p>}
+            {hasAnswered && reviewSchedules?.[question.id] && onReviewConfidence && <ReviewConfidencePicker schedule={reviewSchedules[question.id]} onRate={(confidence) => onReviewConfidence(question.id, confidence)} />}
             <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
               <span className={`text-xs font-bold ${hasAnswered ? answerIsCorrect ? 'text-sea' : 'text-red-700' : 'text-muted'}`}>{isPending ? 'Verificando resposta…' : !hasAnswered ? selectedAnswer === undefined ? 'Escolha uma alternativa' : 'Resposta não validada' : answerIsCorrect ? 'Resposta correta' : 'Resposta incorreta'}</span>
               <button

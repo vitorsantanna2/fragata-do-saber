@@ -32,11 +32,13 @@ import { ExamChoiceGrid, examChoices } from './components/ExamChoiceGrid'
 import { StudyScreen } from './components/StudyScreen'
 import { MindMapViewer } from './components/MindMapViewer'
 import { shuffle, conciseTopic } from './lib/utils'
-import { useQuestions } from './hooks/useQuestions'
+import { useQuestions, type Question } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
 import { useAdminRoute } from './hooks/useAdminRoute'
 import { resolveQuestionAnswer } from './lib/questionAnswers'
 import { getSimulationResult } from './lib/simulationResults'
+import { useReviewQueue } from './hooks/useReviewQueue'
+import { ScheduledReviews } from './components/ScheduledReviews'
 
 const AdminQuestionsPanel = lazy(() => import('./components/AdminQuestionsPanel').then((mod) => ({ default: mod.default })))
 const PerformanceDashboard = lazy(() => import('./components/PerformanceDashboard').then((mod) => ({ default: mod.PerformanceDashboard })))
@@ -65,6 +67,7 @@ function App() {
   const [showAccountSync, setShowAccountSync] = useState(false)
   const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine)
   const [showPerformance, setShowPerformance] = useState(false)
+  const [showScheduledReviews, setShowScheduledReviews] = useState(false)
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null)
   const [selectedStudyMode, setSelectedStudyMode] = useState<'exam-questions' | 'bibliography-questions' | 'mind-maps' | null>(null)
   const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
@@ -126,6 +129,9 @@ function App() {
     setSavedSimulation,
     completedSimulations,
     recordCompletedSimulation,
+    reviewSchedules,
+    recordReviewAnswer,
+    rateReview,
     simulationRevealed,
     setSimulationRevealed,
     syncStatus,
@@ -144,6 +150,7 @@ function App() {
     accountUser,
     isOnline,
   })
+  const { today: reviewToday, dueReviews } = useReviewQueue(reviewSchedules, questionSnapshots)
 
   useEffect(() => {
     if (!supabase) return
@@ -355,6 +362,7 @@ function App() {
   }
 
   const returnToHome = useCallback(() => {
+    setShowScheduledReviews(false)
     setTopic('Todos')
     setYear('Todos')
     setSelectedExamId(null)
@@ -392,6 +400,8 @@ function App() {
         closeAdmin()
       } else if (showAccountSync) {
         setShowAccountSync(false)
+      } else if (showScheduledReviews) {
+        setShowScheduledReviews(false)
       } else if (showPerformance) {
         setShowPerformance(false)
       } else if (openMindMap) {
@@ -407,7 +417,7 @@ function App() {
       }
     })
     return () => { void listener.then((handle) => handle.remove()) }
-  }, [adminMode, closeAdmin, showAccountSync, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToHome])
+  }, [adminMode, closeAdmin, showAccountSync, showScheduledReviews, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToHome])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSplashElapsed(true), 900)
@@ -617,7 +627,7 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  async function submitQuestionAnswer(questionId: string, optionIndex: number, simulationId?: string): Promise<number | null> {
+  async function submitQuestionAnswer(questionId: string, optionIndex: number, simulationId?: string, reviewQuestion?: Question): Promise<Awaited<ReturnType<typeof resolveQuestionAnswer>> | null> {
     if (pendingAnswerIds.includes(questionId)) return null
 
     setPendingAnswerIds((current) => current.includes(questionId) ? current : [...current, questionId])
@@ -628,7 +638,7 @@ function App() {
     })
 
     try {
-      const question = questions.find((item) => item.id === questionId)
+      const question = reviewQuestion ?? questions.find((item) => item.id === questionId)
       if (!question) throw new Error('Questão não encontrada.')
       const savedResult = questionSnapshots[questionId]
       const { selectedOption, correctOption, explanation } = await resolveQuestionAnswer({
@@ -639,6 +649,7 @@ function App() {
 
       setQuestionAnswerResult(questionId, { correctOption, explanation })
       setAnswers((current) => ({ ...current, [questionId]: selectedOption }))
+      recordReviewAnswer(questionId, selectedOption === correctOption, `${simulationId ?? crypto.randomUUID()}:${questionId}`)
       if (question) {
         setQuestionSnapshots((current) => ({
           ...current,
@@ -658,7 +669,7 @@ function App() {
           },
         }))
       }
-      return selectedOption
+      return { selectedOption, correctOption, explanation }
     } catch (error) {
       setAnswerErrors((current) => ({
         ...current,
@@ -733,9 +744,9 @@ function App() {
   async function recordSimulationAnswer(questionId: string, optionIndex: number) {
     if (!savedSimulation) return
     const simulationId = savedSimulation.id ?? `${savedSimulation.examId}-${savedSimulation.updatedAt}`
-    const selectedOption = await submitQuestionAnswer(questionId, optionIndex, simulationId)
-    if (selectedOption === null) return
-    const nextAnswers = { ...simulationAnswers, [questionId]: selectedOption }
+    const result = await submitQuestionAnswer(questionId, optionIndex, simulationId)
+    if (result === null) return
+    const nextAnswers = { ...simulationAnswers, [questionId]: result.selectedOption }
     const updatedAt = new Date().toISOString()
     setSimulationAnswers(nextAnswers)
     setSavedSimulation((current) => current ? { ...current, answers: nextAnswers, lastQuestionId: questionId, updatedAt } : current)
@@ -828,13 +839,14 @@ function App() {
             <button className="rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold transition hover:border-sea hover:text-sea sm:px-3 sm:text-sm" type="button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}>
               {theme === 'light' ? '🌙' : '☀️'}
             </button>
-            <div className="flex w-full gap-2 sm:w-auto"><button className="flex-1 whitespace-nowrap rounded-lg border border-sea bg-white px-2 py-2 text-xs font-bold text-sea transition hover:bg-sea hover:text-white sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowPerformance(true)}>Meu desempenho</button><button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold transition hover:border-sea hover:text-sea sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowAccountSync(true)}>{accountUser && !accountUser.is_anonymous ? 'Conta' : 'Sincronizar'}</button>{accountUser && !accountUser.is_anonymous ? <button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50 hover:text-red-700 sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={handleLogout}>Sair</button> : null}</div>
+            <button className="rounded-lg border border-sea bg-sea-light px-3 py-2 text-xs font-bold text-sea hover:bg-sea hover:text-white sm:text-sm" type="button" onClick={() => { setShowPerformance(false); setShowScheduledReviews(true) }}>Revisões ({dueReviews.length})</button>
+            <div className="flex w-full gap-2 sm:w-auto"><button className="flex-1 whitespace-nowrap rounded-lg border border-sea bg-white px-2 py-2 text-xs font-bold text-sea transition hover:bg-sea hover:text-white sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => { setShowScheduledReviews(false); setShowPerformance(true) }}>Meu desempenho</button><button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold transition hover:border-sea hover:text-sea sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={() => setShowAccountSync(true)}>{accountUser && !accountUser.is_anonymous ? 'Conta' : 'Sincronizar'}</button>{accountUser && !accountUser.is_anonymous ? <button className="flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-2 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50 hover:text-red-700 sm:flex-none sm:px-3 sm:text-sm" type="button" onClick={handleLogout}>Sair</button> : null}</div>
           </div>
         </header>
         {logoutError && <div className="mx-auto max-w-7xl px-5 py-3"><p className="rounded-lg bg-red-50 p-3 text-sm leading-5 text-red-800" role="alert">{logoutError}</p></div>}
 
         <main id="inicio" className="mx-auto max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
-          {!selectedExamId && (
+          {!selectedExamId && !showScheduledReviews && (
             <section className="relative overflow-hidden rounded-2xl bg-ink px-5 py-5 text-white shadow-lg shadow-ink/10 sm:px-8 sm:py-6" id="simulados">
               <div className="relative grid gap-5 lg:grid-cols-[1fr_260px] lg:items-center">
                 <div className="max-w-2xl">
@@ -863,7 +875,14 @@ function App() {
               </div>
             </section>
           )}
-          {showPerformance ? (
+          {showScheduledReviews ? (
+            <ScheduledReviews
+              today={reviewToday} dueReviews={dueReviews} schedules={reviewSchedules} isOnline={isOnline}
+              favorites={favorites} setFavorites={setFavorites} answerErrors={answerErrors}
+              onAnswer={(question, option, attemptId) => submitQuestionAnswer(question.id, option, attemptId, question)}
+              onRate={rateReview} onClose={() => setShowScheduledReviews(false)}
+            />
+          ) : showPerformance ? (
             <Suspense fallback={<div className="mt-8 p-8 text-center"><Skeleton className="w-32 mx-auto mb-2" /><SkeletonText className="w-48 mx-auto" /></div>}>
               <PerformanceDashboard
                 snapshots={questionSnapshots}
@@ -1047,6 +1066,8 @@ function App() {
                 answerErrors,
                 recordSimulationAnswer,
                 recordSimulationReveal,
+                reviewSchedules,
+                onReviewConfidence: rateReview,
               }}
               questionList={{
                 hasQuestions: questions.length > 0,
@@ -1060,6 +1081,8 @@ function App() {
                 setRevealed,
                 setFavorites,
                 submitAnswer: recordQuestionAnswer,
+                reviewSchedules,
+                onReviewConfidence: rateReview,
                 onBackToReviewList: () => { setReviewQuestionId(null); setShowQuestionList(true); setReviewingFromDashboard(true) },
                 onBackToDashboard: () => setReviewingFromDashboard(false),
                 onMissingQuestion: () => { setReviewQuestionId(null); setShowQuestionList(false); setReviewingFromDashboard(false) },

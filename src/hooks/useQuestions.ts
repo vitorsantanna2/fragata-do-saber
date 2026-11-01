@@ -8,7 +8,7 @@ import {
 } from '../lib/localDatabase'
 import { normalizeSearchText, conciseSource, conciseTopic } from '../lib/utils'
 import { loadOfflineQuestionAnswers } from '../lib/questionAnswers'
-import { loadQuestionCatalog } from '../lib/questionCatalog'
+import { loadQuestionCatalog, toStudyQuestion } from '../lib/questionCatalog'
 
 export type Question = {
   id: string
@@ -79,24 +79,7 @@ export function useQuestions({
   const [bibliographySource, setBibliographySource] = useState('Todos')
   const [questionSearch, setQuestionSearch] = useState('')
 
-  const toQuestion = useCallback((row: CachedQuestionRow): Question => ({
-    id: row.id,
-    year: row.question_type === 'bibliography' ? 'Bibliografia' : String(row.year ?? ''),
-    questionNumber: row.question_type === 'bibliography' || row.question_number === 0 ? null : row.question_number,
-    questionType: row.question_type,
-    subject: row.subject,
-    topic: row.topic,
-    difficulty: row.difficulty,
-    exam: row.exam,
-    prompt: row.statement,
-    promptAfterImage: row.statement_after_image,
-    imageUrl: row.image_url,
-    imageAlt: row.image_alt,
-    options: row.options,
-    answer: row.correct_option != null && row.correct_option >= 0 ? row.correct_option : null,
-    explanation: row.explanation ?? null,
-    source: row.source,
-  }), [])
+  const toQuestion = toStudyQuestion
 
   useEffect(() => {
     if (!selectedExamId) {

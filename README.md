@@ -73,6 +73,7 @@ Execute os scripts pelo **SQL Editor** do Supabase nesta ordem:
 5. `supabase/supabase_admin_questions_setup.sql` — painel administrativo, bucket de imagens de questões e permissões administrativas para questões e mapas.
 6. `supabase/supabase_offline_questions_setup.sql` — download autenticado de gabaritos para correção offline no Android.
 7. `supabase/supabase_simulation_answers_setup.sql` — correção online com respostas independentes por simulado.
+8. `supabase/supabase_scheduled_reviews_setup.sql` — sincronização dos agendamentos de revisão entre dispositivos.
 
 Habilite **Anonymous Sign-Ins**, o provedor **Email** e **Manual Linking** nas configurações de Auth do Supabase. Manual Linking é necessário para converter a sessão anônima existente em uma conta com e-mail. Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` em `.env.local` para desenvolvimento. No GitHub Pages, configure os mesmos valores em **Settings → Secrets and variables → Actions → Variables**.
 
@@ -140,6 +141,14 @@ Use **Meu desempenho** no cabeçalho para consultar questões respondidas, acert
 Os resultados de respostas já validadas são preservados ao reabrir o app. Quando há conexão, o app também recupera as respostas registradas para a sessão ou conta atual. Cada simulado concluído tem um identificador próprio e aparece no histórico, mesmo que outros simulados tenham a mesma nota no mesmo dia. A ofensiva continua sendo contabilizada por dia.
 
 Na web, a correção de cada simulado usa respostas independentes: responder uma questão novamente em outro simulado não reutiliza a alternativa de uma tentativa anterior. Execute `supabase/supabase_simulation_answers_setup.sql` para habilitar essa correção no servidor. Os downloads de questões usam paginação e o cache offline só é substituído após a conclusão de todas as páginas e gabaritos.
+
+### Revisão programada
+
+Abra **Revisões** no cabeçalho para acessar as questões previstas para hoje e as atrasadas, com filtros por concurso e matéria. Cada resposta corrigida na lista de questões, nos simulados ou na própria revisão entra no agendamento. Respostas antigas com correção conhecida também são incluídas a partir das datas do progresso salvo.
+
+Depois de responder, use **Sabia**, **Fiquei em dúvida** ou **Chutei**. Acertos avaliados como **Sabia** em dias diferentes seguem os intervalos iniciais de 1, 3, 7, 15, 30 e 60 dias. Erros, dúvidas, chutes e respostas ainda sem avaliação ficam para o dia seguinte. Alterar a avaliação de uma mesma resposta não conta como outra revisão, e repetir a questão no mesmo dia não aumenta o intervalo.
+
+Na revisão, a alternativa antiga não aparece marcada: é preciso tentar responder novamente para consultar a correção e a explicação. No Android, questões já baixadas podem ser revisadas offline. Questões indisponíveis no aparelho precisam ser baixadas com internet. O agendamento usa o calendário de São Paulo e é salvo no aparelho; contas vinculadas podem sincronizá-lo após executar `supabase/supabase_scheduled_reviews_setup.sql` no Supabase. Esses intervalos são uma regra inicial da plataforma, não uma previsão individual de esquecimento.
 
 ### Sincronizar entre dispositivos
 

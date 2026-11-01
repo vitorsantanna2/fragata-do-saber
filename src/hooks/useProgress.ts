@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import {
   loadStudyProgress,
   saveStudyProgress,
@@ -10,6 +10,8 @@ import {
 } from '../lib/localDatabase'
 import { loadValidatedAnswers, syncStudyProgress, syncOffensiveState, type SyncedProgress } from '../lib/progressSync'
 import { mergeCompletedSimulations } from '../lib/simulationHistory'
+import { scheduleReview, seedReviewSchedules, type ReviewConfidence, type ReviewSchedules } from '../lib/scheduledReviews'
+import type { Question } from './useQuestions'
 
 function progressFingerprint(userId: string, progress: SyncedProgress) {
   return JSON.stringify({
@@ -20,11 +22,12 @@ function progressFingerprint(userId: string, progress: SyncedProgress) {
     progressUpdatedAt: Object.entries(progress.progressUpdatedAt).sort(([a], [b]) => a.localeCompare(b)),
     questionSnapshots: Object.entries(progress.questionSnapshots).sort(([a], [b]) => a.localeCompare(b)),
     completedSimulations: [...progress.completedSimulations].sort((a, b) => a.id.localeCompare(b.id)),
+    reviewSchedules: Object.entries(progress.reviewSchedules ?? {}).sort(([a], [b]) => a.localeCompare(b)),
   })
 }
 
 type UseProgressProps = {
-  questions: any[]
+  questions: Question[]
   accountUser: { id: string; email: string | null; is_anonymous: boolean; created_at: string } | null
   isOnline: boolean
 }
@@ -38,6 +41,9 @@ type UseProgressReturn = {
   savedSimulation: SavedSimulation | null
   completedSimulations: CompletedSimulation[]
   recordCompletedSimulation: (simulation: CompletedSimulation) => void
+  reviewSchedules: ReviewSchedules
+  recordReviewAnswer: (questionId: string, correct: boolean, attemptId: string) => void
+  rateReview: (questionId: string, confidence: ReviewConfidence) => void
   syncStatus: 'local' | 'offline' | 'syncing' | 'synced' | 'error'
   offensiveState: OffensiveState | null
   offensiveLoaded: boolean
@@ -77,6 +83,22 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   const [questionSnapshots, setQuestionSnapshots] = useState<Record<string, StudyQuestionSnapshot>>({})
   const [savedSimulation, setSavedSimulation] = useState<SavedSimulation | null>(null)
   const [completedSimulations, setCompletedSimulations] = useState<CompletedSimulation[]>([])
+  const [reviewSchedules, setReviewSchedules] = useState<ReviewSchedules>({})
+  const recordReviewAnswer = useCallback((questionId: string, correct: boolean, attemptId: string) => {
+    const now = new Date().toISOString()
+    setReviewSchedules((current) => {
+      if (current[questionId]?.lastAttemptId === attemptId) return current
+      return { ...current, [questionId]: scheduleReview(current[questionId], correct, null, attemptId, now) }
+    })
+  }, [])
+  const rateReview = useCallback((questionId: string, confidence: ReviewConfidence) => {
+    const now = new Date().toISOString()
+    setReviewSchedules((current) => {
+      const previous = current[questionId]
+      if (!previous || previous.confidence === confidence) return current
+      return { ...current, [questionId]: scheduleReview(previous, previous.lastCorrect, confidence, previous.lastAttemptId, previous.lastReviewedAt, now) }
+    })
+  }, [])
   const [simulationRevealed, setSimulationRevealed] = useState<string[]>([])
   const [syncStatus, setSyncStatus] = useState<'local' | 'offline' | 'syncing' | 'synced' | 'error'>('local')
   const [offensiveState, setOffensiveState] = useState<OffensiveState | null>(null)
@@ -110,6 +132,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         setQuestionSnapshots(progress.questionSnapshots)
         setSavedSimulation(progress.savedSimulation)
         setCompletedSimulations(progress.completedSimulations)
+        setReviewSchedules(seedReviewSchedules(progress.reviewSchedules ?? {}, progress.answers, progress.questionSnapshots, progress.progressUpdatedAt))
       }
       setProgressRestored(true)
     })
@@ -131,13 +154,21 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
     if (!progressRestored) return
     const timeout = window.setTimeout(() => {
       void saveStudyProgress({
-        answers, revealed, favorites, selectedExamId: null as any, selectedStudyMode: null as any,
+        answers, revealed, favorites, selectedExamId: null, selectedStudyMode: null,
         topic: '', year: '', bibliographySource: '', questionSearch: '', questionSnapshots, progressUpdatedAt,
-        savedSimulation, completedSimulations,
+        savedSimulation, completedSimulations, reviewSchedules,
       })
     }, 200)
     return () => window.clearTimeout(timeout)
-    }, [progressRestored, answers, revealed, favorites, questionSnapshots, progressUpdatedAt, savedSimulation, completedSimulations])
+    }, [progressRestored, answers, revealed, favorites, questionSnapshots, progressUpdatedAt, savedSimulation, completedSimulations, reviewSchedules])
+
+  useEffect(() => {
+    if (!progressRestored) return
+    setReviewSchedules((current) => {
+      const seeded = seedReviewSchedules(current, answers, questionSnapshots, progressUpdatedAt)
+      return Object.keys(seeded).length === Object.keys(current).length ? current : seeded
+    })
+  }, [progressRestored, answers, questionSnapshots, progressUpdatedAt])
 
   useEffect(() => {
     if (!progressRestored) return
@@ -170,13 +201,13 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
       return
     }
 
-    const fingerprint = progressFingerprint(accountUser.id, { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations })
+    const fingerprint = progressFingerprint(accountUser.id, { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, reviewSchedules })
     const isManualSync = manualSyncRevision > lastManualSyncRevision.current
     if (!isManualSync && fingerprint === lastSyncedProgressFingerprint.current) return
     let active = true
     const timer = window.setTimeout(() => {
       setSyncStatus('syncing')
-      void syncStudyProgress({ answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations })
+      void syncStudyProgress({ answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, reviewSchedules })
         .then((merged) => {
           if (!active) return
           lastManualSyncRevision.current = manualSyncRevision
@@ -190,6 +221,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
           setProgressUpdatedAt(merged.progressUpdatedAt)
           setQuestionSnapshots(merged.questionSnapshots)
           setCompletedSimulations(merged.completedSimulations)
+          setReviewSchedules(merged.reviewSchedules ?? {})
           setSyncStatus('synced')
         })
         .catch((error: unknown) => {
@@ -200,7 +232,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         })
     }, 450)
     return () => { active = false; window.clearTimeout(timer) }
-  }, [progressRestored, accountUser, isOnline, answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, manualSyncRevision])
+  }, [progressRestored, accountUser, isOnline, answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, reviewSchedules, manualSyncRevision])
 
   useEffect(() => {
     if (!progressRestored || !isOnline || !accountUser?.is_anonymous) return
@@ -306,6 +338,9 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
     savedSimulation,
     completedSimulations,
     recordCompletedSimulation,
+    reviewSchedules,
+    recordReviewAnswer,
+    rateReview,
     simulationRevealed,
     setSimulationRevealed,
     syncStatus,

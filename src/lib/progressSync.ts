@@ -3,6 +3,7 @@ import type { StudyProgress, StudyQuestionSnapshot, OffensiveState } from './loc
 import { getSaoPauloDateKey, normalizeOffensiveDate } from './offensiveDates'
 import { mergeCompletedSimulations } from './simulationHistory'
 import { loadOfflineQuestionAnswers } from './questionAnswers'
+import { syncReviewSchedules } from './reviewSync'
 
 type ValidatedAnswer = {
   question_id: string
@@ -65,7 +66,7 @@ type CloudOffensiveStateRow = {
   updated_at: string
 }
 
-type SyncInput = Pick<StudyProgress, 'answers' | 'favorites' | 'revealed' | 'progressUpdatedAt' | 'questionSnapshots' | 'completedSimulations'>
+type SyncInput = Pick<StudyProgress, 'answers' | 'favorites' | 'revealed' | 'progressUpdatedAt' | 'questionSnapshots' | 'completedSimulations' | 'reviewSchedules'>
 
 export type SyncedProgress = Omit<SyncInput, 'questionSnapshots' | 'completedSimulations'> & {
   questionSnapshots: Record<string, StudyQuestionSnapshot>
@@ -262,7 +263,8 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
     isSimulation: row.is_simulation ?? false,
   })).sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
 
-  return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations: mergeCompletedSimulations(completedSimulations) }
+  const reviewSchedules = await syncReviewSchedules(user.id, progress.reviewSchedules ?? {})
+  return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations: mergeCompletedSimulations(completedSimulations), reviewSchedules }
 }
 
 export async function syncOffensiveState(state: OffensiveState): Promise<SyncedOffensiveState | null> {

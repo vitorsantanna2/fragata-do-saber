@@ -1,6 +1,8 @@
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 import { Fragment } from 'react'
+import { ReviewConfidencePicker } from './ReviewConfidencePicker'
+import type { ReviewConfidence, ReviewSchedule } from '../lib/scheduledReviews'
 
 type Question = {
   id: string
@@ -32,6 +34,8 @@ type QuestionCardProps = {
   setFavorites: (value: string[]) => void
   submitAnswer: (questionId: string, optionIndex: number) => Promise<void>
   conciseSource: (source: string) => string
+  reviewSchedule?: ReviewSchedule
+  onReviewConfidence?: (confidence: ReviewConfidence) => void
 }
 
 function RichText({ text, className }: { text: string; className?: string }) {
@@ -98,6 +102,8 @@ export function QuestionCard({
   setFavorites,
   submitAnswer,
   conciseSource,
+  reviewSchedule,
+  onReviewConfidence,
 }: QuestionCardProps) {
   const isRevealed = revealedState.includes(question.id)
   const selectedAnswer = answerState[question.id]
@@ -174,6 +180,7 @@ export function QuestionCard({
         <p className="mt-4 rounded-lg bg-sea-light/70 p-3 text-sm leading-6 text-ink"><strong className="text-sea">Comentário: </strong>{question.explanation}</p>
       )}
       {answerError && <p className="mt-3 text-sm leading-5 text-red-700" role="alert">{answerError}</p>}
+      {hasAnswered && reviewSchedule && onReviewConfidence && <ReviewConfidencePicker schedule={reviewSchedule} onRate={onReviewConfidence} />}
       <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
         <span className={`text-xs font-bold ${hasAnswered ? answerIsCorrect ? 'text-sea' : 'text-red-700' : 'text-muted'}`}>{isAnswerPending ? 'Verificando resposta…' : !hasAnswered ? selectedAnswer === undefined ? 'Escolha uma alternativa' : 'Toque na alternativa para validar' : answerIsCorrect ? 'Resposta correta' : 'Resposta incorreta'}</span>
         <button

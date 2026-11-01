@@ -1,3 +1,4 @@
+// @vitest-environment node
 /// <reference types="node" />
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -45,6 +46,17 @@ beforeEach(() => {
 afterEach(() => sqlite.close())
 
 describe('native SQLite question cache', () => {
+  it('updates an individual review question without deleting the other downloaded questions', async () => {
+    const cache = await import('../lib/localDatabase')
+    const second = { ...question, id: 'q2' }
+    await cache.cacheQuestions([question, second], 'CP-T', 'Informática')
+    await cache.cacheReviewQuestion({ ...question, explanation: 'Revisão atualizada' })
+    const restored = await cache.readCachedQuestions('CP-T', 'Informática')
+    expect(restored).toHaveLength(2)
+    expect(restored.find((row) => row.id === 'q1')?.explanation).toBe('Revisão atualizada')
+    expect(restored.find((row) => row.id === 'q2')).toEqual(second)
+  })
+
   it('saves questions with their answer keys and keeps the keys after reopening the database', async () => {
     const firstSession = await import('../lib/localDatabase')
     await firstSession.cacheQuestions([question], 'CP-T', 'Informática')

@@ -1,3 +1,5 @@
+import type { ReviewSchedules } from './scheduledReviews'
+
 export type CachedQuestionRow = {
   id: string
   year: number | null
@@ -43,6 +45,7 @@ export type StudyProgress = {
   progressUpdatedAt: Record<string, string>
   savedSimulation: SavedSimulation | null
   completedSimulations: CompletedSimulation[]
+  reviewSchedules?: ReviewSchedules
 }
 
 export type SavedSimulation = {

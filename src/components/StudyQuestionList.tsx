@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react'
 import type { Question } from '../hooks/useQuestions'
 import { conciseSource } from '../lib/utils'
 import { QuestionCard } from './QuestionCard'
+import type { ReviewConfidence, ReviewSchedules } from '../lib/scheduledReviews'
 
 export type StudyQuestionListProps = Pick<
   ComponentProps<typeof QuestionCard>,
@@ -16,6 +17,8 @@ export type StudyQuestionListProps = Pick<
   onBackToReviewList: () => void
   onBackToDashboard: () => void
   onMissingQuestion: () => void
+  reviewSchedules?: ReviewSchedules
+  onReviewConfidence?: (questionId: string, confidence: ReviewConfidence) => void
 }
 
 export function StudyQuestionList({
@@ -34,6 +37,8 @@ export function StudyQuestionList({
   onBackToReviewList,
   onBackToDashboard,
   onMissingQuestion,
+  reviewSchedules,
+  onReviewConfidence,
 }: StudyQuestionListProps) {
   const questionsToShow = reviewQuestionId
     ? questions.filter((question) => question.id === reviewQuestionId)
@@ -82,6 +87,8 @@ export function StudyQuestionList({
         setFavorites={setFavorites}
         submitAnswer={submitAnswer}
         conciseSource={conciseSource}
+        reviewSchedule={reviewSchedules?.[question.id]}
+        onReviewConfidence={onReviewConfidence ? (confidence) => onReviewConfidence(question.id, confidence) : undefined}
       />
       {reviewQuestionId ? <button type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={onBackToReviewList}>Voltar à lista de questões para revisar</button> : null}
       {!reviewQuestionId && reviewingFromDashboard ? <button type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={onBackToDashboard}>Voltar ao painel de desempenho</button> : null}

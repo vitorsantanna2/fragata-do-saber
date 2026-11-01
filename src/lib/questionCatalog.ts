@@ -1,8 +1,20 @@
 import { supabase } from './supabase'
 import type { CachedQuestionRow } from './localDatabaseTypes'
+import type { Question } from '../hooks/useQuestions'
 
 type CatalogQuestion = Omit<CachedQuestionRow, 'correct_option' | 'explanation'>
 const PAGE_SIZE = 500
+
+export function toStudyQuestion(row: CachedQuestionRow): Question {
+  return {
+    id: row.id, year: row.question_type === 'bibliography' ? 'Bibliografia' : String(row.year ?? ''),
+    questionNumber: row.question_type === 'bibliography' || row.question_number === 0 ? null : row.question_number,
+    questionType: row.question_type, subject: row.subject, topic: row.topic, difficulty: row.difficulty, exam: row.exam,
+    prompt: row.statement, promptAfterImage: row.statement_after_image, imageUrl: row.image_url, imageAlt: row.image_alt,
+    options: row.options, answer: row.correct_option != null && row.correct_option >= 0 ? row.correct_option : null,
+    explanation: row.explanation ?? null, source: row.source,
+  }
+}
 
 export async function loadQuestionCatalog(exam: string, subject: string | null, questionType: 'exam' | 'bibliography', isActive = () => true) {
   if (!supabase) throw new Error('A conexão com o catálogo não está disponível.')

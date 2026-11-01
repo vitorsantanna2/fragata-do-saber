@@ -84,7 +84,18 @@ export async function cacheQuestions(rows: CachedQuestionRow[], exam: string, su
     ? { statement: 'DELETE FROM questions WHERE exam = ? AND subject = ? AND question_type = ?', values: [exam, subject, questionType] }
     : { statement: 'DELETE FROM questions WHERE exam = ? AND question_type = ?', values: [exam, questionType] }
 
-  const questionStatements = rows.map((row) => ({
+  const questionStatements = questionUpserts(rows.map((row) => ({ ...row, question_type: questionType })))
+  await database.executeSet([deleteStatement, ...questionStatements], true)
+  await setLocalMetadata('questions_last_synced_at', new Date().toISOString())
+}
+
+export async function cacheReviewQuestion(row: CachedQuestionRow) {
+  const database = await getLocalDatabase()
+  if (database) await database.executeSet(questionUpserts([row]), true)
+}
+
+function questionUpserts(rows: CachedQuestionRow[]) {
+  return rows.map((row) => ({
     statement: `
       INSERT INTO questions (
         id, year, question_number, question_type, subject, topic, difficulty, exam, statement,
@@ -111,7 +122,7 @@ export async function cacheQuestions(rows: CachedQuestionRow[], exam: string, su
       row.id,
       row.year ?? 0,
       row.question_number ?? 0,
-      questionType,
+      row.question_type,
       row.subject,
       row.topic,
       row.difficulty,
@@ -127,8 +138,6 @@ export async function cacheQuestions(rows: CachedQuestionRow[], exam: string, su
     ],
   }))
 
-  await database.executeSet([deleteStatement, ...questionStatements], true)
-  await setLocalMetadata('questions_last_synced_at', new Date().toISOString())
 }
 
 export async function hasCachedQuestions() {

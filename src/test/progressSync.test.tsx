@@ -18,7 +18,7 @@ function emptyProgress(): Pick<StudyProgress, 'answers' | 'favorites' | 'reveale
 }
 
 beforeEach(() => {
-  rows = { user_question_progress: [], question_answer_attempts: [], questions: [], user_simulation_results: [] }
+  rows = { user_question_progress: [], question_answer_attempts: [], questions: [], user_simulation_results: [], user_review_schedules: [] }
   selections = {}
   uploads = {}
   client.getSession.mockResolvedValue({ data: { session: { user: { id: 'user-1', is_anonymous: false } } }, error: null })
