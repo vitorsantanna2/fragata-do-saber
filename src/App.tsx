@@ -15,11 +15,14 @@ import {
   hasCachedQuestions,
   isNativeApp,
   registerOffensiveSimulation,
+  saveOffensiveState,
   setLocalMetadata,
   type SavedSimulation,
   type StudyQuestionSnapshot,
   type CompletedSimulation,
+  type OffensiveState,
 } from './lib/localDatabase'
+import { getDaysAboard } from './lib/offensiveDates'
 import { Skeleton, SkeletonText } from './components/Skeleton'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ExamChoiceGrid, examChoices } from './components/ExamChoiceGrid'
@@ -200,7 +203,7 @@ function App() {
   const [mindMapAction, setMindMapAction] = useState<string | null>(null)
   const [showDownloadedMindMapsOnly, setShowDownloadedMindMapsOnly] = useState(false)
   const [openMindMap, setOpenMindMap] = useState<{ map: MindMap; url: string } | null>(null)
-  const [accountUser, setAccountUser] = useState<{ id: string; email: string | null; is_anonymous: boolean } | null>(null)
+  const [accountUser, setAccountUser] = useState<{ id: string; email: string | null; is_anonymous: boolean; created_at: string } | null>(null)
   const [logoutError, setLogoutError] = useState('')
 
   const {
@@ -265,11 +268,11 @@ function App() {
     if (!supabase) return
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const user = session?.user
-      setAccountUser(user ? { id: user.id, email: user.email ?? null, is_anonymous: Boolean(user.is_anonymous) } : null)
+      setAccountUser(user ? { id: user.id, email: user.email ?? null, is_anonymous: Boolean(user.is_anonymous), created_at: user.created_at } : null)
     })
     void supabase.auth.getSession().then(({ data }) => {
       const user = data.session?.user
-      setAccountUser(user ? { id: user.id, email: user.email ?? null, is_anonymous: Boolean(user.is_anonymous) } : null)
+      setAccountUser(user ? { id: user.id, email: user.email ?? null, is_anonymous: Boolean(user.is_anonymous), created_at: user.created_at } : null)
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -600,9 +603,8 @@ function App() {
   }, [progressUpdatedAt, questionSnapshots])
 
   const daysSinceJoin = useMemo(() => {
-    if (!offensiveState?.joinedAt) return 0
-    return Math.max(0, Math.ceil((Date.now() - Date.parse(offensiveState.joinedAt)) / (1000 * 60 * 60 * 24)))
-  }, [offensiveState?.joinedAt])
+    return getDaysAboard(accountUser?.created_at ?? offensiveState?.joinedAt ?? null)
+  }, [accountUser?.created_at, offensiveState?.joinedAt])
 
   const resumeSavedSimulation = Boolean(savedSimulation && (
     !lastStudiedQuestion || Date.parse(savedSimulation.updatedAt) >= Date.parse(progressUpdatedAt[lastStudiedQuestion.questionId] ?? '')
@@ -713,6 +715,37 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const recordCompletedOffensive = useCallback(async () => {
+    const accountCreatedAt = accountUser?.created_at ?? null
+
+    if (supabase && accountUser && !accountUser.is_anonymous && isOnline) {
+      try {
+        const { data, error } = await supabase.rpc('record_simulation_offensive')
+        if (error) throw error
+
+        const row = Array.isArray(data) ? data[0] : data
+        if (row) {
+          const syncedState: OffensiveState = {
+            totalOffensives: row.total_offensives,
+            currentStreak: row.current_streak,
+            bestStreak: row.best_streak,
+            lastOffensiveDate: row.last_offensive_date,
+            offensiveLoggedToday: row.offensive_logged_today,
+            joinedAt: accountCreatedAt ?? row.joined_at,
+          }
+          await saveOffensiveState(syncedState)
+          setOffensiveState(syncedState)
+          return
+        }
+      } catch (error) {
+        console.warn('Não foi possível registrar a ofensiva no servidor; usando o estado local.', error)
+      }
+    }
+
+    const localState = await registerOffensiveSimulation(accountCreatedAt)
+    setOffensiveState(localState)
+  }, [accountUser, isOnline, setOffensiveState])
+
   useEffect(() => {
     if (!simulationComplete || !savedSimulation || simulationIds === null) return
 
@@ -739,9 +772,9 @@ function App() {
     }
     lastCompletedSimulationRef.current = currentKey
     recordCompletedSimulation(completed)
-    void registerOffensiveSimulation().then((state) => setOffensiveState(state))
+    void recordCompletedOffensive()
     setAnswers({ ...answers, ...simulationAnswers })
-  }, [simulationComplete, savedSimulation, simulationIds, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, examChoices, recordCompletedSimulation, simulationAnswers, answers])
+  }, [simulationComplete, savedSimulation, simulationIds, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, recordCompletedSimulation, recordCompletedOffensive, simulationAnswers, answers, setAnswers])
 
   function recordSimulationAnswer(questionId: string, optionIndex: number) {
     const nextAnswers = { ...simulationAnswers, [questionId]: optionIndex }
@@ -905,7 +938,7 @@ function App() {
                 completedSimulations={completedSimulations}
                 onClose={() => setShowPerformance(false)}
                 onReview={reviewQuestion}
-                offensiveState={offensiveState}
+                offensiveState={offensiveState ? { ...offensiveState, joinedAt: accountUser?.created_at ?? offensiveState.joinedAt } : null}
                 offensiveLoaded={offensiveLoaded}
               />
             </Suspense>

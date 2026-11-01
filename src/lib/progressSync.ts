@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import type { StudyProgress, StudyQuestionSnapshot, CompletedSimulation, OffensiveState } from './localDatabase'
+import { getSaoPauloDateKey, normalizeOffensiveDate } from './offensiveDates'
 
 type CloudProgressRow = {
   user_id: string
@@ -216,14 +217,6 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
   const user = sessionData.session?.user
   if (!user || user.is_anonymous) return null
 
-  const toIsoDate = (value: string | null): string | null => {
-    if (!value) return null
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
-    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
-    if (m) return `${m[3]}-${m[2]}-${m[1]}`
-    return value
-  }
-
   const { data: remote, error: fetchError } = await supabase
     .from('user_offensive_state')
     .select('user_id,total_offensives,current_streak,best_streak,last_offensive_date,offensive_logged_today,joined_at,updated_at')
@@ -241,10 +234,11 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
   const remoteRow = remote as CloudOffensiveStateRow | null
   const now = new Date().toISOString()
   const updatedAt = now
+  const accountCreatedAt = user.created_at
 
-  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
-  const localDate = toIsoDate(state.lastOffensiveDate)
-  const remoteDate = remoteRow ? toIsoDate(remoteRow.last_offensive_date) : null
+  const today = getSaoPauloDateKey()
+  const localDate = normalizeOffensiveDate(state.lastOffensiveDate)
+  const remoteDate = remoteRow ? normalizeOffensiveDate(remoteRow.last_offensive_date) : null
 
   let next: OffensiveState = { ...state }
   let shouldUpload = false
@@ -252,10 +246,10 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
   if (!remoteRow) {
     next = {
       ...state,
-      joinedAt: state.joinedAt ?? now,
-      lastOffensiveDate: toIsoDate(state.lastOffensiveDate),
+      joinedAt: accountCreatedAt ?? state.joinedAt ?? now,
+      lastOffensiveDate: localDate,
     }
-    if (toIsoDate(next.lastOffensiveDate) === today && next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
+    if (normalizeOffensiveDate(next.lastOffensiveDate) === today && next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
     if ((next.currentStreak ?? 0) < 1 && (next.totalOffensives ?? 0) >= 1) next.currentStreak = 1
     if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
     shouldUpload = true
@@ -263,8 +257,8 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
     if (localDate === today && remoteDate !== today) {
       next = {
         ...state,
-        joinedAt: state.joinedAt ?? remoteRow.joined_at,
-        lastOffensiveDate: toIsoDate(state.lastOffensiveDate),
+        joinedAt: accountCreatedAt ?? remoteRow.joined_at,
+        lastOffensiveDate: localDate,
       }
       if (next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
       if ((next.currentStreak ?? 0) < 1 && (next.totalOffensives ?? 0) >= 1) next.currentStreak = 1
@@ -277,13 +271,13 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
         bestStreak: remoteRow.best_streak,
         lastOffensiveDate: remoteRow.last_offensive_date,
         offensiveLoggedToday: true,
-        joinedAt: remoteRow.joined_at,
+        joinedAt: accountCreatedAt ?? remoteRow.joined_at,
       }
       if ((next.currentStreak ?? 0) < 1 && (next.totalOffensives ?? 0) >= 1) next.currentStreak = 1
       if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
     } else {
       const remoteUpdated = Date.parse(remoteRow.updated_at)
-      const localUpdated = Date.parse((toIsoDate(state.lastOffensiveDate) ?? state.joinedAt ?? now) + 'T00:00:00-03:00') || Date.parse(remoteRow.updated_at)
+      const localUpdated = Date.parse((localDate ?? accountCreatedAt ?? state.joinedAt ?? now) + 'T00:00:00-03:00') || Date.parse(remoteRow.updated_at)
 
       if (remoteUpdated > localUpdated) {
         next = {
@@ -292,23 +286,29 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
           bestStreak: remoteRow.best_streak,
           lastOffensiveDate: remoteRow.last_offensive_date,
           offensiveLoggedToday: remoteRow.offensive_logged_today,
-          joinedAt: remoteRow.joined_at,
+          joinedAt: accountCreatedAt ?? remoteRow.joined_at,
         }
-        if (toIsoDate(next.lastOffensiveDate) === today && next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
+        next.lastOffensiveDate = remoteDate
+        if (remoteDate === today && next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
         if ((next.currentStreak ?? 0) < 1 && (next.totalOffensives ?? 0) >= 1) next.currentStreak = 1
         if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
       } else {
         next = {
           ...state,
-          joinedAt: state.joinedAt ?? remoteRow.joined_at,
-          lastOffensiveDate: toIsoDate(state.lastOffensiveDate),
+          joinedAt: accountCreatedAt ?? remoteRow.joined_at,
+          lastOffensiveDate: localDate,
         }
-        if (toIsoDate(next.lastOffensiveDate) === today && next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
+        if (localDate === today && next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
         if ((next.currentStreak ?? 0) < 1 && (next.totalOffensives ?? 0) >= 1) next.currentStreak = 1
         if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
         shouldUpload = true
       }
     }
+  }
+
+  if (accountCreatedAt && next.joinedAt !== accountCreatedAt) {
+    next = { ...next, joinedAt: accountCreatedAt }
+    shouldUpload = true
   }
 
   if (shouldUpload) {
@@ -317,7 +317,7 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
       total_offensives: next.totalOffensives,
       current_streak: next.currentStreak,
       best_streak: next.bestStreak,
-      last_offensive_date: toIsoDate(next.lastOffensiveDate),
+      last_offensive_date: normalizeOffensiveDate(next.lastOffensiveDate),
       offensive_logged_today: next.offensiveLoggedToday,
       joined_at: next.joinedAt,
       updated_at: updatedAt,

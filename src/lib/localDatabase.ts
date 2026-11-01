@@ -4,6 +4,11 @@ import {
   SQLiteConnection,
   type SQLiteDBConnection,
 } from '@capacitor-community/sqlite'
+import {
+  getSaoPauloDateKey,
+  normalizeOffensiveStateForToday,
+  recordOffensiveForDate,
+} from './offensiveDates'
 
 const DATABASE_NAME = 'fragata_saber'
 const DATABASE_VERSION = 1
@@ -100,19 +105,8 @@ export type StudyQuestionSnapshot = {
 const STUDY_PROGRESS_KEY = 'study_progress_v1'
 const OFFENSIVE_STATE_KEY = 'offensive_state_v1'
 
-function todayKey() {
-  const now = new Date()
-  return now.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
-}
-
-function yesterdayKey() {
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  return yesterday.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
-}
-
 function blankOffensiveState(): OffensiveState {
-  return { totalOffensives: 0, currentStreak: 0, bestStreak: 0, lastOffensiveDate: null, offensiveLoggedToday: false, joinedAt: new Date().toISOString() }
+  return { totalOffensives: 0, currentStreak: 0, bestStreak: 0, lastOffensiveDate: null, offensiveLoggedToday: false, joinedAt: null }
 }
 
 function deduplicateCompletedSimulations(simulations: CompletedSimulation[]): CompletedSimulation[] {
@@ -198,7 +192,6 @@ export async function loadOffensiveState(): Promise<OffensiveState> {
     if (!stored) {
       const initial: OffensiveState = {
         ...blankOffensiveState(),
-        joinedAt: new Date().toISOString(),
       }
       void saveOffensiveState(initial)
       return initial
@@ -210,15 +203,13 @@ export async function loadOffensiveState(): Promise<OffensiveState> {
       bestStreak: state.bestStreak ?? 0,
       lastOffensiveDate: state.lastOffensiveDate ?? null,
       offensiveLoggedToday: state.offensiveLoggedToday ?? false,
-      joinedAt: state.joinedAt ?? new Date().toISOString(),
+      joinedAt: state.joinedAt ?? null,
     }
-    const today = todayKey()
-    if (loaded.lastOffensiveDate === today) {
-      if (loaded.offensiveLoggedToday !== true) loaded.offensiveLoggedToday = true
-      if ((loaded.currentStreak ?? 0) < 1 && (loaded.totalOffensives ?? 0) >= 1) loaded.currentStreak = 1
-      if ((loaded.bestStreak ?? 0) < (loaded.currentStreak ?? 0)) loaded.bestStreak = loaded.currentStreak ?? 0
+    const normalized = normalizeOffensiveStateForToday(loaded, getSaoPauloDateKey())
+    if (JSON.stringify(normalized) !== JSON.stringify(loaded)) {
+      void saveOffensiveState(normalized)
     }
-    return loaded
+    return normalized
   } catch {
     return blankOffensiveState()
   }
@@ -234,90 +225,21 @@ export async function saveOffensiveState(state: OffensiveState) {
   }
 }
 
-export async function registerOffensiveAccess(): Promise<OffensiveState> {
+async function registerOffensiveDay(accountCreatedAt?: string | null): Promise<OffensiveState> {
   const state = await loadOffensiveState()
-  const today = todayKey()
-  if (state.lastOffensiveDate === today) {
-    const fixed: OffensiveState = { ...state }
-    if (fixed.offensiveLoggedToday !== true) fixed.offensiveLoggedToday = true
-    if ((fixed.currentStreak ?? 0) < 1) fixed.currentStreak = 1
-    if ((fixed.bestStreak ?? 0) < (fixed.currentStreak ?? 1)) fixed.bestStreak = fixed.currentStreak ?? 1
-    if (JSON.stringify(fixed) !== JSON.stringify(state)) {
-      await saveOffensiveState(fixed)
-    }
-    return fixed
-  }
-
-  const next: OffensiveState = {
-    ...state,
-    totalOffensives: state.totalOffensives + 1,
-    offensiveLoggedToday: true,
-    lastOffensiveDate: today,
-  }
-
-  if (state.lastOffensiveDate === null) {
-    next.currentStreak = 1
-    next.bestStreak = 1
-  } else {
-    const yesterdayKeyValue = yesterdayKey()
-    if (state.lastOffensiveDate === yesterdayKeyValue) {
-      next.currentStreak = (state.currentStreak ?? 0) + 1
-      if ((next.currentStreak ?? 0) > (next.bestStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-    } else {
-      next.currentStreak = 1
-      if ((next.currentStreak ?? 0) > (next.bestStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-    }
-  }
-
-  if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-  if ((next.currentStreak ?? 0) < 1) next.currentStreak = 1
-  if ((next.bestStreak ?? 0) < 1) next.bestStreak = 1
-
+  const joinedAt = accountCreatedAt ?? state.joinedAt
+  const base = joinedAt === state.joinedAt ? state : { ...state, joinedAt }
+  const next = recordOffensiveForDate(base, getSaoPauloDateKey())
   await saveOffensiveState(next)
   return next
 }
 
-export async function registerOffensiveSimulation(): Promise<OffensiveState> {
-  const state = await loadOffensiveState()
-  const today = todayKey()
-  if (state.lastOffensiveDate === today) {
-    const fixed: OffensiveState = { ...state }
-    if (fixed.offensiveLoggedToday !== true) fixed.offensiveLoggedToday = true
-    if ((fixed.currentStreak ?? 0) < 1) fixed.currentStreak = 1
-    if ((fixed.bestStreak ?? 0) < (fixed.currentStreak ?? 1)) fixed.bestStreak = fixed.currentStreak ?? 1
-    if (JSON.stringify(fixed) !== JSON.stringify(state)) {
-      await saveOffensiveState(fixed)
-    }
-    return fixed
-  }
+export function registerOffensiveAccess(accountCreatedAt?: string | null): Promise<OffensiveState> {
+  return registerOffensiveDay(accountCreatedAt)
+}
 
-  const next: OffensiveState = {
-    ...state,
-    totalOffensives: state.totalOffensives + 1,
-    offensiveLoggedToday: true,
-    lastOffensiveDate: today,
-  }
-
-  if (state.lastOffensiveDate === null) {
-    next.currentStreak = 1
-    next.bestStreak = 1
-  } else {
-    const yesterdayKeyValue = yesterdayKey()
-    if (state.lastOffensiveDate === yesterdayKeyValue) {
-      next.currentStreak = (state.currentStreak ?? 0) + 1
-      if ((next.currentStreak ?? 0) > (next.bestStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-    } else {
-      next.currentStreak = 1
-      if ((next.currentStreak ?? 0) > (next.bestStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-    }
-  }
-
-  if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-  if ((next.currentStreak ?? 0) < 1) next.currentStreak = 1
-  if ((next.bestStreak ?? 0) < 1) next.bestStreak = 1
-
-  await saveOffensiveState(next)
-  return next
+export function registerOffensiveSimulation(accountCreatedAt?: string | null): Promise<OffensiveState> {
+  return registerOffensiveDay(accountCreatedAt)
 }
 
 export function getLocalDatabase() {

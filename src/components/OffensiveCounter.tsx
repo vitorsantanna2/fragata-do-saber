@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { getDaysAboard } from '../lib/offensiveDates'
 
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path}`
 
@@ -23,14 +24,7 @@ export function OffensiveCounter({
   compact = false,
 }: OffensiveCounterProps) {
   const daysSinceJoin = useMemo(() => {
-    if (!joinedAt) return 0
-    const start = Date.parse(joinedAt)
-    if (Number.isNaN(start)) return 0
-    const now = Date.now()
-    const diffMs = now - start
-    if (diffMs < 0) return 0
-    const days = diffMs / (1000 * 60 * 60 * 24)
-    return Math.max(0, Math.floor(days) + 1)
+    return getDaysAboard(joinedAt)
   }, [joinedAt])
 
   const sectionClass = compact

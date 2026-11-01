@@ -12,7 +12,7 @@ import { syncStudyProgress, syncOffensiveState } from '../lib/progressSync'
 
 type UseProgressProps = {
   questions: any[]
-  accountUser: { id: string; email: string | null; is_anonymous: boolean } | null
+  accountUser: { id: string; email: string | null; is_anonymous: boolean; created_at: string } | null
   isOnline: boolean
 }
 
