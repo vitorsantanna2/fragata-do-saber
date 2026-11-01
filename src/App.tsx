@@ -34,6 +34,7 @@ import { MindMapViewer } from './components/MindMapViewer'
 import { shuffle, conciseTopic } from './lib/utils'
 import { useQuestions } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
+import { useAdminRoute } from './hooks/useAdminRoute'
 import { resolveQuestionAnswer } from './lib/questionAnswers'
 
 const AdminQuestionsPanel = lazy(() => import('./components/AdminQuestionsPanel').then((mod) => ({ default: mod.default })))
@@ -46,7 +47,7 @@ const OFFLINE_ACCESS_GRACE_MS = 30 * 24 * 60 * 60 * 1000
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path}`
 
 function App() {
-  const [adminMode, setAdminMode] = useState(false)
+  const { adminMode, closeAdmin } = useAdminRoute()
   const [accessState, setAccessState] = useState<'checking' | 'locked' | 'granted'>('checking')
   const [splashElapsed, setSplashElapsed] = useState(false)
   const [accessCode, setAccessCode] = useState('')
@@ -387,7 +388,7 @@ function App() {
     if (Capacitor.getPlatform() !== 'android') return
     const listener = CapacitorApp.addListener('backButton', () => {
       if (adminMode) {
-        setAdminMode(false)
+        closeAdmin()
       } else if (showAccountSync) {
         setShowAccountSync(false)
       } else if (showPerformance) {
@@ -405,7 +406,7 @@ function App() {
       }
     })
     return () => { void listener.then((handle) => handle.remove()) }
-  }, [adminMode, showAccountSync, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToHome])
+  }, [adminMode, closeAdmin, showAccountSync, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToHome])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSplashElapsed(true), 900)
@@ -754,7 +755,7 @@ function App() {
       <ErrorBoundary>
         <div className="min-h-screen bg-paper text-ink">
           <Suspense fallback={<div className="mx-auto mt-20 p-8 text-center text-muted">Carregando painel administrativo…</div>}>
-            <AdminQuestionsPanel onClose={() => setAdminMode(false)} />
+            <AdminQuestionsPanel onClose={closeAdmin} />
           </Suspense>
         </div>
       </ErrorBoundary>
@@ -796,7 +797,6 @@ function App() {
         accountLoginPassword={accountLoginPassword}
         setAccountLoginPassword={setAccountLoginPassword}
         onAccountLogin={handleAccountLogin}
-        onAdmin={() => setAdminMode(true)}
         publicAsset={publicAsset}
       />
     )
@@ -1074,7 +1074,7 @@ function App() {
           )}
         </main>
         {showAccountSync && <AccountSyncPanel onClose={() => setShowAccountSync(false)} onSync={() => setManualSyncRevision((revision) => revision + 1)} onUseExistingAccount={(email) => { setAccountLoginEmail(email); setShowAccountLogin(true); setAccessState('locked'); setShowAccountSync(false) }} syncStatus={syncStatus} />}
-        <footer className="flex flex-wrap items-center justify-center gap-2 border-t border-line bg-white/70 px-5 py-6 text-xs text-muted"><span>Fragata do Saber <span className="px-1 text-coral">·</span> Preparação feita com propósito</span><span className="px-1 text-coral">·</span><span>@vitorsantanna2</span><button className="font-semibold transition hover:text-sea" type="button" onClick={() => setAdminMode(true)}>Painel administrativo</button></footer>
+        <footer className="flex flex-wrap items-center justify-center gap-2 border-t border-line bg-white/70 px-5 py-6 text-xs text-muted"><span>Fragata do Saber <span className="px-1 text-coral">·</span> Preparação feita com propósito</span><span className="px-1 text-coral">·</span><span>@vitorsantanna2</span></footer>
       </div>
     </ErrorBoundary>
   )

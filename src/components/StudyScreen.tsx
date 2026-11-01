@@ -83,7 +83,7 @@ export function StudyScreen({
                       <span className="ml-1 text-base font-bold text-muted">/ 100 pontos</span>
                     </p>
                     <p className="mt-1 text-sm text-muted">
-                      {simulationResult.correctCount} de {filteredQuestionsLength} questões corretas
+                      {simulationResult.correctCount} de {simulationIds?.length ?? filteredQuestionsLength} questões corretas
                     </p>
                   </div>
                   <p className="text-xs font-medium text-muted">

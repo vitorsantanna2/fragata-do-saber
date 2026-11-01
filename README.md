@@ -85,7 +85,9 @@ values ('UUID-DA-CONTA-AQUI')
 on conflict (user_id) do nothing;
 ```
 
-O painel pode ser aberto pelo link **Painel administrativo** no app. Ele permite revisar e publicar questões e mapas. Administradores podem enviar imagens de questões (PNG, JPG ou WebP, até 10 MB) e arquivos de mapas (PDF, PNG, JPG ou WebP, até 25 MB). Os mapas ficam no bucket privado.
+O painel pode ser aberto diretamente por [fragatadosaber.online/#admin](https://fragatadosaber.online/#admin), inclusive ao atualizar a página ou abrir o endereço em outra aba. No ambiente local, acrescente `#admin` ao endereço do app. O link **Acesso administrativo** também está disponível na tela de acesso. O painel exige login com uma conta administrativa.
+
+Ele permite revisar e publicar questões e mapas. Administradores podem enviar imagens de questões (PNG, JPG ou WebP, até 10 MB) e arquivos de mapas (PDF, PNG, JPG ou WebP, até 25 MB). Os mapas ficam no bucket privado.
 
 As alterações administrativas são protegidas por RLS no banco. A chave `publishable` do frontend não concede privilégios administrativos.
 

@@ -24,7 +24,6 @@ type AccessGateProps = {
   accountLoginPassword: string
   setAccountLoginPassword: Dispatch<SetStateAction<string>>
   onAccountLogin: (event: FormEvent<HTMLFormElement>) => void
-  onAdmin: () => void
   publicAsset: (path: string) => string
 }
 
@@ -52,7 +51,6 @@ export function AccessGate({
   accountLoginPassword,
   setAccountLoginPassword,
   onAccountLogin,
-  onAdmin,
   publicAsset,
 }: AccessGateProps) {
   return (
@@ -110,9 +108,9 @@ export function AccessGate({
             <button className="w-full rounded-lg border border-line px-4 py-2.5 text-sm font-bold text-sea hover:bg-sea-light" type="button" onClick={() => setShowAccountCreate(true)}>Não tem conta? Criar conta</button>
           </div>
         )}
-        <button className="mt-5 w-full rounded-lg border border-line px-4 py-2.5 text-sm font-bold text-muted transition hover:border-sea hover:text-sea" type="button" onClick={onAdmin}>
+        <a className="mt-5 block w-full rounded-lg border border-line px-4 py-2.5 text-center text-sm font-bold text-muted transition hover:border-sea hover:text-sea" href="#admin">
           Acesso administrativo
-        </button>
+        </a>
       </section>
     </main>
   )
