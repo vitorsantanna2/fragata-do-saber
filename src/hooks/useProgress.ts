@@ -8,7 +8,20 @@ import {
   type CompletedSimulation,
   type OffensiveState,
 } from '../lib/localDatabase'
-import { syncStudyProgress, syncOffensiveState } from '../lib/progressSync'
+import { loadValidatedAnswers, syncStudyProgress, syncOffensiveState, type SyncedProgress } from '../lib/progressSync'
+import { mergeCompletedSimulations } from '../lib/simulationHistory'
+
+function progressFingerprint(userId: string, progress: SyncedProgress) {
+  return JSON.stringify({
+    userId,
+    answers: Object.entries(progress.answers).sort(([a], [b]) => a.localeCompare(b)),
+    favorites: [...progress.favorites].sort(),
+    revealed: [...progress.revealed].sort(),
+    progressUpdatedAt: Object.entries(progress.progressUpdatedAt).sort(([a], [b]) => a.localeCompare(b)),
+    questionSnapshots: Object.entries(progress.questionSnapshots).sort(([a], [b]) => a.localeCompare(b)),
+    completedSimulations: [...progress.completedSimulations].sort((a, b) => a.id.localeCompare(b.id)),
+  })
+}
 
 type UseProgressProps = {
   questions: any[]
@@ -72,15 +85,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   const [themeLoaded, setThemeLoaded] = useState(false)
 
   function recordCompletedSimulation(simulation: CompletedSimulation) {
-    setCompletedSimulations((current) => {
-      const key = `${simulation.examId}|${simulation.examTitle ?? ''}|${simulation.studyMode}|${simulation.totalQuestions}|${simulation.correctAnswers}|${simulation.wrongAnswers}|${simulation.score}`
-      const alreadyExists = current.some((s) => {
-        const existingKey = `${s.examId}|${s.examTitle ?? ''}|${s.studyMode}|${s.totalQuestions}|${s.correctAnswers}|${s.wrongAnswers}|${s.score}`
-        return existingKey === key
-      })
-      if (alreadyExists) return current
-      return [simulation, ...current].slice(0, 50)
-    })
+    setCompletedSimulations((current) => mergeCompletedSimulations([simulation, ...current]))
   }
   const [manualSyncRevision, setManualSyncRevision] = useState(0)
   const [progressRestored, setProgressRestored] = useState(false)
@@ -102,12 +107,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         setRevealed(progress.revealed)
         setFavorites(progress.favorites)
         setProgressUpdatedAt(progress.progressUpdatedAt)
-        setQuestionSnapshots(Object.fromEntries(
-          Object.entries(progress.questionSnapshots).map(([questionId, snapshot]) => [
-            questionId,
-            { ...snapshot, correctOption: null, explanation: null },
-          ]),
-        ))
+        setQuestionSnapshots(progress.questionSnapshots)
         setSavedSimulation(progress.savedSimulation)
         setCompletedSimulations(progress.completedSimulations)
       }
@@ -170,7 +170,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
       return
     }
 
-    const fingerprint = JSON.stringify({ userId: accountUser.id, answers, favorites: [...favorites].sort(), revealed: [...revealed].sort(), progressUpdatedAt, completedSimulations: [...completedSimulations].sort((a, b) => a.id.localeCompare(b.id)) })
+    const fingerprint = progressFingerprint(accountUser.id, { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations })
     const isManualSync = manualSyncRevision > lastManualSyncRevision.current
     if (!isManualSync && fingerprint === lastSyncedProgressFingerprint.current) return
     let active = true
@@ -181,7 +181,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
           if (!active) return
           lastManualSyncRevision.current = manualSyncRevision
           if (!merged) { setSyncStatus('offline'); return }
-          const mergedFingerprint = JSON.stringify({ userId: accountUser.id, answers: merged.answers, favorites: [...merged.favorites].sort(), revealed: [...merged.revealed].sort(), progressUpdatedAt: merged.progressUpdatedAt })
+          const mergedFingerprint = progressFingerprint(accountUser.id, merged)
           lastSyncedProgressFingerprint.current = mergedFingerprint
           suppressProgressTimestamp.current = true
           setAnswers(merged.answers)
@@ -201,6 +201,30 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
     }, 450)
     return () => { active = false; window.clearTimeout(timer) }
   }, [progressRestored, accountUser, isOnline, answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, manualSyncRevision])
+
+  useEffect(() => {
+    if (!progressRestored || !isOnline || !accountUser?.is_anonymous) return
+    let active = true
+    void loadValidatedAnswers(accountUser.id).then((attempts) => {
+      if (!active || !attempts.length) return
+      setQuestionSnapshots((current) => {
+        const next = { ...current }
+        for (const attempt of attempts) {
+          if (!next[attempt.question_id]) continue
+          next[attempt.question_id] = {
+            ...next[attempt.question_id],
+            correctOption: attempt.correct_option,
+            explanation: attempt.explanation,
+          }
+        }
+        return next
+      })
+      setAnswers((current) => ({ ...current, ...Object.fromEntries(attempts.map((attempt) => [attempt.question_id, attempt.selected_option])) }))
+    }).catch((error: unknown) => {
+      if (active) console.warn('Não foi possível recuperar as respostas validadas.', error)
+    })
+    return () => { active = false }
+  }, [progressRestored, isOnline, accountUser])
 
   useEffect(() => {
     if (!progressRestored || !accountUser || accountUser.is_anonymous) return

@@ -33,7 +33,7 @@ Sem criar conta, o progresso fica somente no aparelho. Vinculando um e-mail e um
 
 ### Pré-requisitos
 
-- Node.js compatível com o Vite usado pelo projeto
+- Node.js 22.12 ou superior na série 22 (a mesma série usada pelos workflows)
 - npm
 - Um projeto Supabase configurado (veja [Configuração do Supabase](#configuração-do-supabase))
 
@@ -62,13 +62,15 @@ npm run dev
 
 ## Configuração do Supabase
 
+Os scripts SQL ficam em `supabase/`. Os arquivos CSV de importação ficam em `data/imports/` e continuam ignorados pelo Git quando o nome termina em `_importacao.csv`.
+
 Execute os scripts pelo **SQL Editor** do Supabase nesta ordem:
 
-1. `supabase_questions_setup.sql` — tabela de questões e políticas de leitura.
-2. `supabase_access_gate.sql` — validação por código de acesso.
-3. `supabase_user_progress_setup.sql` — tabela de progresso sincronizado e políticas RLS.
-4. `supabase_mind_maps_setup.sql` — catálogo de mapas e bucket privado `mind-maps`.
-5. `supabase_admin_questions_setup.sql` — painel administrativo, bucket de imagens de questões e permissões administrativas para questões e mapas.
+1. `supabase/supabase_questions_setup.sql` — tabela de questões e políticas de leitura.
+2. `supabase/supabase_access_gate.sql` — validação por código de acesso.
+3. `supabase/supabase_user_progress_setup.sql` — tabela de progresso sincronizado e políticas RLS.
+4. `supabase/supabase_mind_maps_setup.sql` — catálogo de mapas e bucket privado `mind-maps`.
+5. `supabase/supabase_admin_questions_setup.sql` — painel administrativo, bucket de imagens de questões e permissões administrativas para questões e mapas.
 
 Habilite **Anonymous Sign-Ins**, o provedor **Email** e **Manual Linking** nas configurações de Auth do Supabase. Manual Linking é necessário para converter a sessão anônima existente em uma conta com e-mail. Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` em `.env.local` para desenvolvimento. No GitHub Pages, configure os mesmos valores em **Settings → Secrets and variables → Actions → Variables**.
 
@@ -127,11 +129,13 @@ O banco local `fragata_saber` e suas tabelas são criados automaticamente na pri
 
 Use **Meu desempenho** no cabeçalho para consultar questões respondidas, acertos, erros e aproveitamento, com filtros por concurso e matéria. A tela também lista questões erradas para abrir e revisar. O painel usa o progresso e as questões já carregadas neste aparelho, portanto funciona offline para o conteúdo estudado ou baixado anteriormente.
 
+Os resultados de respostas já validadas são preservados ao reabrir o app. Quando há conexão, o app também recupera as respostas registradas para a sessão ou conta atual. Cada simulado concluído tem um identificador próprio e aparece no histórico, mesmo que outros simulados tenham a mesma nota no mesmo dia. A ofensiva continua sendo contabilizada por dia.
+
 ### Sincronizar entre dispositivos
 
 Depois de entrar com o código de acesso, abra **Sincronizar** no cabeçalho e informe um e-mail. Confirme o endereço pelo e-mail recebido e crie uma senha. A conta é vinculada à sessão atual, preservando o UUID usado pela autorização do código. Em outro aparelho, escolha **Já tenho conta · entrar e sincronizar** na tela de acesso. Se o código de acesso não estiver mais válido, informe um novo código; a conta não substitui essa validação.
 
-O app mantém o progresso no aparelho e envia as alterações quando fica online. A sincronização mescla por questão e usa a alteração mais recente; as políticas RLS permitem que cada conta permanente acesse apenas o próprio progresso. Execute `supabase_user_progress_setup.sql` no projeto antes de ativar esse recurso.
+O app mantém o progresso no aparelho e envia as alterações quando fica online. A sincronização mescla por questão e usa a alteração mais recente; as políticas RLS permitem que cada conta permanente acesse apenas o próprio progresso. Execute `supabase/supabase_user_progress_setup.sql` no projeto antes de ativar esse recurso.
 
 ## Gerenciar mapas mentais
 
@@ -147,11 +151,13 @@ No painel administrativo, é possível revisar os campos e a prévia, salvar ras
 
 ## Acesso por código
 
-O acesso de estudo é compartilhado por código e usa uma sessão anônima do Supabase, sem cadastro individual. Para gerar um código mensal, execute `supabase_generate_access_code.sql` no **SQL Editor**. O código é exibido uma vez; somente seu hash fica armazenado no banco. Guarde o valor retornado e envie-o às pessoas autorizadas.
+O acesso de estudo é compartilhado por código e usa uma sessão anônima do Supabase, sem cadastro individual. Para gerar um código mensal, execute `supabase/supabase_generate_access_code.sql` no **SQL Editor**. O código é exibido uma vez; somente seu hash fica armazenado no banco. Guarde o valor retornado e envie-o às pessoas autorizadas.
 
 ## Implantação
 
-O workflow `.github/workflows/deploy.yml` publica o site no GitHub Pages a cada push para `main` ou quando iniciado manualmente. Em **Settings → Pages**, selecione **GitHub Actions** como origem.
+O workflow `.github/workflows/ci.yml` instala as dependências, executa o lint, compila o projeto e roda os testes nos pull requests destinados à `main`. Ele também pode ser iniciado manualmente.
+
+O workflow `.github/workflows/deploy.yml` é acionado a cada push para `main` ou quando iniciado manualmente. Ele reutiliza o CI e só publica o site no GitHub Pages depois que todas as verificações passam. Em **Settings → Pages**, selecione **GitHub Actions** como origem.
 
 O domínio do site é configurado em `public/CNAME`: [fragatadosaber.online](https://fragatadosaber.online).
 

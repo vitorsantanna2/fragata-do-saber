@@ -25,7 +25,7 @@ function PerformanceInfographic({
   const groups = useMemo(() => {
     const map = new Map<string, { answered: number; correct: number; wrong: number }>()
     for (const [id, question] of allQuestions) {
-      if (answers[id] === undefined) continue
+      if (answers[id] === undefined || question.correctOption === null) continue
       const label = groupBy === 'subject' ? question.subject : (question.topic ?? 'Sem tópico')
       const g = map.get(label) ?? { answered: 0, correct: 0, wrong: 0 }
       g.answered += 1

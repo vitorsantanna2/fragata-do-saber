@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+# CSVs locais de importação, inclusive em data/imports/
 *_importacao.csv
 
 # Editor directories and files

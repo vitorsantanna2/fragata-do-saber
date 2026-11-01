@@ -1,4 +1,7 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AccountSyncPanel } from './components/AccountSyncPanel'
+import { AccessGate } from './components/AccessGate'
+import type { FormEvent } from 'react'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { supabase } from './lib/supabase'
@@ -26,15 +29,13 @@ import { getDaysAboard } from './lib/offensiveDates'
 import { Skeleton, SkeletonText } from './components/Skeleton'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ExamChoiceGrid, examChoices } from './components/ExamChoiceGrid'
-import { QuestionFilters } from './components/QuestionFilters'
-import { QuestionCard } from './components/QuestionCard'
+import { StudyScreen } from './components/StudyScreen'
 import { MindMapViewer } from './components/MindMapViewer'
-import { shuffle, conciseSource, conciseTopic } from './lib/utils'
+import { shuffle, conciseTopic } from './lib/utils'
 import { useQuestions } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
 
 const AdminQuestionsPanel = lazy(() => import('./components/AdminQuestionsPanel').then((mod) => ({ default: mod.default })))
-const Simulation = lazy(() => import('./components/Simulation').then((mod) => ({ default: mod.Simulation })))
 const PerformanceDashboard = lazy(() => import('./components/PerformanceDashboard').then((mod) => ({ default: mod.PerformanceDashboard })))
 
 const SIMULATION_SIZE = 50
@@ -42,133 +43,6 @@ const QUICK_SIMULATION_SIZE = 10
 const OFFLINE_ACCESS_GRACE_MS = 30 * 24 * 60 * 60 * 1000
 
 const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path}`
-
-function AccountSyncPanel({
-  onClose,
-  onSync,
-  onUseExistingAccount,
-  syncStatus,
-}: {
-  onClose: () => void
-  onSync: () => void
-  onUseExistingAccount: (email: string) => void
-  syncStatus: 'local' | 'offline' | 'syncing' | 'synced' | 'error'
-}) {
-  const [user, setUser] = useState<{ email: string | null; is_anonymous: boolean; email_confirmed_at?: string | null } | null>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [step, setStep] = useState<'email' | 'confirm' | 'password' | 'complete'>('email')
-  const [passwordSetupRequired, setPasswordSetupRequired] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
-
-  useEffect(() => {
-    let active = true
-    void supabase?.auth.getUser().then(({ data }) => {
-      if (!active || !data.user) return
-      setUser({ email: data.user.email ?? null, is_anonymous: Boolean(data.user.is_anonymous), email_confirmed_at: data.user.email_confirmed_at })
-      const setupKey = `fragata-password-setup:${data.user.id}`
-      const pendingPassword = window.localStorage.getItem(setupKey) === 'true'
-      if (pendingPassword) {
-        setPasswordSetupRequired(true)
-        setEmail(window.localStorage.getItem(`fragata-link-email:${data.user.id}`) ?? data.user.email ?? '')
-        setStep(data.user.email_confirmed_at ? 'password' : 'confirm')
-      } else if (!data.user.is_anonymous && data.user.email) {
-        setEmail(data.user.email)
-        setStep('complete')
-      }
-    })
-    return () => { active = false }
-  }, [])
-
-  async function sendConfirmation(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!supabase) return
-    setBusy(true); setError(''); setNotice('')
-    const { data, error: updateError } = await supabase.auth.updateUser({ email: email.trim() })
-    if (updateError) setError(`Não foi possível vincular o e-mail: ${updateError.message}`)
-    else if (data.user?.email_confirmed_at) {
-      if (data.user.id) window.localStorage.setItem(`fragata-password-setup:${data.user.id}`, 'true')
-      if (data.user.id) window.localStorage.setItem(`fragata-link-email:${data.user.id}`, email.trim())
-      setPasswordSetupRequired(true)
-      setStep('password')
-      setNotice('E-mail confirmado. Agora crie uma senha para entrar em outros aparelhos.')
-    } else {
-      if (data.user?.id) window.localStorage.setItem(`fragata-password-setup:${data.user.id}`, 'true')
-      if (data.user?.id) window.localStorage.setItem(`fragata-link-email:${data.user.id}`, email.trim())
-      setStep('confirm')
-      setNotice(`Enviamos a confirmação para ${email.trim()}. Confirme o endereço e volte a esta tela.`)
-    }
-    setBusy(false)
-  }
-
-  async function confirmEmail() {
-    if (!supabase) return
-    setBusy(true); setError(''); setNotice('')
-    const { error: refreshError } = await supabase.auth.refreshSession()
-    const { data, error: userError } = await supabase.auth.getUser()
-    if (refreshError || userError || !data.user?.email_confirmed_at) {
-      setError('Ainda não conseguimos confirmar o e-mail. Abra o link enviado e tente novamente.')
-    } else {
-      setUser({ email: data.user.email ?? null, is_anonymous: Boolean(data.user.is_anonymous), email_confirmed_at: data.user.email_confirmed_at })
-      window.localStorage.setItem(`fragata-password-setup:${data.user.id}`, 'true')
-      window.localStorage.removeItem(`fragata-link-email:${data.user.id}`)
-      setPasswordSetupRequired(true)
-      setEmail(data.user.email ?? email)
-      setStep('password')
-      setNotice('E-mail confirmado. Agora crie uma senha para entrar em outros aparelhos.')
-    }
-    setBusy(false)
-  }
-
-  async function createPassword(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!supabase) return
-    setBusy(true); setError(''); setNotice('')
-    const { data, error: updateError } = await supabase.auth.updateUser({ password })
-    if (updateError) setError(`Não foi possível criar a senha: ${updateError.message}`)
-    else {
-      setUser({ email: data.user.email ?? email, is_anonymous: Boolean(data.user.is_anonymous), email_confirmed_at: data.user.email_confirmed_at })
-      window.localStorage.removeItem(`fragata-password-setup:${data.user.id}`)
-      window.localStorage.removeItem(`fragata-link-email:${data.user.id}`)
-      setPasswordSetupRequired(false)
-      setStep('complete')
-      setNotice('Conta pronta. Seu progresso será sincronizado quando houver conexão.')
-      setPassword('')
-      onSync()
-    }
-    setBusy(false)
-  }
-
-  async function switchToExistingAccount() {
-    if (!supabase) return
-    setBusy(true); setError('')
-    const { error: signOutError } = await supabase.auth.signOut()
-    if (signOutError) setError(`Não foi possível sair da sessão atual: ${signOutError.message}`)
-    else onUseExistingAccount(email.trim())
-    setBusy(false)
-  }
-
-  const permanentUser = user !== null && !user.is_anonymous && !passwordSetupRequired && step === 'complete'
-
-  return (
-    <div className="fixed inset-0 z-[60] grid place-items-center bg-ink/60 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <section className="w-full max-w-lg rounded-2xl bg-white p-6 text-ink shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="account-sync-title">
-        <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Conta opcional</p><h2 id="account-sync-title" className="mt-1 font-display text-2xl font-extrabold">Sincronizar progresso</h2></div><button className="rounded-lg border border-line px-3 py-2 text-sm font-bold" type="button" onClick={onClose}>Fechar</button></div>
-        <p className="mt-3 text-sm leading-6 text-muted">Seu acesso por código continua funcionando sem conta. Vincule um e-mail e uma senha para levar respostas e favoritos a outros aparelhos.</p>
-        {permanentUser ? <div className="mt-5 rounded-xl bg-sea-light p-4"><p className="text-sm font-bold">Conta vinculada: {user.email}</p><p className="mt-1 text-xs leading-5 text-muted">O progresso é salvo localmente e sincronizado quando há conexão.</p><button className="mt-3 rounded-lg bg-sea px-4 py-2.5 text-sm font-extrabold text-white disabled:opacity-60" type="button" disabled={syncStatus === 'syncing' || syncStatus === 'offline'} onClick={onSync}>{syncStatus === 'syncing' ? 'Sincronizando…' : 'Sincronizar agora'}</button><p className="mt-2 text-xs text-muted" aria-live="polite">{syncStatus === 'synced' ? 'Tudo sincronizado.' : syncStatus === 'offline' ? 'Sem conexão. O progresso será enviado quando a internet voltar.' : syncStatus === 'error' ? 'Falha na sincronização. Tente novamente.' : ''}</p></div>
-          : step === 'email' ? <form className="mt-5 space-y-3" onSubmit={(event) => void sendConfirmation(event)}><label className="block text-sm font-bold">Seu e-mail<input autoComplete="email" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><button className="w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white disabled:opacity-60" type="submit" disabled={busy}>{busy ? 'Enviando…' : 'Enviar confirmação do e-mail'}</button></form>
-          : step === 'confirm' ? <div className="mt-5"><p className="rounded-lg bg-sea-light p-3 text-sm leading-6">{notice}</p><button className="mt-3 w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white disabled:opacity-60" type="button" disabled={busy} onClick={() => void confirmEmail()}>{busy ? 'Conferindo…' : 'Já confirmei o e-mail'}</button><button className="mt-3 w-full text-sm font-bold text-muted underline" type="button" onClick={() => setStep('email')}>Usar outro e-mail</button></div>
-          : <form className="mt-5 space-y-3" onSubmit={(event) => void createPassword(event)}><p className="text-sm text-muted">E-mail confirmado: <strong>{user?.email ?? email}</strong></p><label className="block text-sm font-bold">Crie uma senha<input autoComplete="new-password" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required /></label><button className="w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white disabled:opacity-60" type="submit" disabled={busy}>{busy ? 'Salvando…' : 'Criar senha e ativar sincronização'}</button></form>}
-        {error && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm leading-5 text-red-800" role="alert">{error}</p>}
-        {notice && step !== 'confirm' && <p className="mt-3 rounded-lg bg-green-50 p-3 text-sm leading-5 text-green-800" role="status">{notice}</p>}
-        {user?.is_anonymous && <button className="mt-3 text-sm font-bold text-sea underline disabled:opacity-60" type="button" disabled={busy} onClick={() => void switchToExistingAccount()}>Já tenho uma conta: sair e entrar nela</button>}
-        <p className="mt-5 text-xs leading-5 text-muted">Se você entrar numa conta já existente, o progresso local e o da conta serão mesclados por questão, priorizando a alteração mais recente.</p>
-      </section>
-    </div>
-  )
-}
 
 function App() {
   const [adminMode, setAdminMode] = useState(false)
@@ -198,7 +72,7 @@ function App() {
   const [pendingAnswerIds, setPendingAnswerIds] = useState<string[]>([])
   const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({})
   const reviewQuestionIdRef = useRef<string | null>(null)
-  const lastCompletedSimulationRef = useRef<{ examId: string; updatedAt: string } | null>(null)
+  const lastCompletedSimulationRef = useRef<string | null>(null)
   const [mindMaps, setMindMaps] = useState<MindMap[]>([])
   const [mindMapsLoading, setMindMapsLoading] = useState(false)
   const [mindMapsError, setMindMapsError] = useState('')
@@ -694,6 +568,7 @@ function App() {
     const picked = shuffle(filteredQuestionsRef.current).slice(0, SIMULATION_SIZE)
     const ids = picked.map((question) => question.id)
     const simulation: SavedSimulation = {
+      id: crypto.randomUUID(),
       ids,
       answers: {},
       revealed: [],
@@ -715,6 +590,7 @@ function App() {
     const picked = shuffle(filteredQuestionsRef.current).slice(0, QUICK_SIMULATION_SIZE)
     const ids = picked.map((question) => question.id)
     const simulation: SavedSimulation = {
+      id: crypto.randomUUID(),
       ids,
       answers: {},
       revealed: [],
@@ -835,17 +711,12 @@ function App() {
   useEffect(() => {
     if (!simulationComplete || !savedSimulation || simulationIds === null) return
 
-    const currentKey = { examId: savedSimulation.examId, updatedAt: savedSimulation.updatedAt }
-    if (
-      lastCompletedSimulationRef.current?.examId === currentKey.examId &&
-      lastCompletedSimulationRef.current?.updatedAt === currentKey.updatedAt
-    ) {
-      return
-    }
+    const simulationId = `completed-${savedSimulation.id ?? `${savedSimulation.examId}-${savedSimulation.updatedAt}`}`
+    if (lastCompletedSimulationRef.current === simulationId || completedSimulations.some((simulation) => simulation.id === simulationId)) return
 
     const examChoice = examChoices.find((choice) => choice.id === savedSimulation.examId)
     const completed: CompletedSimulation = {
-      id: `completed-${savedSimulation.examId}-${savedSimulation.updatedAt}`,
+      id: simulationId,
       examId: savedSimulation.examId,
       examTitle: examChoice?.title ?? null,
       studyMode: savedSimulation.studyMode,
@@ -856,11 +727,11 @@ function App() {
       completedAt: new Date().toISOString(),
       isSimulation: true,
     }
-    lastCompletedSimulationRef.current = currentKey
+    lastCompletedSimulationRef.current = simulationId
     recordCompletedSimulation(completed)
     void recordCompletedOffensive()
-    setAnswers({ ...answers, ...simulationAnswers })
-  }, [simulationComplete, savedSimulation, simulationIds, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, recordCompletedSimulation, recordCompletedOffensive, simulationAnswers, answers, setAnswers])
+    setAnswers((current) => ({ ...current, ...simulationAnswers }))
+  }, [simulationComplete, savedSimulation, simulationIds, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, completedSimulations, recordCompletedSimulation, recordCompletedOffensive, simulationAnswers, setAnswers])
 
   async function recordSimulationAnswer(questionId: string, optionIndex: number) {
     const selectedOption = await submitQuestionAnswer(questionId, optionIndex)
@@ -903,59 +774,35 @@ function App() {
 
   if (accessState === 'locked') {
     return (
-      <main className="grid min-h-screen place-items-center bg-paper px-5 py-10 text-ink">
-        <section className="w-full max-w-md rounded-2xl border border-line bg-white p-6 shadow-xl shadow-ink/5 sm:p-8">
-          <img className="mb-6 h-14 w-24 rounded-md object-contain" src={publicAsset('logo.png')} alt="Fragata do Saber" />
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Acesso restrito</p>
-          <h1 className="mt-2 font-display text-2xl font-extrabold">Digite seu código de acesso</h1>
-          <p className="mt-2 text-sm leading-6 text-muted">Use o código recebido para acessar os concursos e simulados.</p>
-          <form className="mt-6 space-y-4" onSubmit={handleAccessSubmit}>
-            <label className="block text-sm font-bold text-ink" htmlFor="access-code">
-              Código de acesso
-              <input
-                autoCapitalize="characters"
-                autoComplete="one-time-code"
-                className="mt-2 block w-full rounded-lg border border-line px-3 py-3 font-medium outline-none transition placeholder:text-muted/60 focus:border-sea focus:ring-2 focus:ring-sea/10"
-                id="access-code"
-                onChange={(event) => setAccessCode(event.target.value)}
-                placeholder="Digite o código"
-                required
-                value={accessCode}
-              />
-            </label>
-            {accessError && <p className="text-sm leading-5 text-red-700" role="alert">{accessError}</p>}
-            <button
-              className="w-full rounded-lg bg-sea px-4 py-3 text-sm font-extrabold text-white transition hover:bg-ink disabled:cursor-wait disabled:opacity-60"
-              disabled={checkingCode || !accessCode.trim() || !supabase}
-              type="submit"
-            >
-              {checkingCode ? 'Validando...' : 'Acessar'}
-            </button>
-          </form>
-          {showAccountCreate ? <form className="mt-5 space-y-3 rounded-xl border border-line p-4" onSubmit={(event) => void handleAccountCreate(event)}>
-            <p className="text-xs leading-5 text-muted">Crie sua conta para sincronizar o progresso entre aparelhos.</p>
-            <label className="block text-sm font-bold">E-mail<input autoComplete="username" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="email" value={accountCreateEmail} onChange={(event) => setAccountCreateEmail(event.target.value)} required /></label>
-            <label className="block text-sm font-bold">Senha<input autoComplete="new-password" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="password" value={accountCreatePassword} onChange={(event) => setAccountCreatePassword(event.target.value)} required /></label>
-            <label className="block text-sm font-bold">Confirme a senha<input autoComplete="new-password" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="password" value={accountCreateConfirmPassword} onChange={(event) => setAccountCreateConfirmPassword(event.target.value)} required /></label>
-            <button className="w-full rounded-lg bg-sea px-4 py-2.5 text-sm font-extrabold text-white disabled:opacity-60" type="submit" disabled={creatingAccount}>{creatingAccount ? 'Criando…' : 'Criar conta'}</button>
-            <p className="text-xs leading-5 text-muted">Depois de criar, informe seu código de acesso acima para liberar os estudos.</p>
-            <button className="mt-3 w-full text-sm font-bold text-muted underline" type="button" onClick={() => { setShowAccountCreate(false); setShowAccountLogin(false) }}>Voltar</button>
-          </form> : showAccountLogin ? <form className="mt-5 space-y-3 rounded-xl border border-line p-4" onSubmit={(event) => void handleAccountLogin(event)}>
-            <p className="text-xs leading-5 text-muted">Ao entrar, o progresso salvo neste aparelho será mesclado à conta.</p>
-            <p className="text-sm font-bold">Entrar na conta de sincronização</p>
-            <label className="block text-sm font-bold">E-mail<input autoComplete="username" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="email" value={accountLoginEmail} onChange={(event) => setAccountLoginEmail(event.target.value)} required /></label>
-            <label className="block text-sm font-bold">Senha<input autoComplete="current-password" className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="password" value={accountLoginPassword} onChange={(event) => setAccountLoginPassword(event.target.value)} required /></label>
-            <button className="w-full rounded-lg bg-sea px-4 py-2.5 text-sm font-extrabold text-white disabled:opacity-60" type="submit" disabled={checkingCode}>{checkingCode ? 'Entrando…' : 'Entrar e sincronizar'}</button>
-            <p className="text-xs leading-5 text-muted">O acesso por código continua independente. Se a conta ainda não tiver autorização ativa, informe seu código acima.</p>
-          </form> : <div className="mt-4 space-y-2"><button className="w-full rounded-lg border border-sea px-4 py-2.5 text-sm font-bold text-sea hover:bg-sea-light" type="button" onClick={() => setShowAccountLogin(true)}>Já tenho conta · entrar e sincronizar</button><button className="w-full rounded-lg border border-line px-4 py-2.5 text-sm font-bold text-sea hover:bg-sea-light" type="button" onClick={() => setShowAccountCreate(true)}>Não tem conta? Criar conta</button></div>}
-          <button className="mt-5 w-full rounded-lg border border-line px-4 py-2.5 text-sm font-bold text-muted transition hover:border-sea hover:text-sea" type="button" onClick={() => setAdminMode(true)}>
-            Acesso administrativo
-          </button>
-        </section>
-      </main>
+      <AccessGate
+        accessCode={accessCode}
+        setAccessCode={setAccessCode}
+        accessError={accessError}
+        checkingCode={checkingCode}
+        supabaseConfigured={Boolean(supabase)}
+        onAccessSubmit={handleAccessSubmit}
+        showAccountCreate={showAccountCreate}
+        setShowAccountCreate={setShowAccountCreate}
+        showAccountLogin={showAccountLogin}
+        setShowAccountLogin={setShowAccountLogin}
+        accountCreateEmail={accountCreateEmail}
+        setAccountCreateEmail={setAccountCreateEmail}
+        accountCreatePassword={accountCreatePassword}
+        setAccountCreatePassword={setAccountCreatePassword}
+        accountCreateConfirmPassword={accountCreateConfirmPassword}
+        setAccountCreateConfirmPassword={setAccountCreateConfirmPassword}
+        creatingAccount={creatingAccount}
+        onAccountCreate={handleAccountCreate}
+        accountLoginEmail={accountLoginEmail}
+        setAccountLoginEmail={setAccountLoginEmail}
+        accountLoginPassword={accountLoginPassword}
+        setAccountLoginPassword={setAccountLoginPassword}
+        onAccountLogin={handleAccountLogin}
+        onAdmin={() => setAdminMode(true)}
+        publicAsset={publicAsset}
+      />
     )
   }
-
   return (
     <ErrorBoundary>
       <div className="min-h-screen text-ink">
@@ -1163,151 +1010,69 @@ function App() {
               )}
             </section>
           ) : (
-            <>
-              <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-display text-xl font-extrabold">{examChoices.find((choice) => choice.id === selectedExamId)?.title}</h2>
-                <div className="flex flex-wrap gap-2">
-                  {selectedExamId === 'cp-t-informatica' && (
-                    <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={() => setSelectedStudyMode(null)}>
-                      Voltar às opções
-                    </button>
-                  )}
-                  <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={returnToHome}>
-                    Trocar concurso
-                  </button>
-                </div>
-              </div>
-              <section className="mt-4 grid gap-8 lg:grid-cols-[250px_minmax(0,1fr)]" id="questoes">
-                <QuestionFilters
-                  questionSearch={questionSearch}
-                  setQuestionSearch={setQuestionSearch}
-                  topic={topic}
-                  setTopic={setTopic}
-                  year={year}
-                  setYear={setYear}
-                  bibliographySource={bibliographySource}
-                  setBibliographySource={setBibliographySource}
-                  topics={topics}
-                  years={years}
-                  bibliographySources={bibliographySources}
-                  selectedStudyMode={selectedStudyMode === 'bibliography-questions' ? 'bibliography-questions' : null}
-                  filteredQuestionsLength={filteredQuestions.length}
-                  simulationIds={simulationIds}
-                  startSimulation={startSimulation}
-                  exitSimulation={() => setSimulationIds(null)}
-                  simulationSize={SIMULATION_SIZE}
-                  startQuickSimulation={startQuickSimulation}
-                  quickSimulationSize={QUICK_SIMULATION_SIZE}
-                  performanceCorrectCount={performanceCorrectCount}
-                  performanceAnsweredCount={performanceAnsweredCount}
-                />
-                <div>
-                  <div className="mb-4 flex items-end justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Banco de questões</p>
-                      <h2 className="mt-1 font-display text-2xl font-extrabold">{selectedStudyMode === 'bibliography-questions' ? 'Questões baseadas na bibliografia' : 'Continue sua preparação'}</h2>
-                    </div>
-                    <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-line">{simulationIds ? simulationIds.length : filteredQuestions.length} {simulationIds ? 'no simulado' : 'disponíveis'}</span>
-                  </div>
-                  <div className="space-y-4">
-                    {simulationIds !== null && (
-                      <Suspense fallback={<div className="mt-4 p-8 text-center"><Skeleton className="w-32 mx-auto mb-2" /><SkeletonText className="w-64 mx-auto" /></div>}>
-                        <Simulation
-                          questions={questionsWithResults}
-                          simulationIds={simulationIds}
-                          simulationAnswers={simulationAnswers}
-                          simulationRevealed={simulationRevealed}
-                          pendingAnswerIds={pendingAnswerIds}
-                          answerErrors={answerErrors}
-                          recordSimulationAnswer={recordSimulationAnswer}
-                          recordSimulationReveal={recordSimulationReveal}
-                        />
-                      </Suspense>
-                    )}
-                    {simulationComplete && (
-                      <section className="rounded-xl border border-sea/20 bg-sea-light p-5" aria-live="polite">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Simulado concluído</p>
-                        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-                          <div>
-                            <p className="font-display text-3xl font-extrabold text-ink">
-                              {simulationScore.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
-                              <span className="ml-1 text-base font-bold text-muted">/ 100 pontos</span>
-                            </p>
-                            <p className="mt-1 text-sm text-muted">
-                              {simulationCorrectCount} de {filteredQuestions.length} questões corretas
-                            </p>
-                          </div>
-                          <p className="text-xs font-medium text-muted">
-                            Cada questão vale {pointsPerQuestion.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} pontos
-                          </p>
-                        </div>
-                      </section>
-                    )}
-                    {loading && <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-muted">Carregando questões...</p>}
-                    {!loading && usingOfflineCache && <p className="rounded-xl border border-[#ead7be] bg-[#fff8ed] p-4 text-sm leading-6 text-[#805b2d]">Sem conexão: estas questões foram carregadas do aparelho. O conteúdo será atualizado quando a internet voltar.</p>}
-                    {!loading && loadError && <p className="rounded-xl border border-red-200 bg-white p-5 text-sm leading-6 text-red-800">{loadError}</p>}
-                    {showQuestionList && simulationIds === null && !loading && !loadError && (() => {
-                      const questionsToShow = reviewQuestionId
-                        ? questionsWithResults.filter((q) => q.id === reviewQuestionId)
-                        : reviewingFromDashboard
-                          ? questionsWithResults.filter((q) => q.answer !== null && answers[q.id] !== undefined && answers[q.id] !== q.answer)
-                          : questionsWithResults
-                      if (questionsToShow.length > 0) {
-                        return questionsToShow.map((question) => (
-                          <div key={question.id} id={`question-${question.id}`} className={reviewQuestionId === question.id ? 'ring-2 ring-sea rounded-lg' : ''}>
-                            <QuestionCard
-                              key={question.id}
-                              question={question}
-                              answerState={answers}
-                              isAnswerPending={pendingAnswerIds.includes(question.id)}
-                              answerError={answerErrors[question.id] ?? null}
-                              revealedState={revealed}
-                              favorites={favorites}
-                              setRevealed={(value) => setRevealed(value)}
-                              setFavorites={(value) => setFavorites(value)}
-                              submitAnswer={recordQuestionAnswer}
-                              conciseSource={conciseSource}
-                            />
-                            {reviewQuestionId ? <button key={`back-${question.id}`} type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewQuestionId(null); setShowQuestionList(true); setReviewingFromDashboard(true) }}>Voltar à lista de questões para revisar</button> : null}
-                            {!reviewQuestionId && reviewingFromDashboard ? <button key={`back-dash-${question.id}`} type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewingFromDashboard(false) }}>Voltar ao painel de desempenho</button> : null}
-                          </div>
-                        ))
-                      }
-                      return null
-                    })()}
-                    {showQuestionList && simulationIds === null && !loading && !loadError && (() => {
-                      const questionsToShow = reviewQuestionId
-                        ? questionsWithResults.filter((q) => q.id === reviewQuestionId)
-                        : reviewingFromDashboard
-                          ? questionsWithResults.filter((q) => q.answer !== null && answers[q.id] !== undefined && answers[q.id] !== q.answer)
-                          : questionsWithResults
-                      if (questionsToShow.length === 0) {
-                        if (reviewQuestionId) {
-                          return <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
-                            <p className="font-bold">Questão não encontrada</p>
-                            <p className="mt-2 text-muted">Esta questão não está mais disponível nos filtros atuais.</p>
-                            <button type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewQuestionId(null); setShowQuestionList(false); setReviewingFromDashboard(false) }}>Voltar ao painel</button>
-                          </div>
-                        }
-                        if (reviewingFromDashboard) {
-                          return <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
-                            <p className="font-bold">Nenhuma questão para revisar</p>
-                            <p className="mt-2 text-muted">Não há questões erradas com esses filtros.</p>
-                            <button type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewingFromDashboard(false) }}>Voltar ao painel de desempenho</button>
-                          </div>
-                        }
-                        return <p className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">{questions.length === 0 ? 'Ainda não há questões publicadas no banco.' : 'Nenhuma questão encontrada com esses filtros.'}</p>
-                      }
-                      return null
-                    })()}
-                    {!showQuestionList && simulationIds === null && !loading && !loadError && <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
-                      <p className="font-bold">Questões ainda não carregadas</p>
-                      <p className="mt-2 text-muted">Use os filtros acima para selecionar concurso, matéria, tópico e ano, depois toque em "Gerar simulado" para começar a estudar.</p>
-                    </div>}
-                  </div>
-                </div>
-              </section>
-            </>
+            <StudyScreen
+              examTitle={examChoices.find((choice) => choice.id === selectedExamId)?.title}
+              onChangeExam={returnToHome}
+              onChooseStudyMode={selectedExamId === 'cp-t-informatica' ? () => setSelectedStudyMode(null) : undefined}
+              filters={{
+                questionSearch,
+                setQuestionSearch,
+                topic,
+                setTopic,
+                year,
+                setYear,
+                bibliographySource,
+                setBibliographySource,
+                topics,
+                years,
+                bibliographySources,
+                selectedStudyMode: selectedStudyMode === 'bibliography-questions' ? 'bibliography-questions' : null,
+                filteredQuestionsLength: filteredQuestions.length,
+                simulationIds,
+                startSimulation,
+                exitSimulation: () => setSimulationIds(null),
+                simulationSize: SIMULATION_SIZE,
+                startQuickSimulation,
+                quickSimulationSize: QUICK_SIMULATION_SIZE,
+                performanceCorrectCount,
+                performanceAnsweredCount,
+              }}
+              questions={questionsWithResults}
+              loading={loading}
+              loadError={loadError}
+              usingOfflineCache={usingOfflineCache}
+              showQuestionList={showQuestionList}
+              simulation={{
+                simulationAnswers,
+                simulationRevealed,
+                pendingAnswerIds,
+                answerErrors,
+                recordSimulationAnswer,
+                recordSimulationReveal,
+              }}
+              simulationResult={{
+                complete: simulationComplete,
+                score: simulationScore,
+                correctCount: simulationCorrectCount,
+                pointsPerQuestion,
+              }}
+              questionList={{
+                hasQuestions: questions.length > 0,
+                reviewQuestionId,
+                reviewingFromDashboard,
+                answerState: answers,
+                pendingAnswerIds,
+                answerErrors,
+                revealedState: revealed,
+                favorites,
+                setRevealed,
+                setFavorites,
+                submitAnswer: recordQuestionAnswer,
+                onBackToReviewList: () => { setReviewQuestionId(null); setShowQuestionList(true); setReviewingFromDashboard(true) },
+                onBackToDashboard: () => setReviewingFromDashboard(false),
+                onMissingQuestion: () => { setReviewQuestionId(null); setShowQuestionList(false); setReviewingFromDashboard(false) },
+              }}
+            />
           )}
         </main>
         {showAccountSync && <AccountSyncPanel onClose={() => setShowAccountSync(false)} onSync={() => setManualSyncRevision((revision) => revision + 1)} onUseExistingAccount={(email) => { setAccountLoginEmail(email); setShowAccountLogin(true); setAccessState('locked'); setShowAccountSync(false) }} syncStatus={syncStatus} />}

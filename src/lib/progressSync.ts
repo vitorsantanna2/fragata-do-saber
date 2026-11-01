@@ -1,6 +1,33 @@
 import { supabase } from './supabase'
-import type { StudyProgress, StudyQuestionSnapshot, CompletedSimulation, OffensiveState } from './localDatabase'
+import type { StudyProgress, StudyQuestionSnapshot, OffensiveState } from './localDatabase'
 import { getSaoPauloDateKey, normalizeOffensiveDate } from './offensiveDates'
+import { mergeCompletedSimulations } from './simulationHistory'
+
+type ValidatedAnswer = {
+  question_id: string
+  selected_option: number
+  correct_option: number
+  explanation: string | null
+  submitted_at: string
+}
+
+export async function loadValidatedAnswers(userId: string): Promise<ValidatedAnswer[]> {
+  if (!supabase || !navigator.onLine) return []
+  const attempts: ValidatedAnswer[] = []
+  for (let page = 0; ; page += 1) {
+    const { data, error } = await supabase
+      .from('question_answer_attempts')
+      .select('question_id,selected_option,correct_option,explanation,submitted_at')
+      .eq('user_id', userId)
+      .order('question_id')
+      .range(page * 500, page * 500 + 499)
+    if (error) throw error
+    const batch = (data ?? []) as ValidatedAnswer[]
+    attempts.push(...batch)
+    if (batch.length < 500) break
+  }
+  return attempts
+}
 
 type CloudProgressRow = {
   user_id: string
@@ -74,6 +101,8 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
     if (batch.length < 500) break
   }
 
+  const attempts = await loadValidatedAnswers(user.id)
+  const attemptsById = new Map(attempts.map((attempt) => [attempt.question_id, attempt]))
   const remoteById = new Map(remoteRows.map((row) => [row.question_id, row]))
   const localIds = new Set([
     ...Object.keys(progress.answers),
@@ -82,7 +111,7 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
     ...Object.keys(progress.progressUpdatedAt),
   ])
   const winners = new Map<string, CloudProgressRow>()
-  const uploads: CloudProgressRow[] = []
+  const uploads = new Map<string, CloudProgressRow>()
   const now = new Date().toISOString()
 
   for (const id of localIds) {
@@ -97,7 +126,7 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
     }
     const remote = remoteById.get(id)
     if (!remote || Date.parse(timestamp) > Date.parse(remote.updated_at)) {
-      uploads.push(localRow)
+      uploads.set(id, localRow)
       winners.set(id, localRow)
     } else {
       winners.set(id, remote)
@@ -106,8 +135,24 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
   }
   for (const remote of remoteById.values()) winners.set(remote.question_id, remote)
 
-  for (let offset = 0; offset < uploads.length; offset += 100) {
-    const { error } = await supabase.from('user_question_progress').upsert(uploads.slice(offset, offset + 100), { onConflict: 'user_id,question_id' })
+  for (const attempt of attempts) {
+    const existing = winners.get(attempt.question_id)
+    if (existing?.selected_option !== null && existing?.selected_option !== undefined) continue
+    const recovered: CloudProgressRow = {
+      user_id: user.id,
+      question_id: attempt.question_id,
+      selected_option: attempt.selected_option,
+      is_favorite: existing?.is_favorite ?? false,
+      is_revealed: existing?.is_revealed ?? false,
+      updated_at: existing?.updated_at ?? attempt.submitted_at,
+    }
+    winners.set(attempt.question_id, recovered)
+    uploads.set(attempt.question_id, recovered)
+  }
+
+  const uploadRows = [...uploads.values()]
+  for (let offset = 0; offset < uploadRows.length; offset += 100) {
+    const { error } = await supabase.from('user_question_progress').upsert(uploadRows.slice(offset, offset + 100), { onConflict: 'user_id,question_id' })
     if (error) throw error
   }
 
@@ -125,10 +170,15 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
   }
 
   const questionSnapshots = { ...progress.questionSnapshots }
+  for (const attempt of attempts) {
+    const snapshot = questionSnapshots[attempt.question_id]
+    if (!snapshot) continue
+    questionSnapshots[attempt.question_id] = { ...snapshot, correctOption: attempt.correct_option, explanation: attempt.explanation }
+  }
   for (let offset = 0; offset < questionIds.length; offset += 100) {
     const { data, error } = await supabase
       .from('questions')
-      .select('id,exam,subject,topic,year,question_type,statement,correct_option')
+      .select('id,exam,subject,topic,year,question_type,statement')
       .in('id', questionIds.slice(offset, offset + 100))
     if (error) throw error
     for (const row of data ?? []) {
@@ -139,8 +189,8 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
         year: row.question_type === 'bibliography' ? 'Bibliografia' : String(row.year ?? ''),
         questionType: row.question_type,
         prompt: row.statement.slice(0, 400),
-        correctOption: null,
-        explanation: null,
+        correctOption: attemptsById.get(row.id)?.correct_option ?? questionSnapshots[row.id]?.correctOption ?? null,
+        explanation: attemptsById.has(row.id) ? attemptsById.get(row.id)!.explanation : questionSnapshots[row.id]?.explanation ?? null,
       }
     }
   }
@@ -150,8 +200,9 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
   for (let page = 0; ; page += 1) {
     const { data, error } = await supabase
       .from('user_simulation_results')
-      .select('user_id,simulation_id,exam_id,exam_title,study_mode,total_questions,correct_answers,wrong_answers,score,completed_at,updated_at')
+      .select('user_id,simulation_id,exam_id,exam_title,study_mode,total_questions,correct_answers,wrong_answers,score,completed_at,updated_at,is_simulation')
       .eq('user_id', user.id)
+      .eq('is_simulation', true)
       .order('completed_at', { ascending: false })
       .range(page * 500, page * 500 + 499)
     if (error) throw error
@@ -208,7 +259,7 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
     isSimulation: row.is_simulation ?? false,
   })).sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
 
-  return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations: deduplicateCompletedSimulations(completedSimulations) }
+  return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations: mergeCompletedSimulations(completedSimulations) }
 }
 
 export async function syncOffensiveState(state: OffensiveState): Promise<SyncedOffensiveState | null> {
@@ -334,16 +385,4 @@ export async function syncOffensiveState(state: OffensiveState): Promise<SyncedO
     offensiveLoggedToday: next.offensiveLoggedToday,
     joinedAt: next.joinedAt,
   }
-}
-
-function deduplicateCompletedSimulations(simulations: CompletedSimulation[]): CompletedSimulation[] {
-  const seen = new Map<string, CompletedSimulation>()
-  for (const sim of simulations) {
-    const key = `${sim.examId}|${sim.examTitle ?? ''}|${sim.studyMode}|${sim.totalQuestions}|${sim.correctAnswers}|${sim.wrongAnswers}|${sim.score}|${sim.isSimulation}`
-    const existing = seen.get(key)
-    if (!existing || Date.parse(sim.completedAt) > Date.parse(existing.completedAt)) {
-      seen.set(key, sim)
-    }
-  }
-  return [...seen.values()].sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
 }
