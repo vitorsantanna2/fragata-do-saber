@@ -115,7 +115,10 @@ begin
     update public.user_offensive_state
     set total_offensives = state_row.total_offensives + 1,
         current_streak = next_streak,
-        best_streak = pg_catalog.greatest(state_row.best_streak, next_streak),
+        best_streak = case
+          when state_row.best_streak > next_streak then state_row.best_streak
+          else next_streak
+        end,
         last_offensive_date = today_date,
         offensive_logged_today = true,
         joined_at = account_created_at,

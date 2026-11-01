@@ -16,7 +16,7 @@ type Question = {
   imageUrl: string | null
   imageAlt: string | null
   options: string[]
-  answer: number
+  answer: number | null
   explanation: string | null
   source: string | null
 }
@@ -24,14 +24,13 @@ type Question = {
 type QuestionCardProps = {
   question: Question
   answerState: Record<string, number>
+  isAnswerPending: boolean
+  answerError: string | null
   revealedState: string[]
   favorites: string[]
-  setAnswers: (value: Record<string, number>) => void
   setRevealed: (value: string[]) => void
   setFavorites: (value: string[]) => void
-  simulationIds: string[] | null
-  recordSimulationAnswer: (questionId: string, optionIndex: number) => void
-  recordSimulationReveal: (questionId: string) => void
+  submitAnswer: (questionId: string, optionIndex: number) => Promise<void>
   conciseSource: (source: string) => string
 }
 
@@ -91,20 +90,19 @@ function RichText({ text, className }: { text: string; className?: string }) {
 export function QuestionCard({
   question,
   answerState,
+  isAnswerPending,
+  answerError,
   revealedState,
   favorites,
-  setAnswers,
   setRevealed,
   setFavorites,
-  simulationIds,
-  recordSimulationAnswer,
-  recordSimulationReveal,
+  submitAnswer,
   conciseSource,
 }: QuestionCardProps) {
   const isRevealed = revealedState.includes(question.id)
   const selectedAnswer = answerState[question.id]
-  const hasAnswered = selectedAnswer !== undefined
-  const answerIsCorrect = selectedAnswer === question.answer
+  const hasAnswered = selectedAnswer !== undefined && question.answer !== null
+  const answerIsCorrect = hasAnswered && selectedAnswer === question.answer
 
   function toggleInList(list: string[], id: string, update: (value: string[]) => void) {
     update(list.includes(id) ? list.filter((item) => item !== id) : [...list, id])
@@ -150,7 +148,7 @@ export function QuestionCard({
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {question.options.map((option, optionIndex) => {
           const isSelected = selectedAnswer === optionIndex
-          const isCorrect = question.answer === optionIndex
+          const isCorrect = question.answer !== null && question.answer === optionIndex
           const optionStyle = hasAnswered && isCorrect
             ? 'border-sea bg-sea-light text-sea'
             : hasAnswered && isSelected
@@ -162,9 +160,9 @@ export function QuestionCard({
               className={`flex min-h-12 items-start gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition ${optionStyle} ${hasAnswered ? 'cursor-default' : 'hover:border-sea/50 hover:bg-paper'}`}
               key={String(optionIndex) + option}
               type="button"
-              disabled={hasAnswered}
+              disabled={hasAnswered || isAnswerPending}
               aria-pressed={isSelected}
-              onClick={() => (simulationIds !== null ? recordSimulationAnswer(question.id, optionIndex) : setAnswers({ ...answerState, [question.id]: optionIndex }))}
+              onClick={() => void submitAnswer(question.id, optionIndex)}
             >
               <span className="grid size-5 shrink-0 place-items-center rounded-full border border-current text-[10px] font-extrabold">{String.fromCharCode(65 + optionIndex)}</span>
               <RichText className="whitespace-pre-wrap leading-5" text={option} />
@@ -175,13 +173,14 @@ export function QuestionCard({
       {isRevealed && (
         <p className="mt-4 rounded-lg bg-sea-light/70 p-3 text-sm leading-6 text-ink"><strong className="text-sea">Comentário: </strong>{question.explanation}</p>
       )}
+      {answerError && <p className="mt-3 text-sm leading-5 text-red-700" role="alert">{answerError}</p>}
       <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
-        <span className={`text-xs font-bold ${hasAnswered ? answerIsCorrect ? 'text-sea' : 'text-red-700' : 'text-muted'}`}>{!hasAnswered ? 'Escolha uma alternativa' : answerIsCorrect ? 'Resposta correta' : 'Resposta incorreta'}</span>
+        <span className={`text-xs font-bold ${hasAnswered ? answerIsCorrect ? 'text-sea' : 'text-red-700' : 'text-muted'}`}>{isAnswerPending ? 'Verificando resposta…' : !hasAnswered ? selectedAnswer === undefined ? 'Escolha uma alternativa' : 'Toque na alternativa para validar' : answerIsCorrect ? 'Resposta correta' : 'Resposta incorreta'}</span>
         <button
           className="text-sm font-bold text-sea transition hover:text-ink disabled:cursor-not-allowed disabled:text-muted/60"
           type="button"
-          disabled={selectedAnswer === undefined && !isRevealed}
-          onClick={() => (simulationIds !== null ? recordSimulationReveal(question.id) : toggleInList(revealedState, question.id, setRevealed))}
+          disabled={!hasAnswered && !isRevealed}
+          onClick={() => toggleInList(revealedState, question.id, setRevealed)}
         >
           {isRevealed ? 'Ocultar gabarito' : 'Ver gabarito'}
         </button>

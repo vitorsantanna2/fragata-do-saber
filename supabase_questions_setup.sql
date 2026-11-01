@@ -83,8 +83,12 @@ create index if not exists questions_exam_subject_type_year_idx
 
 alter table public.questions enable row level security;
 
-revoke select on public.questions from anon;
-grant select on public.questions to authenticated;
+revoke select on public.questions from anon, authenticated;
+grant select (
+  id, year, question_number, question_type, subject, topic, difficulty, exam,
+  exam_color, statement, statement_after_image, image_url, image_alt, options,
+  source, is_annulled, is_published, created_at
+) on public.questions to authenticated;
 
 drop policy if exists "Public can read published questions"
   on public.questions;

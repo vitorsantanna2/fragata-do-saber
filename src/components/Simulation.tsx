@@ -14,7 +14,7 @@ type Question = {
   imageUrl: string | null
   imageAlt: string | null
   options: string[]
-  answer: number
+  answer: number | null
   explanation: string | null
   source: string | null
 }
@@ -24,7 +24,9 @@ type SimulationProps = {
   simulationIds: string[] | null
   simulationAnswers: Record<string, number>
   simulationRevealed: string[]
-  recordSimulationAnswer: (questionId: string, optionIndex: number) => void
+  pendingAnswerIds: string[]
+  answerErrors: Record<string, string>
+  recordSimulationAnswer: (questionId: string, optionIndex: number) => Promise<void>
   recordSimulationReveal: (questionId: string) => void
 }
 
@@ -33,6 +35,8 @@ export function Simulation({
   simulationIds,
   simulationAnswers,
   simulationRevealed,
+  pendingAnswerIds,
+  answerErrors,
   recordSimulationAnswer,
   recordSimulationReveal,
 }: SimulationProps) {
@@ -42,13 +46,13 @@ export function Simulation({
     return simulationIds.flatMap((id) => (byId.get(id) ? [byId.get(id)!] : []))
   }, [simulationIds, byId, questions])
 
-  const simulationAnsweredCount = visibleQuestions.filter(
-    (question) => simulationAnswers[question.id] !== undefined,
-  ).length
   const simulationCorrectCount = visibleQuestions.filter(
-    (question) => simulationAnswers[question.id] === question.answer,
+    (question) => question.answer !== null && simulationAnswers[question.id] === question.answer,
   ).length
-  const simulationComplete = visibleQuestions.length > 0 && simulationAnsweredCount === visibleQuestions.length
+  const validatedAnswerCount = visibleQuestions.filter(
+    (question) => question.answer !== null && simulationAnswers[question.id] !== undefined,
+  ).length
+  const simulationComplete = visibleQuestions.length > 0 && validatedAnswerCount === visibleQuestions.length
   const pointsPerQuestion = visibleQuestions.length ? 100 / visibleQuestions.length : 0
   const simulationScore = simulationComplete ? (simulationCorrectCount / visibleQuestions.length) * 100 : 0
 
@@ -88,7 +92,8 @@ export function Simulation({
         const revealedState = simulationRevealed
         const isRevealed = revealedState.includes(question.id)
         const selectedAnswer = answerState[question.id]
-        const hasAnswered = selectedAnswer !== undefined
+        const hasAnswered = selectedAnswer !== undefined && question.answer !== null
+        const isPending = pendingAnswerIds.includes(question.id)
         const answerIsCorrect = selectedAnswer === question.answer
 
         return (
@@ -135,9 +140,9 @@ export function Simulation({
                     className={`flex min-h-12 items-start gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition ${optionStyle} ${hasAnswered ? 'cursor-default' : 'hover:border-sea/50 hover:bg-paper'}`}
                     key={String(optionIndex) + option}
                     type="button"
-                    disabled={hasAnswered}
+                    disabled={hasAnswered || isPending}
                     aria-pressed={isSelected}
-                    onClick={() => recordSimulationAnswer(question.id, optionIndex)}
+                    onClick={() => void recordSimulationAnswer(question.id, optionIndex)}
                   >
                     <span className="grid size-5 shrink-0 place-items-center rounded-full border border-current text-[10px] font-extrabold">{String.fromCharCode(65 + optionIndex)}</span>
                     <span className="whitespace-pre-wrap leading-5">{option}</span>
@@ -148,8 +153,9 @@ export function Simulation({
             {isRevealed && (
               <p className="mt-4 rounded-lg bg-sea-light/70 p-3 text-sm leading-6 text-ink"><strong className="text-sea">Comentário: </strong>{question.explanation}</p>
             )}
+            {answerErrors[question.id] && <p className="mt-3 text-sm leading-5 text-red-700" role="alert">{answerErrors[question.id]}</p>}
             <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
-              <span className={`text-xs font-bold ${hasAnswered ? answerIsCorrect ? 'text-sea' : 'text-red-700' : 'text-muted'}`}>{!hasAnswered ? 'Escolha uma alternativa' : answerIsCorrect ? 'Resposta correta' : 'Resposta incorreta'}</span>
+              <span className={`text-xs font-bold ${hasAnswered ? answerIsCorrect ? 'text-sea' : 'text-red-700' : 'text-muted'}`}>{isPending ? 'Verificando resposta…' : !hasAnswered ? selectedAnswer === undefined ? 'Escolha uma alternativa' : 'Resposta não validada' : answerIsCorrect ? 'Resposta correta' : 'Resposta incorreta'}</span>
               <button
                 className="text-sm font-bold text-sea transition hover:text-ink disabled:cursor-not-allowed disabled:text-muted/60"
                 type="button"

@@ -9,7 +9,8 @@ type StudyQuestionSnapshot = {
   year: string
   questionType: 'exam' | 'bibliography'
   prompt: string
-  correctOption: number
+  correctOption: number | null
+  explanation: string | null
 }
 
 type CompletedSimulation = {
@@ -53,7 +54,7 @@ export function PerformanceDashboard({
   const questions = allQuestions.filter(([, question]) =>
     (examFilter === 'Todos' || question.exam === examFilter) &&
     (subjectFilter === 'Todos' || question.subject === subjectFilter))
-  const answered = questions.filter(([id]) => answers[id] !== undefined)
+  const answered = questions.filter(([id, question]) => answers[id] !== undefined && question.correctOption !== null)
   const correct = answered.filter(([id, question]) => answers[id] === question.correctOption)
   const wrong = answered.filter(([id, question]) => answers[id] !== question.correctOption)
   const accuracy = answered.length ? Math.round((correct.length / answered.length) * 100) : 0
@@ -61,7 +62,7 @@ export function PerformanceDashboard({
   function makeGroups(key: 'exam' | 'subject') {
     const groups = new Map<string, { answered: number; correct: number }>()
     for (const [id, question] of questions) {
-      if (answers[id] === undefined) continue
+      if (answers[id] === undefined || question.correctOption === null) continue
       const label = question[key]
       const group = groups.get(label) ?? { answered: 0, correct: 0 }
       group.answered += 1

@@ -195,6 +195,8 @@ function App() {
   const [reviewQuestionId, setReviewQuestionId] = useState<string | null>(null)
   const [reviewingFromDashboard, setReviewingFromDashboard] = useState(false)
   const [simulationAnswers, setSimulationAnswers] = useState<Record<string, number>>({})
+  const [pendingAnswerIds, setPendingAnswerIds] = useState<string[]>([])
+  const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({})
   const reviewQuestionIdRef = useRef<string | null>(null)
   const lastCompletedSimulationRef = useRef<{ examId: string; updatedAt: string } | null>(null)
   const [mindMaps, setMindMaps] = useState<MindMap[]>([])
@@ -219,6 +221,7 @@ function App() {
     setYear,
     setBibliographySource,
     setQuestionSearch,
+    setQuestionAnswerResult,
     topic,
     year,
     bibliographySource,
@@ -241,6 +244,7 @@ function App() {
     favorites,
     progressUpdatedAt,
     questionSnapshots,
+    setQuestionSnapshots,
     savedSimulation,
     setSavedSimulation,
     completedSimulations,
@@ -574,22 +578,34 @@ function App() {
     ? mindMaps.filter((map) => map.local_path)
     : mindMaps
 
-  const simulationTotal = simulationIds !== null ? simulationIds.length : filteredQuestions.length
+  const questionsWithResults = useMemo(
+    () => filteredQuestions.map((question) => {
+      const savedResult = questionSnapshots[question.id]
+      return savedResult?.correctOption !== null && savedResult?.correctOption !== undefined
+        ? { ...question, answer: savedResult.correctOption, explanation: savedResult.explanation }
+        : question
+    }),
+    [filteredQuestions, questionSnapshots],
+  )
+
+  const simulationTotal = simulationIds !== null ? simulationIds.length : questionsWithResults.length
   const simulationAnsweredCount = simulationIds !== null
-    ? simulationIds.filter((id) => simulationAnswers[id] !== undefined).length
-    : filteredQuestions.filter((question) => simulationAnswers[question.id] !== undefined).length
+    ? simulationIds.filter((id) => simulationAnswers[id] !== undefined && questionsWithResults.find((question) => question.id === id)?.answer !== null).length
+    : questionsWithResults.filter((question) => answers[question.id] !== undefined && question.answer !== null).length
   const simulationCorrectCount = simulationIds !== null
-    ? simulationIds.filter((id) => simulationAnswers[id] !== undefined && simulationAnswers[id] === filteredQuestions.find((q) => q.id === id)?.answer).length
-    : filteredQuestions.filter((question) => simulationAnswers[question.id] === question.answer).length
+    ? simulationIds.filter((id) => simulationAnswers[id] !== undefined && simulationAnswers[id] === questionsWithResults.find((question) => question.id === id)?.answer).length
+    : questionsWithResults.filter((question) => answers[question.id] !== undefined && answers[question.id] === question.answer).length
   const simulationComplete = simulationTotal > 0 && simulationAnsweredCount === simulationTotal
   const pointsPerQuestion = simulationTotal ? 100 / simulationTotal : 0
   const simulationScore = simulationComplete ? (simulationCorrectCount / simulationTotal) * 100 : 0
 
   const correctCount = questions.filter(
-    (question) => answers[question.id] === question.answer,
+    (question) => question.answer !== null && answers[question.id] === question.answer,
   ).length
   const performanceCorrectCount = simulationIds !== null ? simulationCorrectCount : correctCount
-  const performanceAnsweredCount = simulationIds !== null ? simulationAnsweredCount : Object.keys(answers).length
+  const performanceAnsweredCount = simulationIds !== null
+    ? simulationAnsweredCount
+    : questions.filter((question) => question.answer !== null && answers[question.id] !== undefined).length
 
   const lastStudiedQuestion = useMemo(() => {
     const latest = Object.entries(progressUpdatedAt)
@@ -715,6 +731,76 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  async function submitQuestionAnswer(questionId: string, optionIndex: number): Promise<number | null> {
+    if (pendingAnswerIds.includes(questionId)) return null
+    if (!supabase) {
+      setAnswerErrors((current) => ({ ...current, [questionId]: 'A validação online da resposta não está disponível.' }))
+      return null
+    }
+    if (!isOnline) {
+      setAnswerErrors((current) => ({ ...current, [questionId]: 'Conecte-se à internet para validar esta resposta.' }))
+      return null
+    }
+
+    setPendingAnswerIds((current) => current.includes(questionId) ? current : [...current, questionId])
+    setAnswerErrors((current) => {
+      const next = { ...current }
+      delete next[questionId]
+      return next
+    })
+
+    try {
+      const { data, error } = await supabase.rpc('submit_question_answer', {
+        p_question_id: questionId,
+        p_selected_option: optionIndex,
+      })
+      if (error) throw error
+
+      const attempt = Array.isArray(data) ? data[0] : data
+      if (!attempt) throw new Error('O servidor não retornou o resultado da resposta.')
+
+      const selectedOption = Number(attempt.selected_option)
+      const correctOption = Number(attempt.correct_option)
+      const explanation = attempt.explanation ?? null
+      const question = questions.find((item) => item.id === questionId)
+
+      setQuestionAnswerResult(questionId, { correctOption, explanation })
+      setAnswers((current) => ({ ...current, [questionId]: selectedOption }))
+      if (question) {
+        setQuestionSnapshots((current) => ({
+          ...current,
+          [questionId]: {
+            ...(current[questionId] ?? {
+              exam: question.exam,
+              subject: question.subject,
+              topic: question.topic,
+              year: question.year,
+              questionType: question.questionType,
+              prompt: question.prompt.slice(0, 400),
+              correctOption: null,
+              explanation: null,
+            }),
+            correctOption,
+            explanation,
+          },
+        }))
+      }
+      return selectedOption
+    } catch (error) {
+      setAnswerErrors((current) => ({
+        ...current,
+        [questionId]: error instanceof Error ? error.message : 'Não foi possível validar a resposta. Tente novamente.',
+      }))
+      return null
+    } finally {
+      setPendingAnswerIds((current) => current.filter((id) => id !== questionId))
+    }
+  }
+
+  async function recordQuestionAnswer(questionId: string, optionIndex: number) {
+    await submitQuestionAnswer(questionId, optionIndex)
+  }
+
   const recordCompletedOffensive = useCallback(async () => {
     const accountCreatedAt = accountUser?.created_at ?? null
 
@@ -776,8 +862,10 @@ function App() {
     setAnswers({ ...answers, ...simulationAnswers })
   }, [simulationComplete, savedSimulation, simulationIds, simulationTotal, simulationCorrectCount, simulationAnsweredCount, simulationScore, recordCompletedSimulation, recordCompletedOffensive, simulationAnswers, answers, setAnswers])
 
-  function recordSimulationAnswer(questionId: string, optionIndex: number) {
-    const nextAnswers = { ...simulationAnswers, [questionId]: optionIndex }
+  async function recordSimulationAnswer(questionId: string, optionIndex: number) {
+    const selectedOption = await submitQuestionAnswer(questionId, optionIndex)
+    if (selectedOption === null) return
+    const nextAnswers = { ...simulationAnswers, [questionId]: selectedOption }
     const updatedAt = new Date().toISOString()
     setSimulationAnswers(nextAnswers)
     setSavedSimulation((current) => current ? { ...current, answers: nextAnswers, lastQuestionId: questionId, updatedAt } : current)
@@ -1125,10 +1213,12 @@ function App() {
                     {simulationIds !== null && (
                       <Suspense fallback={<div className="mt-4 p-8 text-center"><Skeleton className="w-32 mx-auto mb-2" /><SkeletonText className="w-64 mx-auto" /></div>}>
                         <Simulation
-                          questions={filteredQuestions}
+                          questions={questionsWithResults}
                           simulationIds={simulationIds}
                           simulationAnswers={simulationAnswers}
                           simulationRevealed={simulationRevealed}
+                          pendingAnswerIds={pendingAnswerIds}
+                          answerErrors={answerErrors}
                           recordSimulationAnswer={recordSimulationAnswer}
                           recordSimulationReveal={recordSimulationReveal}
                         />
@@ -1158,10 +1248,10 @@ function App() {
                     {!loading && loadError && <p className="rounded-xl border border-red-200 bg-white p-5 text-sm leading-6 text-red-800">{loadError}</p>}
                     {showQuestionList && simulationIds === null && !loading && !loadError && (() => {
                       const questionsToShow = reviewQuestionId
-                        ? filteredQuestions.filter((q) => q.id === reviewQuestionId)
+                        ? questionsWithResults.filter((q) => q.id === reviewQuestionId)
                         : reviewingFromDashboard
-                          ? filteredQuestions.filter((q) => answers[q.id] !== undefined && answers[q.id] !== q.answer)
-                          : filteredQuestions
+                          ? questionsWithResults.filter((q) => q.answer !== null && answers[q.id] !== undefined && answers[q.id] !== q.answer)
+                          : questionsWithResults
                       if (questionsToShow.length > 0) {
                         return questionsToShow.map((question) => (
                           <div key={question.id} id={`question-${question.id}`} className={reviewQuestionId === question.id ? 'ring-2 ring-sea rounded-lg' : ''}>
@@ -1169,14 +1259,13 @@ function App() {
                               key={question.id}
                               question={question}
                               answerState={answers}
+                              isAnswerPending={pendingAnswerIds.includes(question.id)}
+                              answerError={answerErrors[question.id] ?? null}
                               revealedState={revealed}
                               favorites={favorites}
-                              setAnswers={(value) => setAnswers(value)}
                               setRevealed={(value) => setRevealed(value)}
                               setFavorites={(value) => setFavorites(value)}
-                              simulationIds={null}
-                              recordSimulationAnswer={recordSimulationAnswer}
-                              recordSimulationReveal={recordSimulationReveal}
+                              submitAnswer={recordQuestionAnswer}
                               conciseSource={conciseSource}
                             />
                             {reviewQuestionId ? <button key={`back-${question.id}`} type="button" className="mt-3 w-full rounded-lg border border-sea bg-white px-4 py-2.5 text-xs font-bold text-sea disabled:opacity-60" onClick={() => { setReviewQuestionId(null); setShowQuestionList(true); setReviewingFromDashboard(true) }}>Voltar à lista de questões para revisar</button> : null}
@@ -1188,10 +1277,10 @@ function App() {
                     })()}
                     {showQuestionList && simulationIds === null && !loading && !loadError && (() => {
                       const questionsToShow = reviewQuestionId
-                        ? filteredQuestions.filter((q) => q.id === reviewQuestionId)
+                        ? questionsWithResults.filter((q) => q.id === reviewQuestionId)
                         : reviewingFromDashboard
-                          ? filteredQuestions.filter((q) => answers[q.id] !== undefined && answers[q.id] !== q.answer)
-                          : filteredQuestions
+                          ? questionsWithResults.filter((q) => q.answer !== null && answers[q.id] !== undefined && answers[q.id] !== q.answer)
+                          : questionsWithResults
                       if (questionsToShow.length === 0) {
                         if (reviewQuestionId) {
                           return <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">

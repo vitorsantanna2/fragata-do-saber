@@ -27,6 +27,22 @@ $$;
 revoke all on function public.is_admin() from public, anon;
 grant execute on function public.is_admin() to authenticated;
 
+create or replace function public.admin_get_question_answer_keys(p_question_ids uuid[])
+returns table (question_id uuid, correct_option smallint, explanation text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select question_row.id, question_row.correct_option, question_row.explanation
+  from public.questions as question_row
+  where question_row.id = any(p_question_ids)
+    and public.is_admin();
+$$;
+
+revoke all on function public.admin_get_question_answer_keys(uuid[]) from public, anon;
+grant execute on function public.admin_get_question_answer_keys(uuid[]) to authenticated;
+
 -- As imagens são públicas para exibição nas questões; somente administradores
 -- autenticados podem enviar, substituir ou remover arquivos.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -64,9 +80,25 @@ create policy "Admins can delete question images"
   to authenticated
   using (bucket_id = 'question-images' and public.is_admin());
 
--- RLS continua protegendo as escritas. Usuários comuns mantêm apenas
--- a leitura de questões publicadas permitida pela política de acesso por código.
-grant select, insert, update, delete on public.questions to authenticated;
+-- Estudantes só leem colunas públicas. O painel admin busca o gabarito por RPC.
+-- RLS continua limitando todas as escritas a administradores autenticados.
+revoke select, insert, update, delete on public.questions from authenticated;
+grant select (
+  id, year, question_number, question_type, subject, topic, difficulty, exam,
+  exam_color, statement, statement_after_image, image_url, image_alt, options,
+  source, is_annulled, is_published, created_at
+) on public.questions to authenticated;
+grant insert (
+  year, question_number, question_type, subject, topic, difficulty, exam, exam_color,
+  statement, statement_after_image, image_url, image_alt, options, correct_option,
+  explanation, source, is_annulled, is_published
+) on public.questions to authenticated;
+grant update (
+  year, question_number, question_type, subject, topic, difficulty, exam, exam_color,
+  statement, statement_after_image, image_url, image_alt, options, correct_option,
+  explanation, source, is_annulled, is_published
+) on public.questions to authenticated;
+grant delete on public.questions to authenticated;
 
 drop policy if exists "Admins can manage questions" on public.questions;
 create policy "Admins can manage questions"

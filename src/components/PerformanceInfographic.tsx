@@ -7,7 +7,7 @@ type StudyQuestionSnapshot = {
   year: string
   questionType: 'exam' | 'bibliography'
   prompt: string
-  correctOption: number
+  correctOption: number | null
 }
 
 type PerformanceInfographicProps = {

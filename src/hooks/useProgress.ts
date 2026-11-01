@@ -32,11 +32,11 @@ type UseProgressReturn = {
   theme: 'light' | 'dark'
   setTheme: (value: 'light' | 'dark') => void
   themeLoaded: boolean
-  setAnswers: (value: Record<string, number>) => void
+  setAnswers: Dispatch<SetStateAction<Record<string, number>>>
   setRevealed: (value: string[]) => void
   setFavorites: (value: string[]) => void
   setProgressUpdatedAt: (value: Record<string, string>) => void
-  setQuestionSnapshots: (value: Record<string, StudyQuestionSnapshot>) => void
+  setQuestionSnapshots: Dispatch<SetStateAction<Record<string, StudyQuestionSnapshot>>>
   setSavedSimulation: Dispatch<SetStateAction<SavedSimulation | null>>
   setSyncStatus: (value: 'local' | 'offline' | 'syncing' | 'synced' | 'error') => void
   setManualSyncRevision: Dispatch<SetStateAction<number>>
@@ -102,7 +102,12 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         setRevealed(progress.revealed)
         setFavorites(progress.favorites)
         setProgressUpdatedAt(progress.progressUpdatedAt)
-        setQuestionSnapshots(progress.questionSnapshots)
+        setQuestionSnapshots(Object.fromEntries(
+          Object.entries(progress.questionSnapshots).map(([questionId, snapshot]) => [
+            questionId,
+            { ...snapshot, correctOption: null, explanation: null },
+          ]),
+        ))
         setSavedSimulation(progress.savedSimulation)
         setCompletedSimulations(progress.completedSimulations)
       }
@@ -224,6 +229,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
     setQuestionSnapshots((current) => {
       const next = { ...current }
       for (const question of questions) {
+        const existing = next[question.id]
         next[question.id] = {
           exam: question.exam,
           subject: question.subject,
@@ -231,7 +237,8 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
           year: question.year,
           questionType: question.questionType,
           prompt: question.prompt.slice(0, 400),
-          correctOption: question.answer,
+          correctOption: question.answer ?? existing?.correctOption ?? null,
+          explanation: question.explanation ?? existing?.explanation ?? null,
         }
       }
       return next

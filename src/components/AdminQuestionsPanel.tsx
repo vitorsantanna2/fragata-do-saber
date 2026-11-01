@@ -43,7 +43,7 @@ type QuestionDraft = Omit<QuestionRecord, 'id' | 'created_at' | 'year' | 'questi
 }
 
 const PAGE_SIZE = 30
-const questionColumns = 'id, year, question_number, question_type, subject, topic, difficulty, exam, exam_color, statement, statement_after_image, image_url, image_alt, options, correct_option, explanation, source, is_annulled, is_published, created_at'
+const questionColumns = 'id, year, question_number, question_type, subject, topic, difficulty, exam, exam_color, statement, statement_after_image, image_url, image_alt, options, source, is_annulled, is_published, created_at'
 
 function emptyDraft(): QuestionDraft {
   return {
@@ -181,8 +181,29 @@ export default function AdminQuestionsPanel({ onClose }: { onClose: () => void }
       if (error) {
         setListError(`Não foi possível carregar as questões: ${error.message}`)
       } else {
-        setQuestions((data ?? []) as QuestionRecord[])
-        setTotalCount(count ?? 0)
+        const questionRows = data ?? []
+        const { data: answerKeys, error: answerError } = await client.rpc('admin_get_question_answer_keys', {
+          p_question_ids: questionRows.map((question) => question.id),
+        })
+        if (answerError) {
+          setListError(`Não foi possível carregar os gabaritos administrativos: ${answerError.message}`)
+        } else {
+          const answerByQuestionId = new Map<string, { correct_option: number | null; explanation: string | null }>(
+            (answerKeys ?? []).map((answer: { question_id: string; correct_option: number | null; explanation: string | null }) => [
+              answer.question_id,
+              { correct_option: answer.correct_option, explanation: answer.explanation },
+            ]),
+          )
+          setQuestions(questionRows.map((question) => {
+            const answer = answerByQuestionId.get(question.id)
+            return {
+              ...question,
+              correct_option: answer?.correct_option ?? null,
+              explanation: answer?.explanation ?? null,
+            }
+          }) as QuestionRecord[])
+          setTotalCount(count ?? 0)
+        }
       }
       setLoadingQuestions(false)
     }
@@ -328,7 +349,11 @@ export default function AdminQuestionsPanel({ onClose }: { onClose: () => void }
       }
       if (result.error) throw result.error
 
-      const saved = result.data as QuestionRecord
+      const saved = {
+        ...result.data,
+        correct_option: payload.correct_option,
+        explanation: payload.explanation,
+      } as QuestionRecord
       setDraft(toDraft(saved))
       setNotice(saved.is_published ? 'Questão salva e publicada.' : 'Rascunho salvo. A questão ainda não aparece para os estudantes.')
       setRefreshToken((value) => value + 1)

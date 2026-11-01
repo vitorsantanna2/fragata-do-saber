@@ -139,7 +139,8 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
         year: row.question_type === 'bibliography' ? 'Bibliografia' : String(row.year ?? ''),
         questionType: row.question_type,
         prompt: row.statement.slice(0, 400),
-        correctOption: row.correct_option,
+        correctOption: null,
+        explanation: null,
       }
     }
   }

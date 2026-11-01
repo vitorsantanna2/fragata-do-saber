@@ -21,7 +21,7 @@ export type Question = {
   imageUrl: string | null
   imageAlt: string | null
   options: string[]
-  answer: number
+  answer: number | null
   explanation: string | null
   source: string | null
 }
@@ -55,6 +55,7 @@ type UseQuestionsReturn = {
   setYear: Dispatch<SetStateAction<string>>
   setBibliographySource: Dispatch<SetStateAction<string>>
   setQuestionSearch: Dispatch<SetStateAction<string>>
+  setQuestionAnswerResult: (questionId: string, result: { correctOption: number; explanation: string | null }) => void
   topic: string
   year: string
   bibliographySource: string
@@ -89,8 +90,8 @@ export function useQuestions({
     imageUrl: row.image_url,
     imageAlt: row.image_alt,
     options: row.options,
-    answer: row.correct_option,
-    explanation: row.explanation,
+    answer: row.correct_option != null && row.correct_option >= 0 ? row.correct_option : null,
+    explanation: row.explanation ?? null,
     source: row.source,
   }), [])
 
@@ -149,7 +150,7 @@ export function useQuestions({
 
       let query = supabase
         .from('questions')
-        .select('id, year, question_number, question_type, subject, topic, difficulty, exam, statement, statement_after_image, image_url, image_alt, options, correct_option, explanation, source')
+        .select('id, year, question_number, question_type, subject, topic, difficulty, exam, statement, statement_after_image, image_url, image_alt, options, source')
         .eq('is_published', true)
         .eq('is_annulled', false)
         .eq('exam', exam.exam)
@@ -171,12 +172,39 @@ export function useQuestions({
         }
         setLoadError(`Não foi possível carregar as questões. Confira se a tabela public.questions e a política de leitura estão configuradas. (${error.message})`)
       } else {
-        const questionRows = data as CachedQuestionRow[]
+        const questionRows = data as Omit<CachedQuestionRow, 'correct_option' | 'explanation'>[]
+        const questionIds = questionRows.map((question) => question.id)
+        let attemptsByQuestionId = new Map<string, { correct_option: number; explanation: string | null }>()
+        if (questionIds.length > 0) {
+          const { data: attempts, error: attemptsError } = await supabase
+            .from('question_answer_attempts')
+            .select('question_id,correct_option,explanation')
+            .in('question_id', questionIds)
+
+          if (!active) return
+          if (attemptsError) {
+            console.warn('Não foi possível restaurar as respostas já corrigidas.', attemptsError)
+          } else {
+            attemptsByQuestionId = new Map((attempts ?? []).map((attempt) => [
+              attempt.question_id,
+              { correct_option: attempt.correct_option, explanation: attempt.explanation },
+            ]))
+          }
+        }
+
+        const safeQuestionRows = questionRows.map((question) => {
+          const attempt = attemptsByQuestionId.get(question.id)
+          return {
+            ...question,
+            correct_option: attempt?.correct_option ?? -1,
+            explanation: attempt?.explanation ?? null,
+          }
+        }) as CachedQuestionRow[]
         setUsingOfflineCache(false)
         void cacheQuestions(questionRows, exam.exam, exam.subject, questionType).catch((cacheError) => {
           console.warn('Não foi possível atualizar o cache local de questões.', cacheError)
         })
-        setQuestions(questionRows.map(toQuestion))
+        setQuestions(safeQuestionRows.map(toQuestion))
       }
 
       setLoading(false)
@@ -223,6 +251,12 @@ export function useQuestions({
     })
   }, [questions, topic, year, bibliographySource, selectedStudyMode, questionSearch])
 
+  const setQuestionAnswerResult = useCallback((questionId: string, result: { correctOption: number; explanation: string | null }) => {
+    setQuestions((current) => current.map((question) => question.id === questionId
+      ? { ...question, answer: result.correctOption, explanation: result.explanation }
+      : question))
+  }, [])
+
   return {
     questions,
     loading,
@@ -236,6 +270,7 @@ export function useQuestions({
     setYear,
     setBibliographySource,
     setQuestionSearch,
+    setQuestionAnswerResult,
     topic,
     year,
     bibliographySource,

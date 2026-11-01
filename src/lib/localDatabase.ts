@@ -27,8 +27,8 @@ export type CachedQuestionRow = {
   image_url: string | null
   image_alt: string | null
   options: string[]
-  correct_option: number
-  explanation: string | null
+  correct_option?: number
+  explanation?: string | null
   source: string | null
 }
 
@@ -99,7 +99,8 @@ export type StudyQuestionSnapshot = {
   year: string
   questionType: 'exam' | 'bibliography'
   prompt: string
-  correctOption: number
+  correctOption: number | null
+  explanation: string | null
 }
 
 const STUDY_PROGRESS_KEY = 'study_progress_v1'
@@ -295,6 +296,7 @@ async function openDatabase() {
   if (!existingQuestionColumns.has('source')) {
     await database.execute('ALTER TABLE questions ADD COLUMN source TEXT')
   }
+  await database.run('UPDATE questions SET correct_option = -1, explanation = NULL WHERE correct_option != -1 OR explanation IS NOT NULL')
   await database.execute(`
     CREATE INDEX IF NOT EXISTS questions_exam_subject_year_idx
       ON questions (exam, subject, year DESC)
@@ -392,7 +394,8 @@ export async function readCachedQuestions(exam: string, subject: string | null, 
     ...row,
     year: Number(row.year),
     question_number: Number(row.question_number),
-    correct_option: Number(row.correct_option),
+    correct_option: -1,
+    explanation: null,
     options: typeof row.options === 'string' ? JSON.parse(row.options) as string[] : row.options as string[],
   })) as CachedQuestionRow[]
 }
@@ -424,8 +427,8 @@ export async function cacheQuestions(rows: CachedQuestionRow[], exam: string, su
         image_url = excluded.image_url,
         image_alt = excluded.image_alt,
         options = excluded.options,
-        correct_option = excluded.correct_option,
-        explanation = excluded.explanation,
+          correct_option = excluded.correct_option ?? -1,
+          explanation = excluded.explanation ?? null,
         source = excluded.source
     `,
     values: [
@@ -442,8 +445,8 @@ export async function cacheQuestions(rows: CachedQuestionRow[], exam: string, su
       row.image_url,
       row.image_alt,
       JSON.stringify(row.options),
-      row.correct_option,
-      row.explanation,
+      -1,
+      null,
       row.source,
     ],
   }))
