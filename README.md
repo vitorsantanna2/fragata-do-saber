@@ -134,6 +134,14 @@ O banco local `fragata_saber` e suas tabelas são criados automaticamente na pri
 
 Se o aparelho já tinha questões salvas por uma versão que não baixava gabaritos, abra os concursos novamente com internet depois de atualizar o app. As questões antigas sem gabarito precisam dessa atualização antes de poderem ser corrigidas offline. A versão web continua validando cada resposta online.
 
+### Área do concurso (modo foco)
+
+Ao escolher um concurso ou curso, o aluno entra em uma área de estudos com os recursos disponíveis para essa seleção. No CP-T de Informática, a área reúne questões de provas, bibliografia, mapas mentais, revisões programadas e desempenho. O concurso escolhido fica salvo no aparelho e é restaurado ao reabrir o app.
+
+Os indicadores, revisões pendentes, questões para revisar e simulados concluídos são filtrados pelo concurso e pela especialidade selecionados. **Minha área** retorna à página do concurso; **Trocar concurso** abre o catálogo para escolher outro. O logotipo também retorna à área atual. A seleção de foco funciona offline.
+
+O catálogo de concursos fica em `src/lib/exams.ts`; os recursos e o recorte de dados de cada área ficam em `src/lib/studyFocus.ts`. Essa organização permite acrescentar módulos como trilhas e caderno de erros dentro da área de cada concurso.
+
 ### Painel de desempenho
 
 Use **Meu desempenho** no cabeçalho para consultar questões respondidas, acertos, erros e aproveitamento, com filtros por concurso e matéria. A tela também lista questões erradas para abrir e revisar. O painel usa o progresso e as questões já carregadas neste aparelho, portanto funciona offline para o conteúdo estudado ou baixado anteriormente.

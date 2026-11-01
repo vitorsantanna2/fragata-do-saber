@@ -9,6 +9,7 @@ import {
 import { normalizeSearchText, conciseSource, conciseTopic } from '../lib/utils'
 import { loadOfflineQuestionAnswers } from '../lib/questionAnswers'
 import { loadQuestionCatalog, toStudyQuestion } from '../lib/questionCatalog'
+import type { ExamChoice } from '../lib/exams'
 
 export type Question = {
   id: string
@@ -27,16 +28,6 @@ export type Question = {
   answer: number | null
   explanation: string | null
   source: string | null
-}
-
-type ExamChoice = {
-  id: string
-  group: string
-  title: string
-  description: string
-  exam: string
-  subject: string | null
-  image: string
 }
 
 type UseQuestionsProps = {
@@ -89,14 +80,14 @@ export function useQuestions({
       return
     }
 
-    if (selectedExamId === 'cp-t-informatica' && selectedStudyMode !== 'exam-questions' && selectedStudyMode !== 'bibliography-questions') {
+    if (selectedStudyMode !== 'exam-questions' && selectedStudyMode !== 'bibliography-questions') {
       setQuestions([])
       setLoading(false)
       setLoadError('')
       return
     }
 
-    const questionType: 'exam' | 'bibliography' = selectedExamId === 'cp-t-informatica' && selectedStudyMode === 'bibliography-questions'
+    const questionType: 'exam' | 'bibliography' = selectedStudyMode === 'bibliography-questions'
       ? 'bibliography'
       : 'exam'
 

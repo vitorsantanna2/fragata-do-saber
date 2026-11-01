@@ -26,6 +26,7 @@ type CompletedSimulation = {
 }
 
 type PerformanceDashboardProps = {
+  focusExam?: string
   snapshots: Record<string, StudyQuestionSnapshot>
   answers: Record<string, number>
   completedSimulations: CompletedSimulation[]
@@ -43,8 +44,9 @@ export function PerformanceDashboard({
   onReview,
   offensiveState,
   offensiveLoaded,
+  focusExam,
 }: PerformanceDashboardProps) {
-  const [examFilter, setExamFilter] = useState('Todos')
+  const [examFilter, setExamFilter] = useState(focusExam ?? 'Todos')
   const [subjectFilter, setSubjectFilter] = useState('Todos')
   const allQuestions = Object.entries(snapshots)
   const exams = [...new Set(allQuestions.map(([, question]) => question.exam))].sort()
@@ -82,13 +84,13 @@ export function PerformanceDashboard({
     <section className="mt-8" aria-labelledby="performance-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Seu progresso no aparelho</p>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">{focusExam ? `Seu progresso em ${focusExam}` : 'Seu progresso no aparelho'}</p>
           <h2 id="performance-title" className="mt-1 font-display text-2xl font-extrabold">Painel de desempenho</h2>
         </div>
-        <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold hover:border-sea hover:text-sea" type="button" onClick={onClose}>Voltar aos concursos</button>
+        <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold hover:border-sea hover:text-sea" type="button" onClick={onClose}>Voltar aos estudos</button>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <label className="text-xs font-bold text-muted">Concurso<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={examFilter} onChange={(event) => { setExamFilter(event.target.value); setSubjectFilter('Todos') }}><option>Todos</option>{exams.map((exam) => <option key={exam}>{exam}</option>)}</select></label>
+        {!focusExam && <label className="text-xs font-bold text-muted">Concurso<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={examFilter} onChange={(event) => { setExamFilter(event.target.value); setSubjectFilter('Todos') }}><option>Todos</option>{exams.map((exam) => <option key={exam}>{exam}</option>)}</select></label>}
         <label className="text-xs font-bold text-muted">Matéria<select className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink" value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value)}><option>Todos</option>{subjects.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
       </div>
       {offensiveLoaded && offensiveState && (
@@ -116,7 +118,7 @@ export function PerformanceDashboard({
           {wrong.length ? <div className="mt-3 max-h-80 space-y-2 overflow-y-auto">{wrong.slice(0, 30).map(([id, question]) => <button key={id} type="button" className="w-full rounded-lg border border-line p-3 text-left hover:border-sea" onClick={() => onReview(id, question)}><span className="block text-xs font-bold text-sea">{question.exam} · {question.subject}{question.topic ? ` · ${question.topic}` : ''}</span><span className="mt-1 block text-sm leading-5">{question.prompt}</span><span className="mt-1 block text-xs font-bold text-muted">Toque para revisar</span></button>)}</div> : <p className="mt-3 text-sm leading-6 text-muted">Nenhuma questão errada neste filtro. Questões respondidas são guardadas neste aparelho.</p>}
         </section>
       </div>
-      <PerformanceInfographic snapshots={snapshots} answers={answers} />
+      <PerformanceInfographic snapshots={Object.fromEntries(questions)} answers={answers} />
       <section className="mt-6 rounded-xl border border-line bg-white p-4 sm:p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3 className="font-display text-lg font-extrabold">Simulados concluídos</h3>

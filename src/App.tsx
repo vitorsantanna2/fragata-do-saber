@@ -28,7 +28,8 @@ import {
 import { getDaysAboard } from './lib/offensiveDates'
 import { Skeleton, SkeletonText } from './components/Skeleton'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { ExamChoiceGrid, examChoices } from './components/ExamChoiceGrid'
+import { ExamChoiceGrid } from './components/ExamChoiceGrid'
+import { examChoices } from './lib/exams'
 import { StudyScreen } from './components/StudyScreen'
 import { MindMapViewer } from './components/MindMapViewer'
 import { shuffle, conciseTopic } from './lib/utils'
@@ -39,6 +40,10 @@ import { resolveQuestionAnswer } from './lib/questionAnswers'
 import { getSimulationResult } from './lib/simulationResults'
 import { useReviewQueue } from './hooks/useReviewQueue'
 import { ScheduledReviews } from './components/ScheduledReviews'
+import { useStudyFocus } from './hooks/useStudyFocus'
+import { scopeStudyData, type FocusResource } from './lib/studyFocus'
+import { ExamFocusHome } from './components/ExamFocusHome'
+import { ExamFocusBar } from './components/ExamFocusBar'
 
 const AdminQuestionsPanel = lazy(() => import('./components/AdminQuestionsPanel').then((mod) => ({ default: mod.default })))
 const PerformanceDashboard = lazy(() => import('./components/PerformanceDashboard').then((mod) => ({ default: mod.PerformanceDashboard })))
@@ -68,7 +73,8 @@ function App() {
   const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine)
   const [showPerformance, setShowPerformance] = useState(false)
   const [showScheduledReviews, setShowScheduledReviews] = useState(false)
-  const [selectedExamId, setSelectedExamId] = useState<string | null>(null)
+  const { selectedExamId, setSelectedExamId } = useStudyFocus()
+  const focusedExam = examChoices.find((exam) => exam.id === selectedExamId) ?? null
   const [selectedStudyMode, setSelectedStudyMode] = useState<'exam-questions' | 'bibliography-questions' | 'mind-maps' | null>(null)
   const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
   const [showQuestionList, setShowQuestionList] = useState(false)
@@ -150,7 +156,8 @@ function App() {
     accountUser,
     isOnline,
   })
-  const { today: reviewToday, dueReviews } = useReviewQueue(reviewSchedules, questionSnapshots)
+  const focusedStudy = useMemo(() => scopeStudyData(focusedExam, { answers, questionSnapshots, progressUpdatedAt, completedSimulations, reviewSchedules }), [focusedExam, answers, questionSnapshots, progressUpdatedAt, completedSimulations, reviewSchedules])
+  const { today: reviewToday, dueReviews } = useReviewQueue(focusedStudy.reviewSchedules, focusedStudy.questionSnapshots)
 
   useEffect(() => {
     if (!supabase) return
@@ -361,17 +368,25 @@ function App() {
     }
   }
 
-  const returnToHome = useCallback(() => {
+  const returnToFocus = useCallback(() => {
     setShowScheduledReviews(false)
     setTopic('Todos')
     setYear('Todos')
-    setSelectedExamId(null)
+    setBibliographySource('Todos')
+    setQuestionSearch('')
+    setReviewQuestionId(null)
+    setOpenMindMap(null)
     setSelectedStudyMode(null)
     setSimulationIds(null)
     setShowQuestionList(false)
     setReviewingFromDashboard(false)
     setShowPerformance(false)
-  }, [setTopic, setYear, setSelectedExamId, setSelectedStudyMode, setSimulationIds, setShowQuestionList, setReviewingFromDashboard, setShowPerformance])
+  }, [setTopic, setYear, setBibliographySource, setQuestionSearch])
+
+  const returnToHome = useCallback(() => {
+    returnToFocus()
+    setSelectedExamId(null)
+  }, [returnToFocus, setSelectedExamId])
 
   useEffect(() => {
     if (!reviewQuestionId) return
@@ -408,16 +423,14 @@ function App() {
         setOpenMindMap(null)
       } else if (simulationIds !== null) {
         setSimulationIds(null)
-      } else if (selectedExamId === 'cp-t-informatica' && selectedStudyMode !== null) {
-        setSelectedStudyMode(null)
-      } else if (selectedExamId !== null) {
-        returnToHome()
+      } else if (selectedExamId !== null && selectedStudyMode !== null) {
+        returnToFocus()
       } else {
         void CapacitorApp.exitApp()
       }
     })
     return () => { void listener.then((handle) => handle.remove()) }
-  }, [adminMode, closeAdmin, showAccountSync, showScheduledReviews, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToHome])
+  }, [adminMode, closeAdmin, showAccountSync, showScheduledReviews, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToFocus])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSplashElapsed(true), 900)
@@ -502,32 +515,34 @@ function App() {
     : questions.filter((question) => question.answer !== null && answers[question.id] !== undefined).length
 
   const lastStudiedQuestion = useMemo(() => {
-    const latest = Object.entries(progressUpdatedAt)
-      .filter(([questionId]) => questionSnapshots[questionId])
+    const latest = Object.entries(focusedStudy.progressUpdatedAt)
+      .filter(([questionId]) => focusedStudy.questionSnapshots[questionId])
       .sort((left, right) => Date.parse(right[1]) - Date.parse(left[1]))[0]
     if (!latest) return null
     const [questionId] = latest
-    const snapshot = questionSnapshots[questionId]
-    const examChoice = examChoices.find((choice) => choice.exam === snapshot.exam)
+    const snapshot = focusedStudy.questionSnapshots[questionId]
+    const examChoice = examChoices.find((choice) => choice.exam === snapshot.exam && (!choice.subject || choice.subject === snapshot.subject))
     return examChoice ? { questionId, snapshot, examChoice } : null
-  }, [progressUpdatedAt, questionSnapshots])
+  }, [focusedStudy])
 
   const daysSinceJoin = useMemo(() => {
     return getDaysAboard(accountUser?.created_at ?? offensiveState?.joinedAt ?? null)
   }, [accountUser?.created_at, offensiveState?.joinedAt])
 
-  const resumeSavedSimulation = Boolean(savedSimulation && (
+  const resumeSavedSimulation = Boolean(savedSimulation && (!selectedExamId || savedSimulation.examId === selectedExamId) && (
     !lastStudiedQuestion || Date.parse(savedSimulation.updatedAt) >= Date.parse(progressUpdatedAt[lastStudiedQuestion.questionId] ?? '')
   ))
 
   function selectExam(examId: string) {
-    setTopic('Todos')
-    setYear('Todos')
+    returnToFocus()
     setSelectedExamId(examId)
-    setSelectedStudyMode(examId === 'cp-t-informatica' ? null : 'exam-questions')
-    setSimulationIds(null)
-    setShowQuestionList(false)
-    setReviewingFromDashboard(false)
+  }
+
+  function openFocusResource(resource: FocusResource) {
+    returnToFocus()
+    if (resource === 'scheduled-reviews') setShowScheduledReviews(true)
+    else if (resource === 'performance') setShowPerformance(true)
+    else setSelectedStudyMode(resource)
   }
 
   function continueStudying() {
@@ -566,7 +581,7 @@ function App() {
   }
 
   function reviewQuestion(questionId: string, snapshot: StudyQuestionSnapshot) {
-    const examChoice = examChoices.find((choice) => choice.exam === snapshot.exam)
+    const examChoice = examChoices.find((choice) => choice.exam === snapshot.exam && (!choice.subject || choice.subject === snapshot.subject))
     if (!examChoice) return
     const nextMode = examChoice.id === 'cp-t-informatica'
       ? snapshot.questionType === 'bibliography' ? 'bibliography-questions' : 'exam-questions'
@@ -817,7 +832,7 @@ function App() {
       <div className="min-h-screen text-ink">
         <header className="border-b border-line bg-paper/95">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-8">
-            <a className="flex items-center gap-3" href="#inicio" aria-label="Fragata do Saber, início" onClick={returnToHome}>
+            <a className="flex items-center gap-3" href="#inicio" aria-label="Fragata do Saber, início" onClick={returnToFocus}>
               <img className="h-12 w-[72px] rounded-md object-contain" src={publicAsset('logo.png')} alt="" />
               <span>
                 <span className="block font-display text-base font-extrabold tracking-normal">Fragata do Saber</span>
@@ -846,6 +861,7 @@ function App() {
         {logoutError && <div className="mx-auto max-w-7xl px-5 py-3"><p className="rounded-lg bg-red-50 p-3 text-sm leading-5 text-red-800" role="alert">{logoutError}</p></div>}
 
         <main id="inicio" className="mx-auto max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
+          {focusedExam && <ExamFocusBar exam={focusedExam} onHome={returnToFocus} onChange={returnToHome} />}
           {!selectedExamId && !showScheduledReviews && (
             <section className="relative overflow-hidden rounded-2xl bg-ink px-5 py-5 text-white shadow-lg shadow-ink/10 sm:px-8 sm:py-6" id="simulados">
               <div className="relative grid gap-5 lg:grid-cols-[1fr_260px] lg:items-center">
@@ -877,7 +893,9 @@ function App() {
           )}
           {showScheduledReviews ? (
             <ScheduledReviews
-              today={reviewToday} dueReviews={dueReviews} schedules={reviewSchedules} isOnline={isOnline}
+              key={selectedExamId ?? 'all-reviews'}
+              today={reviewToday} dueReviews={dueReviews} schedules={focusedStudy.reviewSchedules} isOnline={isOnline}
+              focusExam={focusedExam?.exam}
               favorites={favorites} setFavorites={setFavorites} answerErrors={answerErrors}
               onAnswer={(question, option, attemptId) => submitQuestionAnswer(question.id, option, attemptId, question)}
               onRate={rateReview} onClose={() => setShowScheduledReviews(false)}
@@ -885,12 +903,14 @@ function App() {
           ) : showPerformance ? (
             <Suspense fallback={<div className="mt-8 p-8 text-center"><Skeleton className="w-32 mx-auto mb-2" /><SkeletonText className="w-48 mx-auto" /></div>}>
               <PerformanceDashboard
-                snapshots={questionSnapshots}
-                answers={answers}
-                completedSimulations={completedSimulations}
+                key={selectedExamId ?? 'all-performance'}
+                snapshots={focusedStudy.questionSnapshots}
+                answers={focusedStudy.answers}
+                completedSimulations={focusedStudy.completedSimulations}
+                focusExam={focusedExam?.exam}
                 onClose={() => setShowPerformance(false)}
                 onReview={reviewQuestion}
-                offensiveState={offensiveState ? { ...offensiveState, joinedAt: accountUser?.created_at ?? offensiveState.joinedAt } : null}
+                offensiveState={!focusedExam && offensiveState ? { ...offensiveState, joinedAt: accountUser?.created_at ?? offensiveState.joinedAt } : null}
                 offensiveLoaded={offensiveLoaded}
               />
             </Suspense>
@@ -917,38 +937,17 @@ function App() {
               </div>
               <ExamChoiceGrid onSelect={selectExam} publicAsset={publicAsset} />
             </section>
-          ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === null ? (
-            <section className="mt-10" id="questoes">
-              <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Quadro Técnico - Informática</p>
-                  <h2 className="mt-1 font-display text-2xl font-extrabold">Como você quer estudar?</h2>
-                </div>
-                <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={returnToHome}>
-                  Trocar concurso
-                </button>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('mind-maps')}>
-                  <span className="grid size-12 place-items-center rounded-xl bg-[#fff2e8] text-2xl text-sea" aria-hidden="true">✦</span>
-                  <span className="mt-5 block font-display text-xl font-extrabold text-ink">Mapas mentais</span>
-                  <span className="mt-2 block text-sm leading-6 text-muted">Revise os conteúdos do Quadro Técnico com mapas mentais.</span>
-                  <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar mapas <span aria-hidden="true">→</span></span>
-                </button>
-                <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('exam-questions')}>
-                  <span className="grid size-12 place-items-center rounded-xl bg-sea-light text-2xl text-sea" aria-hidden="true">✓</span>
-                  <span className="mt-5 block font-display text-xl font-extrabold text-ink">Questões de provas</span>
-                  <span className="mt-2 block text-sm leading-6 text-muted">Pratique com questões de provas anteriores e simulados.</span>
-                  <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar questões de provas <span aria-hidden="true">→</span></span>
-                </button>
-                <button className="group rounded-xl border border-line bg-white p-6 text-left transition hover:border-sea hover:shadow-lg hover:shadow-ink/5" type="button" onClick={() => setSelectedStudyMode('bibliography-questions')}>
-                  <span className="grid size-12 place-items-center rounded-xl bg-[#eef3f5] text-2xl text-sea" aria-hidden="true">▤</span>
-                  <span className="mt-5 block font-display text-xl font-extrabold text-ink">Questões de apostilas e livros</span>
-                  <span className="mt-2 block text-sm leading-6 text-muted">Estude com questões elaboradas a partir das apostilas e livros do edital.</span>
-                  <span className="mt-5 block text-sm font-extrabold text-sea group-hover:text-ink">Acessar questões de bibliografia <span aria-hidden="true">→</span></span>
-                </button>
-              </div>
-            </section>
+          ) : focusedExam && selectedStudyMode === null ? (
+            <ExamFocusHome
+              exam={focusedExam}
+              snapshots={focusedStudy.questionSnapshots}
+              answers={focusedStudy.answers}
+              dueCount={dueReviews.length}
+              publicAsset={publicAsset}
+              onSelect={openFocusResource}
+              onContinue={(resumeSavedSimulation && savedSimulation?.ids.length) || lastStudiedQuestion ? continueStudying : undefined}
+              continueLabel={resumeSavedSimulation && savedSimulation ? `${savedSimulation.ids.length} questões no último simulado` : lastStudiedQuestion ? `${lastStudiedQuestion.snapshot.subject} · ${lastStudiedQuestion.snapshot.topic ?? 'Última questão estudada'}` : undefined}
+            />
           ) : selectedExamId === 'cp-t-informatica' && selectedStudyMode === 'mind-maps' ? (
             <section className="mt-10" id="mapas-mentais">
               <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -956,7 +955,7 @@ function App() {
                   <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Quadro Técnico - Informática</p>
                   <h2 className="mt-1 font-display text-2xl font-extrabold">Mapas mentais</h2>
                 </div>
-                <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={() => setSelectedStudyMode(null)}>
+                <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={returnToFocus}>
                   Voltar às opções
                 </button>
               </div>
@@ -1028,9 +1027,7 @@ function App() {
             </section>
           ) : (
             <StudyScreen
-              examTitle={examChoices.find((choice) => choice.id === selectedExamId)?.title}
-              onChangeExam={returnToHome}
-              onChooseStudyMode={selectedExamId === 'cp-t-informatica' ? () => setSelectedStudyMode(null) : undefined}
+              examTitle={selectedStudyMode === 'bibliography-questions' ? 'Questões de bibliografia' : 'Questões de provas'}
               filters={{
                 questionSearch,
                 setQuestionSearch,

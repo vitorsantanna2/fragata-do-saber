@@ -66,6 +66,16 @@ function renderUseQuestions({
 }
 
 describe('useQuestions', () => {
+  it('waits for a study resource to be chosen in every contest focus home', () => {
+    const { result } = renderUseQuestions({
+      selectedExamId: 'ea-hsg', selectedStudyMode: null,
+      examChoices: [{ id: 'ea-hsg', group: 'Concursos', title: 'EA-HSG', description: '', exam: 'EA-HSG', subject: null, image: '' }],
+    })
+    expect(result.current.questions).toEqual([])
+    expect(result.current.loading).toBe(false)
+    expect(readCachedQuestions).not.toHaveBeenCalled()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
   })

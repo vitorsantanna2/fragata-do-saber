@@ -8,7 +8,7 @@ const Simulation = lazy(() => import('./Simulation').then((mod) => ({ default: m
 
 type StudyScreenProps = {
   examTitle: string | undefined
-  onChangeExam: () => void
+  onChangeExam?: () => void
   onChooseStudyMode?: () => void
   filters: ComponentProps<typeof QuestionFilters>
   questions: Question[]
@@ -45,9 +45,9 @@ export function StudyScreen({
               Voltar às opções
             </button>
           )}
-          <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={onChangeExam}>
+          {onChangeExam && <button className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold transition hover:border-sea hover:text-sea" type="button" onClick={onChangeExam}>
             Trocar concurso
-          </button>
+          </button>}
         </div>
       </div>
       <section className="mt-4 grid gap-8 lg:grid-cols-[250px_minmax(0,1fr)]" id="questoes">

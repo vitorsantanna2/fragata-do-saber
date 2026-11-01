@@ -7,6 +7,7 @@ import { QuestionCard } from './QuestionCard'
 
 type AnswerResult = { selectedOption: number; correctOption: number; explanation: string | null }
 type ScheduledReviewsProps = {
+  focusExam?: string
   today: string
   dueReviews: DueReview[]
   schedules: ReviewSchedules
@@ -19,8 +20,8 @@ type ScheduledReviewsProps = {
   onClose: () => void
 }
 
-export function ScheduledReviews({ today, dueReviews, schedules, isOnline, favorites, setFavorites, answerErrors, onAnswer, onRate, onClose }: ScheduledReviewsProps) {
-  const [examFilter, setExamFilter] = useState('Todos')
+export function ScheduledReviews({ today, dueReviews, schedules, isOnline, favorites, setFavorites, answerErrors, onAnswer, onRate, onClose, focusExam }: ScheduledReviewsProps) {
+  const [examFilter, setExamFilter] = useState(focusExam ?? 'Todos')
   const [subjectFilter, setSubjectFilter] = useState('Todos')
   const [visibleCount, setVisibleCount] = useState(20)
   const [activeReview, setActiveReview] = useState<DueReview | null>(null)
@@ -124,7 +125,7 @@ export function ScheduledReviews({ today, dueReviews, schedules, isOnline, favor
       ) : (
         <>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <label className="text-xs font-bold text-muted">Concurso<select value={examFilter} onChange={(event) => { setExamFilter(event.target.value); setSubjectFilter('Todos'); setVisibleCount(20) }} className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink"><option>Todos</option>{exams.map((exam) => <option key={exam}>{exam}</option>)}</select></label>
+            {!focusExam && <label className="text-xs font-bold text-muted">Concurso<select value={examFilter} onChange={(event) => { setExamFilter(event.target.value); setSubjectFilter('Todos'); setVisibleCount(20) }} className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink"><option>Todos</option>{exams.map((exam) => <option key={exam}>{exam}</option>)}</select></label>}
             <label className="text-xs font-bold text-muted">Matéria<select value={subjectFilter} onChange={(event) => { setSubjectFilter(event.target.value); setVisibleCount(20) }} className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink"><option>Todos</option>{subjects.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
           </div>
           {!dueReviews.length ? <div className="mt-5 rounded-xl border border-dashed border-line bg-white p-8 text-center"><h3 className="font-display text-xl font-extrabold">Tudo em dia!</h3><p className="mt-2 text-sm leading-6 text-muted">Suas próximas revisões aparecerão aqui na data marcada. Responda questões e avalie sua confiança para alimentar a fila.</p></div>
