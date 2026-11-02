@@ -46,6 +46,34 @@ beforeEach(() => {
 afterEach(() => sqlite.close())
 
 describe('native SQLite question cache', () => {
+  it('removes unpublished maps atomically, including when no maps remain published', async () => {
+    const cache = await import('../lib/localDatabase')
+    const map = { id: 'keep', title: 'Linux', subject: 'Linux', description: null, storage_path: 'map.png', content_type: 'image/png', sort_order: 0, updated_at: '2026-11-02T12:00:00Z' }
+    await cache.cacheMindMaps([map, { ...map, id: 'removed' }], true)
+    await cache.setMindMapLocalPath('keep', 'mind-maps/keep.png')
+    await cache.cacheMindMaps([map], true)
+    expect((await cache.readCachedMindMaps()).map((item) => item.id)).toEqual(['keep'])
+    expect((await cache.readCachedMindMaps())[0].local_path).toBe('mind-maps/keep.png')
+    await cache.cacheMindMaps([], true)
+    expect(await cache.readCachedMindMaps()).toEqual([])
+    expect(await cache.hasCachedMindMaps()).toBe(false)
+  })
+
+  it('keeps the previous catalog if updating the replacement fails', async () => {
+    const cache = await import('../lib/localDatabase')
+    const map = { id: 'keep', title: 'Original', subject: 'Linux', description: null, storage_path: 'map.png', content_type: 'image/png', sort_order: 0, updated_at: '2026-11-02T12:00:00Z' }
+    await cache.cacheMindMaps([map, { ...map, id: 'other' }], true)
+    await expect(cache.cacheMindMaps([{ ...map, title: 'Changed' }, { ...map, id: 'invalid', title: null as unknown as string }], true)).rejects.toThrow()
+    expect(await cache.readCachedMindMaps()).toHaveLength(2)
+    expect((await cache.readCachedMindMaps()).find((item) => item.id === 'keep')?.title).toBe('Original')
+  })
+
+  it('reports invalid native progress without overwriting the original metadata', async () => {
+    const cache = await import('../lib/localDatabase')
+    await cache.setLocalMetadata('study_progress_v1:student', '{broken')
+    await expect(cache.loadStudyProgress('student')).rejects.toThrow('preservados')
+    expect(await cache.getLocalMetadata('study_progress_v1:student')).toBe('{broken')
+  })
   it('keeps step links offline and preserves the downloaded file when only metadata changes', async () => {
     const cache = await import('../lib/localDatabase')
     const map = { id: 'map1', title: 'Linux', subject: 'Informática', description: null, storage_path: 'map1.png', content_type: 'image/png', sort_order: 0, updated_at: '2026-11-01T12:00:00Z', track_steps: ['cpt-2026-infra/so'] }

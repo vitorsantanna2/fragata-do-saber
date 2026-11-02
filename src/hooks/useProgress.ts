@@ -12,6 +12,7 @@ import { loadValidatedAnswers, syncStudyProgress, syncOffensiveState, type Synce
 import { mergeCompletedSimulations } from '../lib/simulationHistory'
 import { scheduleReview, seedReviewSchedules, type ReviewConfidence, type ReviewSchedules } from '../lib/scheduledReviews'
 import type { Question } from './useQuestions'
+import { useSyncRefresh } from './useSyncRefresh'
 
 function progressFingerprint(userId: string, progress: SyncedProgress) {
   return JSON.stringify({
@@ -33,6 +34,8 @@ type UseProgressProps = {
 }
 
 type UseProgressReturn = {
+  progressStorageError: string
+  retryProgressLoad: () => void
   answers: Record<string, number>
   revealed: string[]
   favorites: string[]
@@ -113,6 +116,11 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   }
   const [manualSyncRevision, setManualSyncRevision] = useState(0)
   const [progressRestored, setProgressRestored] = useState(false)
+  const [progressStorageError, setProgressStorageError] = useState('')
+  const [loadRevision, setLoadRevision] = useState(0)
+  const [saveRevision, setSaveRevision] = useState(0)
+  const refreshRevision = useSyncRefresh(Boolean(progressRestored && accountUser && !accountUser.is_anonymous && isOnline))
+  const lastSyncRefresh = useRef(0)
 
   const skipSelectionReset = useRef(false)
   const suppressProgressTimestamp = useRef(false)
@@ -124,6 +132,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   if (loadedOwner !== ownerId) {
     setLoadedOwner(ownerId)
     setProgressRestored(false)
+    setProgressStorageError('')
     setAnswers({})
     setRevealed([])
     setFavorites([])
@@ -141,6 +150,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   useEffect(() => {
     let active = true
     lastSyncedProgressFingerprint.current = null
+    lastSyncRefresh.current = 0
     previousQuestionProgress.current = { answers: {}, revealed: [], favorites: [] }
     void loadStudyProgress(ownerId).then((progress) => {
       if (!active) return
@@ -157,6 +167,12 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         setReviewSchedules(seedReviewSchedules(progress.reviewSchedules ?? {}, progress.answers, progress.questionSnapshots, progress.progressUpdatedAt))
       }
       setProgressRestored(true)
+      setProgressStorageError('')
+    }).catch((cause: unknown) => {
+      if (active) {
+        setProgressRestored(false)
+        setProgressStorageError(cause instanceof Error ? cause.message : 'Não foi possível ler o progresso salvo. Os dados existentes foram preservados.')
+      }
     })
     void loadOffensiveState(ownerId).then((state) => {
       if (!active) return
@@ -170,16 +186,20 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
       setThemeLoaded(true)
     })
     return () => { active = false }
-  }, [ownerId])
+  }, [ownerId, loadRevision])
 
   useEffect(() => {
     if (!progressRestored) return
+    let active = true
     void saveStudyProgress({
       answers, revealed, favorites, selectedExamId: null, selectedStudyMode: null,
       topic: '', year: '', bibliographySource: '', questionSearch: '', questionSnapshots, progressUpdatedAt,
       savedSimulation, completedSimulations, reviewSchedules,
-    }, ownerId)
-  }, [ownerId, progressRestored, answers, revealed, favorites, questionSnapshots, progressUpdatedAt, savedSimulation, completedSimulations, reviewSchedules])
+    }, ownerId).then(() => { if (active) setProgressStorageError('') }).catch(() => {
+      if (active) setProgressStorageError('Não foi possível salvar o progresso neste dispositivo. Suas respostas continuam na tela; tente salvar novamente antes de fechar o aplicativo.')
+    })
+    return () => { active = false }
+  }, [ownerId, progressRestored, answers, revealed, favorites, questionSnapshots, progressUpdatedAt, savedSimulation, completedSimulations, reviewSchedules, saveRevision])
 
   useEffect(() => {
     if (!progressRestored) return
@@ -222,7 +242,8 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
 
     const fingerprint = progressFingerprint(accountUser.id, { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, reviewSchedules })
     const isManualSync = manualSyncRevision > lastManualSyncRevision.current
-    if (!isManualSync && fingerprint === lastSyncedProgressFingerprint.current) return
+    const refreshRequested = refreshRevision > lastSyncRefresh.current
+    if (!isManualSync && !refreshRequested && fingerprint === lastSyncedProgressFingerprint.current) return
     let active = true
     const timer = window.setTimeout(() => {
       setSyncStatus('syncing')
@@ -231,6 +252,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
           if (!active) return
           lastManualSyncRevision.current = manualSyncRevision
           if (!merged) { setSyncStatus('offline'); return }
+          lastSyncRefresh.current = refreshRevision
           const mergedFingerprint = progressFingerprint(accountUser.id, merged)
           lastSyncedProgressFingerprint.current = mergedFingerprint
           suppressProgressTimestamp.current = true
@@ -251,7 +273,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         })
     }, 450)
     return () => { active = false; window.clearTimeout(timer) }
-  }, [progressRestored, accountUser, isOnline, answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, reviewSchedules, manualSyncRevision])
+  }, [progressRestored, accountUser, isOnline, answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, reviewSchedules, manualSyncRevision, refreshRevision])
 
   useEffect(() => {
     if (!progressRestored || !isOnline || !accountUser?.is_anonymous) return
@@ -306,7 +328,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
         })
     }, 450)
     return () => { active = false; window.clearTimeout(timer) }
-  }, [progressRestored, accountUser, isOnline, offensiveState, manualSyncRevision])
+  }, [progressRestored, accountUser, isOnline, offensiveState, manualSyncRevision, refreshRevision])
 
   useEffect(() => {
     if (!questions.length) return
@@ -349,6 +371,8 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   }, [theme])
 
   return {
+    progressStorageError,
+    retryProgressLoad: () => progressRestored ? setSaveRevision((value) => value + 1) : setLoadRevision((value) => value + 1),
     answers,
     revealed,
     favorites,

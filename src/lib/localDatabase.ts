@@ -24,7 +24,7 @@ export async function readCachedMindMaps() {
   })) as CachedMindMap[]
 }
 
-export async function cacheMindMaps(rows: Omit<CachedMindMap, 'local_path'>[]) {
+export async function cacheMindMaps(rows: Omit<CachedMindMap, 'local_path'>[], replaceCatalog = false) {
   const database = await getLocalDatabase()
   if (!database) return
   const statements = rows.map((row) => ({
@@ -38,6 +38,13 @@ export async function cacheMindMaps(rows: Omit<CachedMindMap, 'local_path'>[]) {
       updated_at = excluded.updated_at`,
     values: [row.id, row.title, row.subject, row.description, row.storage_path, row.content_type, row.sort_order, row.updated_at, JSON.stringify(row.track_steps ?? [])],
   }))
+  if (replaceCatalog) {
+    const existing = await database.query('SELECT id FROM mind_maps')
+    const published = new Set(rows.map((row) => row.id))
+    for (const row of existing.values ?? []) {
+      if (!published.has(String(row.id))) statements.push({ statement: 'DELETE FROM mind_maps WHERE id = ?', values: [String(row.id)] })
+    }
+  }
   if (statements.length) await database.executeSet(statements, true)
 }
 

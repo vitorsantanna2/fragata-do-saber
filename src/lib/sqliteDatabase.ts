@@ -26,31 +26,30 @@ export async function loadStudyProgress(ownerId?: string): Promise<StudyProgress
     const stored = isNativeApp()
       ? await getLocalMetadata(ownerId ? `${STUDY_PROGRESS_KEY}:${ownerId}` : STUDY_PROGRESS_KEY)
       : window.localStorage.getItem(ownerId ? `${STUDY_PROGRESS_KEY}:${ownerId}` : STUDY_PROGRESS_KEY)
-    if (!stored) return null
-    const progress = JSON.parse(stored) as Partial<StudyProgress>
+    if (stored === null) return null
+    const parsed: unknown = JSON.parse(stored)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Formato de progresso inválido.')
+    const progress = parsed as Partial<StudyProgress>
+    for (const key of ['answers', 'questionSnapshots', 'progressUpdatedAt', 'reviewSchedules'] as const) {
+      const value = progress[key]
+      if (value !== undefined && (!value || typeof value !== 'object' || Array.isArray(value))) throw new Error('Formato de progresso inválido.')
+    }
+    for (const key of ['favorites', 'revealed', 'completedSimulations'] as const) {
+      if (progress[key] !== undefined && !Array.isArray(progress[key])) throw new Error('Formato de progresso inválido.')
+    }
+    if (Object.values(progress.answers ?? {}).some((value) => !Number.isInteger(value) || value < 0)
+      || [...(progress.favorites ?? []), ...(progress.revealed ?? [])].some((value) => typeof value !== 'string')) {
+      throw new Error('Formato de progresso inválido.')
+    }
+    if (progress.savedSimulation != null && (typeof progress.savedSimulation !== 'object'
+      || !Array.isArray(progress.savedSimulation.ids) || !Array.isArray(progress.savedSimulation.revealed)
+      || !progress.savedSimulation.answers || typeof progress.savedSimulation.answers !== 'object')) {
+      throw new Error('Formato de simulado salvo inválido.')
+    }
     const validSimulations = mergeCompletedSimulations(progress.completedSimulations ?? [])
     const savedSimulation = progress.savedSimulation
       ? { ...progress.savedSimulation, id: progress.savedSimulation.id ?? `${progress.savedSimulation.examId}-${progress.savedSimulation.updatedAt}` }
       : null
-    // Limpa registros que não são simulados de verdade do armazenamento local
-    if ((progress.completedSimulations ?? []).length !== validSimulations.length) {
-      void saveStudyProgress({
-        answers: progress.answers ?? {},
-        revealed: progress.revealed ?? [],
-        favorites: progress.favorites ?? [],
-        selectedExamId: progress.selectedExamId ?? null,
-        selectedStudyMode: progress.selectedStudyMode ?? null,
-        topic: progress.topic ?? 'Todos',
-        year: progress.year ?? 'Todos',
-        bibliographySource: progress.bibliographySource ?? 'Todos',
-        questionSearch: progress.questionSearch ?? '',
-        questionSnapshots: progress.questionSnapshots ?? {},
-        progressUpdatedAt: progress.progressUpdatedAt ?? {},
-        savedSimulation,
-        completedSimulations: validSimulations,
-        reviewSchedules: progress.reviewSchedules ?? {},
-      }, ownerId)
-    }
     return {
       answers: progress.answers ?? {},
       revealed: progress.revealed ?? [],
@@ -67,8 +66,8 @@ export async function loadStudyProgress(ownerId?: string): Promise<StudyProgress
       completedSimulations: validSimulations,
       reviewSchedules: progress.reviewSchedules ?? {},
     }
-  } catch {
-    return null
+  } catch (cause) {
+    throw new Error('Não foi possível ler o progresso salvo. Os dados existentes foram preservados.', { cause })
   }
 }
 
@@ -78,7 +77,7 @@ export async function saveStudyProgress(progress: StudyProgress, ownerId?: strin
     if (isNativeApp()) await setLocalMetadata(ownerId ? `${STUDY_PROGRESS_KEY}:${ownerId}` : STUDY_PROGRESS_KEY, serialized)
     else window.localStorage.setItem(ownerId ? `${STUDY_PROGRESS_KEY}:${ownerId}` : STUDY_PROGRESS_KEY, serialized)
   } catch (error) {
-    console.warn('Não foi possível salvar o progresso de estudo localmente.', error)
+    throw new Error('Não foi possível salvar o progresso neste dispositivo.', { cause: error })
   }
 }
 

@@ -139,6 +139,8 @@ function App() {
   const {
     answers,
     progressRestored,
+    progressStorageError,
+    retryProgressLoad,
     revealed,
     favorites,
     progressUpdatedAt,
@@ -916,6 +918,7 @@ function App() {
           </div>
         </header>
         {logoutError && <div className="mx-auto max-w-7xl px-5 py-3"><p className="rounded-lg bg-red-50 p-3 text-sm leading-5 text-red-800" role="alert">{logoutError}</p></div>}
+        {progressStorageError && <div className="mx-auto max-w-7xl px-5 py-3"><div role="alert" className="rounded-lg bg-red-50 p-3 text-sm leading-5 text-red-800"><p>{progressStorageError}</p><button type="button" className="mt-2 font-bold underline" onClick={retryProgressLoad}>Tentar novamente</button></div></div>}
 
         <main id="inicio" className="mx-auto max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
           {focusedExam && <ExamFocusBar exam={focusedExam} onHome={returnToFocus} onChange={returnToHome} />}

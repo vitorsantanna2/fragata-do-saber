@@ -13,24 +13,32 @@ export async function loadMindMaps(): Promise<MindMap[]> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return localMaps
   if (!supabase) return localMaps
 
-  const { data, error } = await supabase
-    .from('mind_maps')
-    .select('*')
-    .eq('is_published', true)
-    .order('subject')
-    .order('sort_order')
-    .order('title')
-
-  if (error) {
+  try {
+    const maps: Omit<MindMap, 'local_path'>[] = []
+    for (let offset = 0; ; ) {
+      const { data, error, count } = await supabase.from('mind_maps')
+        .select('*', { count: 'exact' }).eq('is_published', true)
+        .order('subject').order('sort_order').order('title').order('id')
+        .range(offset, offset + 499)
+      if (error) throw error
+      const batch = (data ?? []) as Omit<MindMap, 'local_path'>[]
+      maps.push(...batch)
+      if (count != null && maps.length >= count) break
+      if (!batch.length) {
+        if (count != null && maps.length < count) throw new Error('O catálogo de mapas foi baixado parcialmente.')
+        break
+      }
+      offset += batch.length
+    }
+    // A transação também remove mapas despublicados, inclusive se o catálogo ficou vazio.
+    await cacheMindMaps(maps, true)
+    const syncedMaps = await readCachedMindMaps()
+    const downloadedPaths = new Map(syncedMaps.filter((map) => map.local_path).map((map) => [map.id, map.local_path]))
+    return maps.map((map) => ({ ...map, local_path: downloadedPaths.get(map.id) ?? null }))
+  } catch (error) {
     if (localMaps.length) return localMaps
     throw error
   }
-
-  const maps = (data ?? []) as Omit<MindMap, 'local_path'>[]
-  await cacheMindMaps(maps)
-  const syncedMaps = await readCachedMindMaps()
-  const downloadedPaths = new Map(syncedMaps.filter((map) => map.local_path).map((map) => [map.id, map.local_path]))
-  return maps.map((map) => ({ ...map, local_path: downloadedPaths.get(map.id) ?? null }))
 }
 
 function extensionFor(map: MindMap) {
