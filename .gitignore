@@ -11,6 +11,11 @@ node_modules
 dist
 dist-ssr
 *.local
+*.jks
+*.keystore
+keystore.properties
+key.properties
+android/app/release/
 # CSVs locais de importação, inclusive em data/imports/
 *_importacao.csv
 

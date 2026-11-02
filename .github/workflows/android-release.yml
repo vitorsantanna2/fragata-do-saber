@@ -1,6 +1,7 @@
 name: Android Release
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
@@ -11,6 +12,7 @@ permissions:
 jobs:
   build-and-release:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     env:
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
@@ -49,11 +51,52 @@ jobs:
       - name: Build web app and sync Android
         run: npm run android:sync
 
-      - name: Build Android APK
+      - name: Prepare release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Configure the repository secret $name."
+              exit 1
+            fi
+          done
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/fragata-release.jks"
+          test -s "$RUNNER_TEMP/fragata-release.jks"
+          keytool -list -keystore "$RUNNER_TEMP/fragata-release.jks" -storepass:env ANDROID_KEYSTORE_PASSWORD -alias "$ANDROID_KEY_ALIAS" > /dev/null
+          printf 'ANDROID_KEYSTORE_PATH=%s/fragata-release.jks\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+      - name: Build signed Android APK
         working-directory: android
-        run: ./gradlew --no-daemon assembleDebug
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon --no-configuration-cache assembleRelease
+
+      - name: Verify APK signature
+        run: |
+          set -euo pipefail
+          apksigner="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$apksigner"
+          "$apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload signed APK for manual validation
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fragata-do-saber-signed-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Create GitHub release and upload APK
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/github-script@v9
         with:
           script: |
@@ -68,14 +111,14 @@ jobs:
                 'APK beta do Fragata do Saber para Android.',
                 '',
                 '- Inclui questões do Supabase e cache local SQLite.',
-                '- É um APK de depuração para instalação direta; não está assinado para publicação na Play Store.',
-                '- Se já houver uma instalação de depuração assinada por outra chave, desinstale-a antes. Isso apaga o banco local e o cache daquele app.',
+                '- APK de release assinado com a chave permanente do aplicativo, para instalação direta.',
+                '- Na migração de um APK antigo de depuração, pode ser necessário desinstalar a versão anterior. Sincronize seu progresso antes: desinstalar apaga os dados locais.',
               ].join('\n'),
               draft: true,
               prerelease: true,
             });
 
-            const apkPath = 'android/app/build/outputs/apk/debug/app-debug.apk';
+            const apkPath = 'android/app/build/outputs/apk/release/app-release.apk';
             const apk = fs.readFileSync(apkPath);
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
@@ -95,3 +138,7 @@ jobs:
               release_id: release.id,
               draft: false,
             });
+
+      - name: Remove temporary keystore
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/fragata-release.jks"

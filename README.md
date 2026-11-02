@@ -118,7 +118,7 @@ cd android
 
 O APK fica em `android/app/build/outputs/apk/debug/app-debug.apk`. Instale o APK recém-gerado no aparelho para conferir as alterações.
 
-Para publicar uma versão de teste no GitHub Releases, crie e envie uma tag no formato `v*`, por exemplo `v1.0.0-beta.3`. O workflow `.github/workflows/android-release.yml` compila o APK e o anexa a uma pré-release. O APK de depuração não está assinado para a Play Store. Atualize também o `versionCode` em `android/app/build.gradle` ao preparar outra versão.
+Para publicar uma versão de teste no GitHub Releases, crie e envie uma tag no formato `v*`, por exemplo `v1.0.0-beta.3`. O workflow `.github/workflows/android-release.yml` compila um APK de release assinado com a chave permanente e o anexa a uma pré-release. Os releases antigos de depuração permanecem inalterados. Atualize também o `versionCode` em `android/app/build.gradle` ao preparar outra versão.
 
 As artes originais e os arquivos derivados ficam em `android/assets/`. Os recursos nativos do ícone e da tela de abertura ficam em `android/app/src/main/res/`.
 
@@ -229,3 +229,11 @@ Mapas sem vínculos explícitos são associados por correspondência exata da ma
 O leitor de imagens ocupa a tela inteira, respeita as áreas seguras do aparelho e oferece botões de ampliar, reduzir, ajustar à tela e ajustar à largura. É possível ampliar com dois dedos, navegar arrastando e usar a rolagem normal com mouse/teclado. A imagem ampliada ocupa uma área rolável real, permitindo alcançar suas bordas sem depender de deslocamentos negativos. Ao mudar a orientação, o mapa é ajustado novamente à tela.
 
 A página de fundo fica sem rolagem enquanto o leitor está aberto, e o foco retorna ao controle anterior ao fechar. PDFs no site usam a área completa do leitor e oferecem o botão “Abrir PDF” para o visualizador do navegador; no Android nativo, continua sendo usado o leitor de PDF do aparelho. O zoom melhora a navegação, mas a nitidez continua dependendo da resolução do arquivo enviado.
+
+### Assinatura permanente do Android
+
+Cadastre em **Settings → Secrets and variables → Actions** os secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD`. O workflow restaura o keystore em um arquivo temporário de acesso restrito, verifica o alias, executa `assembleRelease`, valida a assinatura com `apksigner` e remove a chave temporária mesmo se houver falha. Nenhum arquivo de chave ou senha deve ser incluído no Git. Mantenha um backup seguro da chave original e das senhas.
+
+Para testar a configuração sem publicar uma versão, abra **Actions → Android Release → Run workflow** na branch `main`. O APK assinado fica no artifact **fragata-do-saber-signed-apk**, disponível por sete dias. Enviar uma nova tag `v*` executa a mesma validação e publica o APK em GitHub Releases. Atualize `versionCode`, `versionName` e as notas em `releases/<tag>.md` ao preparar uma versão; não reutilize tags já publicadas. O envio e as instruções para a Play Store são um processo separado.
+
+Para builds locais pelo Gradle, forneça as variáveis `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD` no ambiente. O projeto também continua podendo usar o assistente de assinatura do Android Studio. O workflow exige todas as chaves e só publica depois de validar a assinatura; nunca recorre à assinatura debug se faltar um secret. Instalações antigas assinadas com outra chave podem exigir desinstalação na primeira migração. Sincronize o progresso antes, pois desinstalar apaga os dados locais.
