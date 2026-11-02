@@ -96,7 +96,7 @@ jobs:
           retention-days: 7
 
       - name: Create GitHub release and upload APK
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         uses: actions/github-script@v9
         with:
           script: |
