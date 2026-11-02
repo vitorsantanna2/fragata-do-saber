@@ -41,6 +41,11 @@ jobs:
       - name: Install web dependencies
         run: npm ci
 
+      - name: Validate web app
+        run: |
+          npm run lint
+          npm test
+
       - name: Build web app and sync Android
         run: npm run android:sync
 
@@ -59,7 +64,7 @@ jobs:
               repo: context.repo.repo,
               tag_name: tag,
               name: `Fragata do Saber ${tag}`,
-              body: [
+              body: fs.existsSync(`releases/${tag}.md`) ? fs.readFileSync(`releases/${tag}.md`, 'utf8') : [
                 'APK beta do Fragata do Saber para Android.',
                 '',
                 '- Inclui questões do Supabase e cache local SQLite.',
