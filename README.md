@@ -223,3 +223,9 @@ Execute `supabase/supabase_mind_map_tracks_setup.sql` após o setup de mapas men
 Dentro de cada etapa, o aluno vê os mapas relacionados e pode abri-los ou baixá-los no aplicativo. A leitura e o download não marcam automaticamente a etapa como estudada. Ao fechar uma imagem, permanece na trilha; PDFs baixados no Android usam o leitor nativo. Os vínculos ficam no cache SQLite para uso offline. Atualizar apenas título, descrição ou vínculos preserva o arquivo baixado; substituir o arquivo deve usar um novo `storage_path`, como já faz o editor administrativo.
 
 Mapas sem vínculos explícitos são associados por correspondência exata da matéria com o título/assuntos da etapa, ignorando acentos e maiúsculas. A matéria genérica “Informática” não coloca o mesmo mapa em todas as etapas. O catálogo continua legível antes da migração, mas salvar vínculos no administrador exige executar o novo SQL. Não foi feita atribuição manual de mapas no banco remoto.
+
+### Leitura de mapas no celular
+
+O leitor de imagens ocupa a tela inteira, respeita as áreas seguras do aparelho e oferece botões de ampliar, reduzir, ajustar à tela e ajustar à largura. É possível ampliar com dois dedos, navegar arrastando e usar a rolagem normal com mouse/teclado. A imagem ampliada ocupa uma área rolável real, permitindo alcançar suas bordas sem depender de deslocamentos negativos. Ao mudar a orientação, o mapa é ajustado novamente à tela.
+
+A página de fundo fica sem rolagem enquanto o leitor está aberto, e o foco retorna ao controle anterior ao fechar. PDFs no site usam a área completa do leitor e oferecem o botão “Abrir PDF” para o visualizador do navegador; no Android nativo, continua sendo usado o leitor de PDF do aparelho. O zoom melhora a navegação, mas a nitidez continua dependendo da resolução do arquivo enviado.
