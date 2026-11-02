@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MindMapViewer } from '../components/MindMapViewer'
 
@@ -36,6 +36,34 @@ function loadMap() {
 }
 
 describe('mobile mind map reader', () => {
+  it('keeps zoom and position when only scrollbars change, and resets on a real resize', async () => {
+    let notify!: () => void
+    const observe = vi.fn()
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: () => void) { notify = callback }
+      observe = observe
+      disconnect = vi.fn()
+    })
+    render(<MindMapViewer map={map} url="/map.png" onClose={vi.fn()} />)
+    const image = loadMap()
+    const viewport = screen.getByLabelText('Área de leitura do mapa')
+    const bounds = vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue({ width: 360, height: 600 } as DOMRect)
+    await userEvent.click(screen.getByRole('button', { name: 'Aumentar zoom' }))
+    viewport.scrollTop = 125
+    Object.defineProperty(viewport, 'clientWidth', { configurable: true, value: 345 })
+    Object.defineProperty(viewport, 'clientHeight', { configurable: true, value: 585 })
+    act(() => { notify(); notify() })
+    expect(image.style.width).toBe('450px')
+    expect(viewport.scrollTop).toBe(125)
+    expect(observe).toHaveBeenCalledWith(viewport, { box: 'border-box' })
+    bounds.mockReturnValue({ width: 720, height: 360 } as DOMRect)
+    Object.defineProperty(viewport, 'clientWidth', { configurable: true, value: 720 })
+    Object.defineProperty(viewport, 'clientHeight', { configurable: true, value: 360 })
+    act(() => notify())
+    expect(image.style.width).toBe('180px')
+    expect(viewport.scrollTop).toBe(0)
+    bounds.mockRestore()
+  })
   it('fits a tall map to the viewport and allows width fitting, zoom and reset', async () => {
     render(<MindMapViewer map={map} url="/map.png" onClose={vi.fn()} />)
     const image = loadMap()

@@ -30,7 +30,17 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
   useEffect(() => {
     const element = viewport.current
     if (!element) return
+    let previousWidth = -1
+    let previousHeight = -1
     const measure = () => {
+      // Barras de rolagem alteram o content-box no Edge. Elas não são uma
+      // mudança de orientação/tamanho e não devem reiniciar o zoom.
+      const bounds = element.getBoundingClientRect()
+      const width = Math.round(bounds.width || element.clientWidth)
+      const height = Math.round(bounds.height || element.clientHeight)
+      if (width === previousWidth && height === previousHeight) return
+      previousWidth = width
+      previousHeight = height
       setSize({ width: element.clientWidth, height: element.clientHeight })
       zoomRef.current = 1
       setZoom(1)
@@ -38,7 +48,7 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
     }
     measure()
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
-    observer?.observe(element)
+    observer?.observe(element, { box: 'border-box' })
     window.addEventListener('resize', measure)
     return () => { observer?.disconnect(); window.removeEventListener('resize', measure) }
   }, [])
@@ -129,7 +139,7 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
       <button type="button" className={control} disabled={!ready} onClick={() => changeZoom(1)}>Ajustar à tela</button>
       <button type="button" className={control} disabled={!ready} onClick={() => changeZoom(size.width / (natural.width * fit))}>Ajustar à largura</button>
     </div>
-    <div ref={viewport} tabIndex={0} aria-label="Área de leitura do mapa" className="min-h-0 flex-1 overflow-auto bg-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" style={{ touchAction: 'none', overscrollBehavior: 'contain' }}
+    <div ref={viewport} tabIndex={0} aria-label="Área de leitura do mapa" className="min-h-0 flex-1 overflow-auto bg-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" style={{ touchAction: 'none', overscrollBehavior: 'contain', scrollbarGutter: 'stable', overflowAnchor: 'none' }}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd} onLostPointerCapture={onPointerEnd}
       onDoubleClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); changeZoom(zoomRef.current > 1 ? 1 : 2, { x: event.clientX - rect.left, y: event.clientY - rect.top }) }}
       onKeyDown={(event) => { if (['+', '=', '-', '0'].includes(event.key)) { event.preventDefault(); changeZoom(event.key === '0' ? 1 : event.key === '-' ? zoomRef.current / 1.5 : zoomRef.current * 1.5) } }}>
