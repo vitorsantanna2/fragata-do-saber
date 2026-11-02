@@ -1,4 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react'
+import { AndroidDownloadLink } from './AndroidDownloadLink'
 
 type AccessGateProps = {
   accessCode: string
@@ -60,6 +61,7 @@ export function AccessGate({
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Acesso restrito</p>
         <h1 className="mt-2 font-display text-2xl font-extrabold">Digite seu código de acesso</h1>
         <p className="mt-2 text-sm leading-6 text-muted">Use o código recebido para acessar os concursos e simulados.</p>
+        <div className="mt-4"><AndroidDownloadLink /></div>
         <form className="mt-6 space-y-4" onSubmit={onAccessSubmit}>
           <label className="block text-sm font-bold text-ink" htmlFor="access-code">
             Código de acesso

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AccountSyncPanel } from './components/AccountSyncPanel'
 import { AccessGate } from './components/AccessGate'
+import { AndroidDownloadLink } from './components/AndroidDownloadLink'
 import type { FormEvent } from 'react'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
@@ -894,6 +895,7 @@ function App() {
                 <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Rumo à aprovação</span>
               </span>
             </a>
+            <AndroidDownloadLink />
             {offensiveLoaded && offensiveState && (
               <div className="hidden sm:flex items-center gap-2 px-2 py-1 rounded-lg border border-line bg-white">
                 <div className="flex items-center gap-1.5">
