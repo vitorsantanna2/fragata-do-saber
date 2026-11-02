@@ -82,12 +82,12 @@ export type SyncedOffensiveState = {
   joinedAt: string | null
 }
 
-export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProgress | null> {
+export async function syncStudyProgress(progress: SyncInput, expectedUserId?: string): Promise<SyncedProgress | null> {
   if (!supabase || !navigator.onLine) return null
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) throw sessionError
   const user = sessionData.session?.user
-  if (!user || user.is_anonymous) return null
+  if (!user || user.is_anonymous || (expectedUserId && user.id !== expectedUserId)) return null
 
   const remoteRows: CloudProgressRow[] = []
   for (let page = 0; ; page += 1) {
@@ -267,12 +267,12 @@ export async function syncStudyProgress(progress: SyncInput): Promise<SyncedProg
   return { answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations: mergeCompletedSimulations(completedSimulations), reviewSchedules }
 }
 
-export async function syncOffensiveState(state: OffensiveState): Promise<SyncedOffensiveState | null> {
+export async function syncOffensiveState(state: OffensiveState, expectedUserId?: string): Promise<SyncedOffensiveState | null> {
   if (!supabase || !navigator.onLine) return null
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) throw sessionError
   const user = sessionData.session?.user
-  if (!user || user.is_anonymous) return null
+  if (!user || user.is_anonymous || (expectedUserId && user.id !== expectedUserId)) return null
 
   const { data: remote, error: fetchError } = await supabase
     .from('user_offensive_state')

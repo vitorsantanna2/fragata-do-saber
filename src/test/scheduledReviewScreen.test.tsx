@@ -39,7 +39,7 @@ beforeEach(() => {
     selectedExamId: null, selectedStudyMode: null, topic: 'Todos', year: 'Todos', bibliographySource: 'Todos', questionSearch: '',
     savedSimulation: null, completedSimulations: [], reviewSchedules: { q1: scheduleReview(undefined, true, 'sure', 'old-attempt', yesterday) },
   }
-  window.localStorage.setItem('study_progress_v1', JSON.stringify(progress))
+  window.localStorage.setItem('study_progress_v1:guest', JSON.stringify(progress))
 })
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); window.localStorage.clear() })
@@ -59,7 +59,7 @@ describe('scheduled review session', () => {
     await user.click(screen.getByRole('button', { name: 'Concluir revisão' }))
     expect(screen.getByText('Tudo em dia!')).not.toBeNull()
     await waitFor(() => {
-      const saved = JSON.parse(window.localStorage.getItem('study_progress_v1')!) as StudyProgress
+      const saved = JSON.parse(window.localStorage.getItem('study_progress_v1:guest')!) as StudyProgress
       expect(saved.answers.q1).toBe(1)
       expect(saved.reviewSchedules?.q1).toMatchObject({ confidence: 'guess', lastCorrect: false, intervalDays: 1 })
       expect(saved.reviewSchedules!.q1.dueDate > getSaoPauloDateKey()).toBe(true)

@@ -35,10 +35,12 @@ import { MindMapViewer } from './components/MindMapViewer'
 import { shuffle, conciseTopic } from './lib/utils'
 import { useQuestions, type Question } from './hooks/useQuestions'
 import { useProgress } from './hooks/useProgress'
+import { useSimulationSession } from './hooks/useSimulationSession'
 import { useTrackProgress } from './hooks/useTrackProgress'
 import { useAdminRoute } from './hooks/useAdminRoute'
 import { resolveQuestionAnswer } from './lib/questionAnswers'
 import { getSimulationResult } from './lib/simulationResults'
+import { selectStudyQuestions } from './lib/studyQuestionSelection'
 import { useReviewQueue } from './hooks/useReviewQueue'
 import { ScheduledReviews } from './components/ScheduledReviews'
 import { useStudyFocus } from './hooks/useStudyFocus'
@@ -82,12 +84,11 @@ function App() {
   const { selectedExamId, setSelectedExamId } = useStudyFocus()
   const focusedExam = examChoices.find((exam) => exam.id === selectedExamId) ?? null
   const [selectedStudyMode, setSelectedStudyMode] = useState<'exam-questions' | 'bibliography-questions' | 'mind-maps' | null>(null)
-  const [simulationIds, setSimulationIds] = useState<string[] | null>(null)
   const [showQuestionList, setShowQuestionList] = useState(false)
   const [reviewQuestionId, setReviewQuestionId] = useState<string | null>(null)
   const [reviewingFromDashboard, setReviewingFromDashboard] = useState(false)
-  const [simulationAnswers, setSimulationAnswers] = useState<Record<string, number>>({})
   const [pendingAnswerIds, setPendingAnswerIds] = useState<string[]>([])
+  const answerRequestsRef = useRef(new Map<string, { isCurrent: () => boolean }>())
   const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({})
   const reviewQuestionIdRef = useRef<string | null>(null)
   const lastCompletedSimulationRef = useRef<string | null>(null)
@@ -98,6 +99,7 @@ function App() {
   const [showDownloadedMindMapsOnly, setShowDownloadedMindMapsOnly] = useState(false)
   const [openMindMap, setOpenMindMap] = useState<{ map: MindMap; url: string } | null>(null)
   const [accountUser, setAccountUser] = useState<{ id: string; email: string | null; is_anonymous: boolean; created_at: string } | null>(null)
+  const accountSessionRef = useRef({ id: null as string | null, revision: 0 })
   const [logoutError, setLogoutError] = useState('')
   const trackProgressState = useTrackProgress(accountUser?.id ?? null, Boolean(accountUser && !accountUser.is_anonymous), isOnline)
 
@@ -134,6 +136,7 @@ function App() {
 
   const {
     answers,
+    progressRestored,
     revealed,
     favorites,
     progressUpdatedAt,
@@ -164,6 +167,7 @@ function App() {
     accountUser,
     isOnline,
   })
+  const { simulationIds, setSimulationIds, simulationAnswers, setSimulationAnswers, recordAnswer: recordSessionAnswer } = useSimulationSession(setSavedSimulation)
   const focusedStudy = useMemo(() => scopeStudyData(focusedExam, { answers, questionSnapshots, progressUpdatedAt, completedSimulations, reviewSchedules }), [focusedExam, answers, questionSnapshots, progressUpdatedAt, completedSimulations, reviewSchedules])
   const { today: reviewToday, dueReviews } = useReviewQueue(focusedStudy.reviewSchedules, focusedStudy.questionSnapshots)
 
@@ -171,14 +175,27 @@ function App() {
     if (!supabase) return
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const user = session?.user
+      if (accountSessionRef.current.id !== (user?.id ?? null)) {
+        accountSessionRef.current = { id: user?.id ?? null, revision: accountSessionRef.current.revision + 1 }
+        setSimulationIds(null)
+        setSimulationAnswers({})
+        setSimulationRevealed([])
+        setPendingAnswerIds([])
+        setAnswerErrors({})
+        setReviewQuestionId(null)
+        setTrackPractice(null)
+        lastCompletedSimulationRef.current = null
+      }
       setAccountUser(user ? { id: user.id, email: user.email ?? null, is_anonymous: Boolean(user.is_anonymous), created_at: user.created_at } : null)
     })
     void supabase.auth.getSession().then(({ data }) => {
       const user = data.session?.user
+      if (accountSessionRef.current.revision) return
+      accountSessionRef.current = { id: user?.id ?? null, revision: 1 }
       setAccountUser(user ? { id: user.id, email: user.email ?? null, is_anonymous: Boolean(user.is_anonymous), created_at: user.created_at } : null)
     })
     return () => subscription.unsubscribe()
-  }, [])
+  }, [setSimulationRevealed, setSimulationIds, setSimulationAnswers])
 
   async function handleLogout() {
     if (!supabase) return
@@ -391,7 +408,7 @@ function App() {
     setShowQuestionList(false)
     setReviewingFromDashboard(false)
     setShowPerformance(false)
-  }, [setTopic, setYear, setBibliographySource, setQuestionSearch])
+  }, [setTopic, setYear, setBibliographySource, setQuestionSearch, setSimulationIds])
 
   const returnToHome = useCallback(() => {
     returnToFocus()
@@ -443,7 +460,7 @@ function App() {
       }
     })
     return () => { void listener.then((handle) => handle.remove()) }
-  }, [adminMode, closeAdmin, showAccountSync, showScheduledReviews, showTracks, trackPractice, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToFocus])
+  }, [adminMode, closeAdmin, showAccountSync, showScheduledReviews, showTracks, trackPractice, showPerformance, openMindMap, simulationIds, selectedExamId, selectedStudyMode, returnToFocus, setSimulationIds])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSplashElapsed(true), 900)
@@ -502,13 +519,8 @@ function App() {
     : mindMaps
 
   const questionsWithResults = useMemo(
-    () => filteredQuestions.map((question) => {
-      const savedResult = questionSnapshots[question.id]
-      return savedResult?.correctOption !== null && savedResult?.correctOption !== undefined
-        ? { ...question, answer: savedResult.correctOption, explanation: savedResult.explanation }
-        : question
-    }),
-    [filteredQuestions, questionSnapshots],
+    () => selectStudyQuestions(questions, filteredQuestions, simulationIds, questionSnapshots),
+    [questions, filteredQuestions, simulationIds, questionSnapshots],
   )
 
   const {
@@ -620,6 +632,8 @@ function App() {
   }
 
   function startSimulation() {
+    setPendingAnswerIds([])
+    setAnswerErrors({})
     lastCompletedSimulationRef.current = null
     const picked = shuffle(filteredQuestionsRef.current).slice(0, SIMULATION_SIZE)
     const ids = picked.map((question) => question.id)
@@ -644,6 +658,8 @@ function App() {
   }
 
   function startQuickSimulation() {
+    setPendingAnswerIds([])
+    setAnswerErrors({})
     lastCompletedSimulationRef.current = null
     const picked = shuffle(filteredQuestionsRef.current).slice(0, QUICK_SIMULATION_SIZE)
     const ids = picked.map((question) => question.id)
@@ -667,8 +683,12 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  async function submitQuestionAnswer(questionId: string, optionIndex: number, simulationId?: string, reviewQuestion?: Question): Promise<Awaited<ReturnType<typeof resolveQuestionAnswer>> | null> {
-    if (pendingAnswerIds.includes(questionId)) return null
+  async function submitQuestionAnswer(questionId: string, optionIndex: number, simulationId?: string, reviewQuestion?: Question, isCurrent: () => boolean = () => true): Promise<Awaited<ReturnType<typeof resolveQuestionAnswer>> | null> {
+    const accountSession = accountSessionRef.current
+    if (!progressRestored || accountSession.id !== (accountUser?.id ?? null)) return null
+    if (answerRequestsRef.current.get(questionId)?.isCurrent()) return null
+    const request = { isCurrent: () => accountSessionRef.current === accountSession && isCurrent() }
+    answerRequestsRef.current.set(questionId, request)
 
     setPendingAnswerIds((current) => current.includes(questionId) ? current : [...current, questionId])
     setAnswerErrors((current) => {
@@ -686,6 +706,7 @@ function App() {
         answer: question.answer ?? savedResult?.correctOption ?? null,
         explanation: question.explanation ?? savedResult?.explanation ?? null,
       }, optionIndex, isOnline, simulationId)
+      if (accountSessionRef.current !== accountSession || !isCurrent()) return null
 
       setQuestionAnswerResult(questionId, { correctOption, explanation })
       setAnswers((current) => ({ ...current, [questionId]: selectedOption }))
@@ -711,13 +732,17 @@ function App() {
       }
       return { selectedOption, correctOption, explanation }
     } catch (error) {
+      if (accountSessionRef.current !== accountSession || !isCurrent()) return null
       setAnswerErrors((current) => ({
         ...current,
         [questionId]: error instanceof Error ? error.message : 'Não foi possível validar a resposta. Tente novamente.',
       }))
       return null
     } finally {
-      setPendingAnswerIds((current) => current.filter((id) => id !== questionId))
+      if (answerRequestsRef.current.get(questionId) === request) {
+        answerRequestsRef.current.delete(questionId)
+        if (accountSessionRef.current === accountSession) setPendingAnswerIds((current) => current.filter((id) => id !== questionId))
+      }
     }
   }
 
@@ -726,11 +751,13 @@ function App() {
   }
 
   const recordCompletedOffensive = useCallback(async () => {
+    const accountSession = accountSessionRef.current
     const accountCreatedAt = accountUser?.created_at ?? null
 
     if (supabase && accountUser && !accountUser.is_anonymous && isOnline) {
       try {
         const { data, error } = await supabase.rpc('record_simulation_offensive')
+        if (accountSessionRef.current !== accountSession) return
         if (error) throw error
 
         const row = Array.isArray(data) ? data[0] : data
@@ -743,7 +770,8 @@ function App() {
             offensiveLoggedToday: row.offensive_logged_today,
             joinedAt: accountCreatedAt ?? row.joined_at,
           }
-          await saveOffensiveState(syncedState)
+          await saveOffensiveState(syncedState, accountUser.id)
+          if (accountSessionRef.current !== accountSession) return
           setOffensiveState(syncedState)
           return
         }
@@ -752,7 +780,9 @@ function App() {
       }
     }
 
-    const localState = await registerOffensiveSimulation(accountCreatedAt)
+    if (accountSessionRef.current !== accountSession) return
+    const localState = await registerOffensiveSimulation(accountCreatedAt, accountUser?.id ?? 'guest')
+    if (accountSessionRef.current !== accountSession) return
     setOffensiveState(localState)
   }, [accountUser, isOnline, setOffensiveState])
 
@@ -784,12 +814,7 @@ function App() {
   async function recordSimulationAnswer(questionId: string, optionIndex: number) {
     if (!savedSimulation) return
     const simulationId = savedSimulation.id ?? `${savedSimulation.examId}-${savedSimulation.updatedAt}`
-    const result = await submitQuestionAnswer(questionId, optionIndex, simulationId)
-    if (result === null) return
-    const nextAnswers = { ...simulationAnswers, [questionId]: result.selectedOption }
-    const updatedAt = new Date().toISOString()
-    setSimulationAnswers(nextAnswers)
-    setSavedSimulation((current) => current ? { ...current, answers: nextAnswers, lastQuestionId: questionId, updatedAt } : current)
+    await recordSessionAnswer(questionId, simulationId, (isCurrent) => submitQuestionAnswer(questionId, optionIndex, simulationId, undefined, isCurrent))
   }
 
   function recordSimulationReveal(questionId: string) {
@@ -1061,7 +1086,7 @@ function App() {
             <>
             {trackPractice && <div className="mt-5 rounded-xl border border-line bg-sea-light p-4"><p className="font-bold text-sea">{trackPractice.track.title} · {trackPractice.step.title}</p><p className="mt-1 text-sm text-muted">Questões dos assuntos vinculados a esta etapa.{!loading && !filteredQuestions.length ? ' Nenhuma questão encontrada para esta etapa com os filtros atuais.' : ''}</p><button type="button" className="mt-3 text-sm font-bold text-sea" onClick={() => { returnToFocus(); setShowTracks(true) }}>← Voltar à trilha</button></div>}
             <StudyScreen
-              examTitle={trackPractice ? 'Prática · Provas e bibliografia' : selectedStudyMode === 'bibliography-questions' ? 'Questões de bibliografia' : 'Questões de provas'}
+              examTitle={trackPractice ? 'Prática · Provas e bibliografia' : selectedStudyMode === 'bibliography-questions' ? 'Simulador de Questões' : 'Provas Antigas'}
               filters={{
                 questionSearch,
                 setQuestionSearch,
@@ -1074,7 +1099,7 @@ function App() {
                 topics,
                 years,
                 bibliographySources,
-                selectedStudyMode: trackPractice ? 'mixed' : selectedStudyMode === 'bibliography-questions' ? 'bibliography-questions' : null,
+                selectedStudyMode: trackPractice || selectedStudyMode === 'bibliography-questions' ? 'mixed' : null,
                 filteredQuestionsLength: filteredQuestions.length,
                 simulationIds,
                 startSimulation,

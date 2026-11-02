@@ -64,16 +64,16 @@ export function QuestionFilters({
           aria-label="Buscar questões por texto"
           disabled={simulationIds !== null}
         />
-        {simulationIds !== null && <span className="mt-2 block text-xs text-muted">Saia do simulado para buscar na lista de questões.</span>}
+        {simulationIds !== null && <span className="mt-2 block text-xs text-muted">Saia do simulado para alterar a busca e os filtros.</span>}
       </label>
 
       <div className="space-y-4">
-        <FilterSelect label="Tópico" value={topic} options={topics} onChange={setTopic} />
+        <FilterSelect label="Tópico" value={topic} options={topics} onChange={setTopic} disabled={simulationIds !== null} />
         {selectedStudyMode === 'bibliography-questions' && (
-          <FilterSelect label="Apostila ou livro" value={bibliographySource} options={bibliographySources} onChange={setBibliographySource} />
+          <FilterSelect label="Apostila ou livro" value={bibliographySource} options={bibliographySources} onChange={setBibliographySource} disabled={simulationIds !== null} />
         )}
         {selectedStudyMode !== 'bibliography-questions' && (
-          <FilterSelect label={selectedStudyMode === 'mixed' ? 'Ano / bibliografia' : 'Ano da prova'} value={year} options={years} onChange={setYear} />
+          <FilterSelect label={selectedStudyMode === 'mixed' ? 'Ano / bibliografia' : 'Ano da prova'} value={year} options={years} onChange={setYear} disabled={simulationIds !== null} />
         )}
         <div className="mt-5 space-y-2">
           <button

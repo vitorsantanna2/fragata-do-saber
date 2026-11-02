@@ -76,6 +76,8 @@ type UseProgressReturn = {
 }
 
 export function useProgress({ questions, accountUser, isOnline }: UseProgressProps): UseProgressReturn {
+  const ownerId = accountUser?.id ?? 'guest'
+  const [loadedOwner, setLoadedOwner] = useState(ownerId)
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [revealed, setRevealed] = useState<string[]>([])
   const [favorites, setFavorites] = useState<string[]>([])
@@ -118,9 +120,29 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
   const lastSyncedProgressFingerprint = useRef<string | null>(null)
   const lastManualSyncRevision = useRef(0)
 
+  // Reinicia antes de renderizar/rodar efeitos da nova conta.
+  if (loadedOwner !== ownerId) {
+    setLoadedOwner(ownerId)
+    setProgressRestored(false)
+    setAnswers({})
+    setRevealed([])
+    setFavorites([])
+    setProgressUpdatedAt({})
+    setQuestionSnapshots({})
+    setSavedSimulation(null)
+    setCompletedSimulations([])
+    setReviewSchedules({})
+    setSimulationRevealed([])
+    setOffensiveState(null)
+    setOffensiveLoaded(false)
+    setSyncStatus('local')
+  }
+
   useEffect(() => {
     let active = true
-    void loadStudyProgress().then((progress) => {
+    lastSyncedProgressFingerprint.current = null
+    previousQuestionProgress.current = { answers: {}, revealed: [], favorites: [] }
+    void loadStudyProgress(ownerId).then((progress) => {
       if (!active) return
       if (progress) {
         skipSelectionReset.current = true
@@ -136,7 +158,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
       }
       setProgressRestored(true)
     })
-    void loadOffensiveState().then((state) => {
+    void loadOffensiveState(ownerId).then((state) => {
       if (!active) return
       setOffensiveState(state)
       setOffensiveLoaded(true)
@@ -148,19 +170,16 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
       setThemeLoaded(true)
     })
     return () => { active = false }
-  }, [])
+  }, [ownerId])
 
   useEffect(() => {
     if (!progressRestored) return
-    const timeout = window.setTimeout(() => {
-      void saveStudyProgress({
-        answers, revealed, favorites, selectedExamId: null, selectedStudyMode: null,
-        topic: '', year: '', bibliographySource: '', questionSearch: '', questionSnapshots, progressUpdatedAt,
-        savedSimulation, completedSimulations, reviewSchedules,
-      })
-    }, 200)
-    return () => window.clearTimeout(timeout)
-    }, [progressRestored, answers, revealed, favorites, questionSnapshots, progressUpdatedAt, savedSimulation, completedSimulations, reviewSchedules])
+    void saveStudyProgress({
+      answers, revealed, favorites, selectedExamId: null, selectedStudyMode: null,
+      topic: '', year: '', bibliographySource: '', questionSearch: '', questionSnapshots, progressUpdatedAt,
+      savedSimulation, completedSimulations, reviewSchedules,
+    }, ownerId)
+  }, [ownerId, progressRestored, answers, revealed, favorites, questionSnapshots, progressUpdatedAt, savedSimulation, completedSimulations, reviewSchedules])
 
   useEffect(() => {
     if (!progressRestored) return
@@ -207,7 +226,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
     let active = true
     const timer = window.setTimeout(() => {
       setSyncStatus('syncing')
-      void syncStudyProgress({ answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, reviewSchedules })
+      void syncStudyProgress({ answers, favorites, revealed, progressUpdatedAt, questionSnapshots, completedSimulations, reviewSchedules }, accountUser.id)
         .then((merged) => {
           if (!active) return
           lastManualSyncRevision.current = manualSyncRevision
@@ -265,7 +284,7 @@ export function useProgress({ questions, accountUser, isOnline }: UseProgressPro
 
     let active = true
     const timer = window.setTimeout(() => {
-      void syncOffensiveState(offensiveState)
+      void syncOffensiveState(offensiveState, accountUser.id)
         .then((synced) => {
           if (!active) return
           if (synced) {

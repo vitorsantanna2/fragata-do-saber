@@ -133,7 +133,7 @@ export function PerformanceDashboard({
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                     <div>
                       <p className="text-xs font-bold text-sea">{sim.examTitle ?? sim.examId}</p>
-                      <p className="text-[10px] text-muted">{sim.studyMode === 'bibliography-questions' ? 'Bibliografia' : 'Prova'}{sim.totalQuestions ? ` · ${sim.totalQuestions} questões` : ''}</p>
+                      <p className="text-[10px] text-muted">{sim.studyMode === 'bibliography-questions' ? 'Simulador de Questões' : 'Provas Antigas'}{sim.totalQuestions ? ` · ${sim.totalQuestions} questões` : ''}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-display text-xl font-extrabold text-ink">{sim.score.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>

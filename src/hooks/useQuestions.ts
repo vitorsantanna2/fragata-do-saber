@@ -64,7 +64,8 @@ export function useQuestions({
   selectedStudyMode,
   examChoices,
 }: UseQuestionsProps): UseQuestionsReturn {
-  const mixedPractice = !!trackStep
+  // O ID histórico bibliography-questions agora representa o simulador geral.
+  const mixedPractice = !!trackStep || selectedStudyMode === 'bibliography-questions'
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')

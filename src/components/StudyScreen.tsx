@@ -56,7 +56,7 @@ export function StudyScreen({
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-sea">Banco de questões</p>
-              <h2 className="mt-1 font-display text-2xl font-extrabold">{selectedStudyMode === 'bibliography-questions' ? 'Questões baseadas na bibliografia' : 'Continue sua preparação'}</h2>
+              <h2 className="mt-1 font-display text-2xl font-extrabold">{selectedStudyMode === 'mixed' ? 'Provas antigas e bibliografia' : selectedStudyMode === 'bibliography-questions' ? 'Questões baseadas na bibliografia' : 'Continue sua preparação'}</h2>
             </div>
             <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-line">{simulationIds ? simulationIds.length : filteredQuestionsLength} {simulationIds ? 'no simulado' : 'disponíveis'}</span>
           </div>

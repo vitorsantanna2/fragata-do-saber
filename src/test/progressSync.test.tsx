@@ -5,7 +5,7 @@ import type { StudyProgress } from '../lib/localDatabaseTypes'
 
 const client = vi.hoisted(() => ({ from: vi.fn(), rpc: vi.fn(), getSession: vi.fn() }))
 vi.mock('../lib/supabase', () => ({ supabase: { from: client.from, rpc: client.rpc, auth: { getSession: client.getSession } } }))
-import { syncStudyProgress } from '../lib/progressSync'
+import { syncStudyProgress, syncOffensiveState } from '../lib/progressSync'
 
 type Row = Record<string, unknown>
 let rows: Record<string, Row[]>
@@ -45,6 +45,11 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.clearAllMocks() })
 
 describe('performance synchronization', () => {
+  it('refuses to synchronize a payload when the authenticated account changed', async () => {
+    expect(await syncStudyProgress(emptyProgress(), 'another-user')).toBeNull()
+    expect(await syncOffensiveState({ totalOffensives: 1, currentStreak: 1, bestStreak: 1, lastOffensiveDate: null, offensiveLoggedToday: false, joinedAt: null }, 'another-user')).toBeNull()
+    expect(client.from).not.toHaveBeenCalled()
+  })
   it('recovers the correction of offline answers on another device after their progress is synchronized', async () => {
     rows.user_question_progress = [{ user_id: 'user-1', question_id: 'q1', selected_option: 0, is_favorite: true, is_revealed: false, updated_at: timestamp }]
     rows.questions = [{ id: 'q1', exam: 'CP-T', subject: 'Informática', topic: null, year: 2024, question_type: 'exam', statement: 'Questão' }]

@@ -58,14 +58,14 @@ describe('progress recovery', () => {
   })
 
   it('keeps the validated result and explanation after restarting offline', async () => {
-    window.localStorage.setItem('study_progress_v1', JSON.stringify(storedProgress()))
+    window.localStorage.setItem('study_progress_v1:guest', JSON.stringify(storedProgress()))
     const { result } = renderHook(() => useProgress({ questions: noQuestions, accountUser: null, isOnline: false }))
     await act(async () => {})
     expect(result.current.progressRestored).toBe(true)
     expect(result.current.answers).toEqual({ q1: 0 })
     expect(result.current.questionSnapshots.q1).toEqual(snapshot)
     await act(async () => { await vi.advanceTimersByTimeAsync(250) })
-    expect(JSON.parse(window.localStorage.getItem('study_progress_v1')!).questionSnapshots.q1.correctOption).toBe(0)
+    expect(JSON.parse(window.localStorage.getItem('study_progress_v1:guest')!).questionSnapshots.q1.correctOption).toBe(0)
   })
 
   it('records different attempts with identical scores once each and restores both', async () => {
@@ -85,7 +85,7 @@ describe('progress recovery', () => {
   })
 
   it('does not restart synchronization indefinitely after merging completed simulations', async () => {
-    window.localStorage.setItem('study_progress_v1', JSON.stringify({ ...storedProgress(), completedSimulations: [simulation] }))
+    window.localStorage.setItem('study_progress_v1:user-1', JSON.stringify({ ...storedProgress(), completedSimulations: [simulation] }))
     const { result } = renderHook(() => useProgress({ questions: noQuestions, accountUser: user, isOnline: true }))
     await act(async () => {})
     await act(async () => { await vi.advanceTimersByTimeAsync(500) })
@@ -98,7 +98,7 @@ describe('progress recovery', () => {
   it('recovers previously cleared results for anonymous sessions from their own attempts', async () => {
     const progress = storedProgress()
     progress.questionSnapshots.q1 = { ...snapshot, correctOption: null, explanation: null }
-    window.localStorage.setItem('study_progress_v1', JSON.stringify(progress))
+    window.localStorage.setItem('study_progress_v1:user-1', JSON.stringify(progress))
     vi.mocked(loadValidatedAnswers).mockResolvedValue([{ question_id: 'q1', selected_option: 0, correct_option: 0, explanation: snapshot.explanation, submitted_at: simulation.completedAt }])
     const anonymousUser = { ...user, email: null, is_anonymous: true }
     const { result } = renderHook(() => useProgress({ questions: noQuestions, accountUser: anonymousUser, isOnline: true }))
@@ -110,7 +110,7 @@ describe('progress recovery', () => {
   it('preserves a newer offline choice when restoring an older server attempt', async () => {
     const progress = storedProgress()
     progress.answers = { q1: 1 }
-    window.localStorage.setItem('study_progress_v1', JSON.stringify(progress))
+    window.localStorage.setItem('study_progress_v1:user-1', JSON.stringify(progress))
     vi.mocked(loadValidatedAnswers).mockResolvedValue([{ question_id: 'q1', selected_option: 0, correct_option: 0, explanation: snapshot.explanation, submitted_at: simulation.completedAt }])
     const anonymousUser = { ...user, email: null, is_anonymous: true }
     const { result } = renderHook(() => useProgress({ questions: noQuestions, accountUser: anonymousUser, isOnline: true }))

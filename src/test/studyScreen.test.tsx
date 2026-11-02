@@ -1,8 +1,10 @@
 import type { ComponentProps } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { StudyScreen } from '../components/StudyScreen'
 import { getSimulationResult } from '../lib/simulationResults'
+import { selectStudyQuestions } from '../lib/studyQuestionSelection'
 import type { Question } from '../hooks/useQuestions'
 
 const questions: Question[] = Array.from({ length: 10 }, (_, index) => ({
@@ -34,6 +36,37 @@ function props(): ComponentProps<typeof StudyScreen> {
 afterEach(cleanup)
 
 describe('simulation completion summary', () => {
+  it.each([null, 'bibliography-questions', 'mixed'] as const)('locks all filters during a simulation and unlocks them after exiting (%s)', async (mode) => {
+    const input = props()
+    input.filters.selectedStudyMode = mode
+    input.filters.topics = ['Todos', 'Redes']
+    const view = render(<StudyScreen {...input} />)
+    const user = userEvent.setup()
+    const topic = screen.getByRole('combobox', { name: 'Tópico' }) as HTMLSelectElement
+    for (const select of screen.getAllByRole('combobox')) expect((select as HTMLSelectElement).disabled).toBe(true)
+    expect((screen.getByRole('searchbox') as HTMLInputElement).disabled).toBe(true)
+    await user.selectOptions(topic, 'Redes')
+    expect(input.filters.setTopic).not.toHaveBeenCalled()
+    expect((screen.getByRole('button', { name: 'Sair do simulado' }) as HTMLButtonElement).disabled).toBe(false)
+    view.rerender(<StudyScreen {...input} filters={{ ...input.filters, simulationIds: null }} />)
+    for (const select of screen.getAllByRole('combobox')) expect((select as HTMLSelectElement).disabled).toBe(false)
+    expect((screen.getByRole('searchbox') as HTMLInputElement).disabled).toBe(false)
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Tópico' }), 'Redes')
+    expect(input.filters.setTopic).toHaveBeenCalledWith('Redes')
+  })
+
+  it('preserves simulation questions, their order and the result even when the filtered list becomes empty', async () => {
+    const selectedIds = [...ids].reverse()
+    const selected = selectStudyQuestions(questions, [], selectedIds, {})
+    expect(selected.map((question) => question.id)).toEqual(selectedIds)
+    const input = props()
+    render(<StudyScreen {...input} questions={selected} filters={{ ...input.filters, simulationIds: selectedIds, filteredQuestionsLength: 0 }} />)
+    expect(await screen.findByText('8 de 10 questões corretas')).not.toBeNull()
+    expect(screen.getByText('Questão 0')).not.toBeNull()
+    expect(screen.getByText('Questão 9')).not.toBeNull()
+    expect(getSimulationResult(selected, selectedIds, answers)).toMatchObject({ complete: true, correctCount: 8, score: 80 })
+    expect(selectStudyQuestions(questions, [], null, {})).toEqual([])
+  })
   it('renders a single summary using the quick simulation size rather than the bank size', async () => {
     render(<StudyScreen {...props()} />)
     expect(await screen.findByText('8 de 10 questões corretas')).not.toBeNull()

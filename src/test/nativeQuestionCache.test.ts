@@ -46,6 +46,21 @@ beforeEach(() => {
 afterEach(() => sqlite.close())
 
 describe('native SQLite question cache', () => {
+  it('isolates native progress and offensive counters by account without adopting legacy data', async () => {
+    const storage = await import('../lib/localDatabase')
+    await storage.setLocalMetadata('study_progress_v1', JSON.stringify({ answers: { legacy: 1 } }))
+    const legacy = await storage.loadStudyProgress()
+    expect(legacy?.answers).toEqual({ legacy: 1 })
+    expect(await storage.loadStudyProgress('student-a')).toBeNull()
+    await storage.saveStudyProgress({ ...legacy!, answers: { onlyA: 0 } }, 'student-a')
+    expect(await storage.loadStudyProgress('student-b')).toBeNull()
+    await storage.saveOffensiveState({ totalOffensives: 7, currentStreak: 0, bestStreak: 7, lastOffensiveDate: null, offensiveLoggedToday: false, joinedAt: null }, 'student-a')
+    expect((await storage.loadOffensiveState('student-b')).totalOffensives).toBe(0)
+    vi.resetModules()
+    const reopened = await import('../lib/localDatabase')
+    expect((await reopened.loadStudyProgress('student-a'))?.answers).toEqual({ onlyA: 0 })
+    expect((await reopened.loadStudyProgress())?.answers).toEqual({ legacy: 1 })
+  })
   it('updates an individual review question without deleting the other downloaded questions', async () => {
     const cache = await import('../lib/localDatabase')
     const second = { ...question, id: 'q2' }

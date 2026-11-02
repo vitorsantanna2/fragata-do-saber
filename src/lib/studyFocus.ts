@@ -22,11 +22,11 @@ export function scopeStudyData(exam: ExamChoice | null, data: FocusData): FocusD
 
 export function getFocusResources(exam: ExamChoice): FocusResourceInfo[] {
   const resources: FocusResourceInfo[] = [
-    { id: 'exam-questions', title: 'Questões de provas', description: 'Pratique as matérias deste concurso e monte seus simulados.', icon: '✓' },
+    { id: 'exam-questions', title: 'Provas Antigas', description: 'Pratique questões de provas anteriores deste concurso e monte seus simulados.', icon: '✓' },
   ]
   if (exam.id === 'cp-t-informatica') resources.push(
     { id: 'study-tracks', title: 'Trilhas de estudo', description: 'Estude a bibliografia do CP-T/2026 por etapas e acompanhe seu progresso.', icon: '↗' },
-    { id: 'bibliography-questions', title: 'Apostilas e livros', description: 'Questões baseadas na bibliografia do CP-T de Informática.', icon: '▤' },
+    { id: 'bibliography-questions', title: 'Simulador de Questões', description: 'Monte simulados com todo o banco do CP-T: provas antigas e questões da bibliografia misturadas.', icon: '▤' },
     { id: 'mind-maps', title: 'Mapas mentais', description: 'Consulte os mapas do Quadro Técnico e baixe-os para estudar offline.', icon: '✦' },
   )
   resources.push(

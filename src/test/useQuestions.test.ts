@@ -67,6 +67,23 @@ function renderUseQuestions({
 }
 
 describe('useQuestions', () => {
+  it.each(['exam-questions', 'bibliography-questions'] as const)('loads the correct sources for the old exams area and the general simulator (%s)', async (mode) => {
+    vi.mocked(readCachedQuestions).mockImplementation(async (_exam, _subject, type) => type === 'exam'
+      ? mockCachedRows.map((row) => ({ ...row, exam: 'CP-T' }))
+      : [{ ...mockCachedRows[0], id: 'book', exam: 'CP-T', topic: 'Sistemas operacionais', question_type: 'bibliography' }])
+    const { result } = renderUseQuestions({ selectedStudyMode: mode })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    if (mode === 'bibliography-questions') {
+      expect(result.current.filteredQuestions.map((question) => question.id)).toEqual(['q1', 'q2', 'book'])
+      expect(result.current.topics).toContain('Sistemas operacionais')
+      expect(result.current.topics).toContain('Banco de Dados')
+      expect(readCachedQuestions).toHaveBeenCalledTimes(2)
+    } else {
+      expect(result.current.filteredQuestions.map((question) => question.id)).toEqual(['q1', 'q2'])
+      expect(readCachedQuestions).toHaveBeenCalledTimes(1)
+      expect(readCachedQuestions).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), 'bibliography')
+    }
+  })
   it('restricts track practice and filter options to mapped topics from the correct contest', async () => {
     vi.mocked(readCachedQuestions).mockImplementation(async (_exam, _subject, type) => type === 'exam'
       ? mockCachedRows.map((row, index) => ({ ...row, exam: 'CP-T', topic: index === 0 ? 'Memória cache' : 'SQL / consultas' }))

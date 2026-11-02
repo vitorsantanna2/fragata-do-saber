@@ -21,11 +21,11 @@ export function isNativeApp() {
   return Capacitor.isNativePlatform()
 }
 
-export async function loadStudyProgress(): Promise<StudyProgress | null> {
+export async function loadStudyProgress(ownerId?: string): Promise<StudyProgress | null> {
   try {
     const stored = isNativeApp()
-      ? await getLocalMetadata(STUDY_PROGRESS_KEY)
-      : window.localStorage.getItem(STUDY_PROGRESS_KEY)
+      ? await getLocalMetadata(ownerId ? `${STUDY_PROGRESS_KEY}:${ownerId}` : STUDY_PROGRESS_KEY)
+      : window.localStorage.getItem(ownerId ? `${STUDY_PROGRESS_KEY}:${ownerId}` : STUDY_PROGRESS_KEY)
     if (!stored) return null
     const progress = JSON.parse(stored) as Partial<StudyProgress>
     const validSimulations = mergeCompletedSimulations(progress.completedSimulations ?? [])
@@ -49,7 +49,7 @@ export async function loadStudyProgress(): Promise<StudyProgress | null> {
         savedSimulation,
         completedSimulations: validSimulations,
         reviewSchedules: progress.reviewSchedules ?? {},
-      })
+      }, ownerId)
     }
     return {
       answers: progress.answers ?? {},
@@ -72,26 +72,26 @@ export async function loadStudyProgress(): Promise<StudyProgress | null> {
   }
 }
 
-export async function saveStudyProgress(progress: StudyProgress) {
+export async function saveStudyProgress(progress: StudyProgress, ownerId?: string) {
   const serialized = JSON.stringify(progress)
   try {
-    if (isNativeApp()) await setLocalMetadata(STUDY_PROGRESS_KEY, serialized)
-    else window.localStorage.setItem(STUDY_PROGRESS_KEY, serialized)
+    if (isNativeApp()) await setLocalMetadata(ownerId ? `${STUDY_PROGRESS_KEY}:${ownerId}` : STUDY_PROGRESS_KEY, serialized)
+    else window.localStorage.setItem(ownerId ? `${STUDY_PROGRESS_KEY}:${ownerId}` : STUDY_PROGRESS_KEY, serialized)
   } catch (error) {
     console.warn('Não foi possível salvar o progresso de estudo localmente.', error)
   }
 }
 
-export async function loadOffensiveState(): Promise<OffensiveState> {
+export async function loadOffensiveState(ownerId?: string): Promise<OffensiveState> {
   try {
     const stored = isNativeApp()
-      ? await getLocalMetadata(OFFENSIVE_STATE_KEY)
-      : window.localStorage.getItem(OFFENSIVE_STATE_KEY)
+      ? await getLocalMetadata(ownerId ? `${OFFENSIVE_STATE_KEY}:${ownerId}` : OFFENSIVE_STATE_KEY)
+      : window.localStorage.getItem(ownerId ? `${OFFENSIVE_STATE_KEY}:${ownerId}` : OFFENSIVE_STATE_KEY)
     if (!stored) {
       const initial: OffensiveState = {
         ...blankOffensiveState(),
       }
-      void saveOffensiveState(initial)
+      void saveOffensiveState(initial, ownerId)
       return initial
     }
     const state = JSON.parse(stored) as Partial<OffensiveState>
@@ -105,7 +105,7 @@ export async function loadOffensiveState(): Promise<OffensiveState> {
     }
     const normalized = normalizeOffensiveStateForToday(loaded, getSaoPauloDateKey())
     if (JSON.stringify(normalized) !== JSON.stringify(loaded)) {
-      void saveOffensiveState(normalized)
+      void saveOffensiveState(normalized, ownerId)
     }
     return normalized
   } catch {
@@ -113,31 +113,31 @@ export async function loadOffensiveState(): Promise<OffensiveState> {
   }
 }
 
-export async function saveOffensiveState(state: OffensiveState) {
+export async function saveOffensiveState(state: OffensiveState, ownerId?: string) {
   const serialized = JSON.stringify(state)
   try {
-    if (isNativeApp()) await setLocalMetadata(OFFENSIVE_STATE_KEY, serialized)
-    else window.localStorage.setItem(OFFENSIVE_STATE_KEY, serialized)
+    if (isNativeApp()) await setLocalMetadata(ownerId ? `${OFFENSIVE_STATE_KEY}:${ownerId}` : OFFENSIVE_STATE_KEY, serialized)
+    else window.localStorage.setItem(ownerId ? `${OFFENSIVE_STATE_KEY}:${ownerId}` : OFFENSIVE_STATE_KEY, serialized)
   } catch (error) {
     console.warn('Não foi possível salvar o estado da ofensiva localmente.', error)
   }
 }
 
-async function registerOffensiveDay(accountCreatedAt?: string | null): Promise<OffensiveState> {
-  const state = await loadOffensiveState()
+async function registerOffensiveDay(accountCreatedAt?: string | null, ownerId?: string): Promise<OffensiveState> {
+  const state = await loadOffensiveState(ownerId)
   const joinedAt = accountCreatedAt ?? state.joinedAt
   const base = joinedAt === state.joinedAt ? state : { ...state, joinedAt }
   const next = recordOffensiveForDate(base, getSaoPauloDateKey())
-  await saveOffensiveState(next)
+  await saveOffensiveState(next, ownerId)
   return next
 }
 
-export function registerOffensiveAccess(accountCreatedAt?: string | null): Promise<OffensiveState> {
-  return registerOffensiveDay(accountCreatedAt)
+export function registerOffensiveAccess(accountCreatedAt?: string | null, ownerId?: string): Promise<OffensiveState> {
+  return registerOffensiveDay(accountCreatedAt, ownerId)
 }
 
-export function registerOffensiveSimulation(accountCreatedAt?: string | null): Promise<OffensiveState> {
-  return registerOffensiveDay(accountCreatedAt)
+export function registerOffensiveSimulation(accountCreatedAt?: string | null, ownerId?: string): Promise<OffensiveState> {
+  return registerOffensiveDay(accountCreatedAt, ownerId)
 }
 
 export function getLocalDatabase() {
