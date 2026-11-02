@@ -46,6 +46,18 @@ beforeEach(() => {
 afterEach(() => sqlite.close())
 
 describe('native SQLite question cache', () => {
+  it('keeps step links offline and preserves the downloaded file when only metadata changes', async () => {
+    const cache = await import('../lib/localDatabase')
+    const map = { id: 'map1', title: 'Linux', subject: 'Informática', description: null, storage_path: 'map1.png', content_type: 'image/png', sort_order: 0, updated_at: '2026-11-01T12:00:00Z', track_steps: ['cpt-2026-infra/so'] }
+    await cache.cacheMindMaps([map])
+    await cache.setMindMapLocalPath(map.id, 'mind-maps/map1.png')
+    await cache.cacheMindMaps([{ ...map, updated_at: '2026-11-02T12:00:00Z', track_steps: ['cpt-2026-infra/so', 'cpt-2026-infra/seguranca'] }])
+    vi.resetModules()
+    const reopened = await import('../lib/localDatabase')
+    expect((await reopened.readCachedMindMaps())[0]).toMatchObject({ track_steps: ['cpt-2026-infra/so', 'cpt-2026-infra/seguranca'], local_path: 'mind-maps/map1.png' })
+    await reopened.cacheMindMaps([{ ...map, storage_path: 'replacement.png' }])
+    expect((await reopened.readCachedMindMaps())[0].local_path).toBeNull()
+  })
   it('isolates native progress and offensive counters by account without adopting legacy data', async () => {
     const storage = await import('../lib/localDatabase')
     await storage.setLocalMetadata('study_progress_v1', JSON.stringify({ answers: { legacy: 1 } }))

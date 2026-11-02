@@ -15,7 +15,7 @@ export async function loadMindMaps(): Promise<MindMap[]> {
 
   const { data, error } = await supabase
     .from('mind_maps')
-    .select('id, title, subject, description, storage_path, content_type, sort_order, updated_at')
+    .select('*')
     .eq('is_published', true)
     .order('subject')
     .order('sort_order')

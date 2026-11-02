@@ -9,6 +9,7 @@ import {
   downloadMindMap,
   getMindMapUrl,
   loadMindMaps,
+  openMindMapPdf,
   type MindMap,
 } from './lib/mindMaps'
 import {
@@ -444,12 +445,12 @@ function App() {
         setShowAccountSync(false)
       } else if (showScheduledReviews) {
         setShowScheduledReviews(false)
+      } else if (openMindMap) {
+        setOpenMindMap(null)
       } else if (showTracks) {
         returnToFocus()
       } else if (showPerformance) {
         setShowPerformance(false)
-      } else if (openMindMap) {
-        setOpenMindMap(null)
       } else if (simulationIds !== null) {
         setSimulationIds(null)
       } else if (selectedExamId !== null && selectedStudyMode !== null) {
@@ -468,7 +469,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (selectedStudyMode !== 'mind-maps' || selectedExamId !== 'cp-t-informatica') return
+    if ((selectedStudyMode !== 'mind-maps' && !showTracks) || selectedExamId !== 'cp-t-informatica') return
     let active = true
     setMindMapsLoading(true)
     setMindMapsError('')
@@ -479,7 +480,7 @@ function App() {
       })
       .finally(() => { if (active) setMindMapsLoading(false) })
     return () => { active = false }
-  }, [selectedExamId, selectedStudyMode])
+  }, [selectedExamId, selectedStudyMode, showTracks])
 
   async function handleMindMapAction(map: MindMap) {
     setMindMapAction(map.id)
@@ -490,6 +491,10 @@ function App() {
         const localPath = await downloadMindMap(map)
         currentMap = { ...map, local_path: localPath }
         setMindMaps((items) => items.map((item) => item.id === map.id ? currentMap : item))
+      }
+      if (isNativeApp() && currentMap.content_type === 'application/pdf') {
+        await openMindMapPdf(currentMap)
+        return
       }
       const url = await getMindMapUrl(currentMap)
       setOpenMindMap({ map: currentMap, url })
@@ -965,7 +970,7 @@ function App() {
               />
             </Suspense>
           ) : showTracks && focusedExam ? (
-            <StudyTracks key={`${focusedExam.id}:${accountUser?.id ?? 'guest'}`} examId={focusedExam.id} progressState={trackProgressState} initialTrackId={lastTrackId} snapshots={focusedStudy.questionSnapshots} answers={focusedStudy.answers} onClose={returnToFocus} onPractice={(track, step) => {
+            <StudyTracks key={`${focusedExam.id}:${accountUser?.id ?? 'guest'}`} examId={focusedExam.id} progressState={trackProgressState} mapResources={{ items: mindMaps, loading: mindMapsLoading, busyId: mindMapAction, native: isNativeApp(), onOpen: (map) => void handleMindMapAction(map), onDownload: (map) => void handleMindMapDownload(map) }} mapsError={mindMapsError} initialTrackId={lastTrackId} snapshots={focusedStudy.questionSnapshots} answers={focusedStudy.answers} onClose={returnToFocus} onPractice={(track, step) => {
               returnToFocus()
               setLastTrackId(track.id)
               setTrackPractice({ track, step })
@@ -1078,9 +1083,6 @@ function App() {
                   ))}
                 </div>
               )}
-              {openMindMap && (
-                <MindMapViewer map={openMindMap.map} url={openMindMap.url} onClose={() => setOpenMindMap(null)} />
-              )}
             </section>
           ) : (
             <>
@@ -1146,6 +1148,7 @@ function App() {
             />
             </>
           )}
+          {openMindMap && <MindMapViewer map={openMindMap.map} url={openMindMap.url} onClose={() => setOpenMindMap(null)} />}
         </main>
         {showAccountSync && <AccountSyncPanel onClose={() => setShowAccountSync(false)} onSync={() => { setManualSyncRevision((revision) => revision + 1); trackProgressState.retrySync() }} onUseExistingAccount={(email) => { setAccountLoginEmail(email); setShowAccountLogin(true); setAccessState('locked'); setShowAccountSync(false) }} syncStatus={syncStatus} />}
         <footer className="flex flex-wrap items-center justify-center gap-2 border-t border-line bg-white/70 px-5 py-6 text-xs text-muted"><span>Fragata do Saber <span className="px-1 text-coral">·</span> Preparação feita com propósito</span><span className="px-1 text-coral">·</span><span>@vitorsantanna2</span></footer>

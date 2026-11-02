@@ -2,8 +2,11 @@ import { useState } from 'react'
 import type { useTrackProgress } from '../hooks/useTrackProgress'
 import { matchesTrackStep, studyTracks, trackProgressKey, type StudyTrack, type TrackStep } from '../lib/studyTracks'
 import type { StudyQuestionSnapshot } from '../lib/localDatabaseTypes'
+import { StepMindMaps, type StepMapResources } from './StepMindMaps'
 
 type Props = {
+  mapResources?: StepMapResources
+  mapsError?: string
   examId: string
   progressState: ReturnType<typeof useTrackProgress>
   initialTrackId: string | null
@@ -15,7 +18,7 @@ type Props = {
 
 const button = 'rounded-lg border border-line bg-white px-3 py-2 text-sm font-bold text-sea hover:border-sea disabled:opacity-50'
 
-export function StudyTracks({ examId, progressState, initialTrackId, snapshots, answers, onClose, onPractice }: Props) {
+export function StudyTracks({ examId, progressState, initialTrackId, snapshots, answers, onClose, onPractice, mapResources, mapsError }: Props) {
   const tracks = studyTracks.filter((track) => track.examId === examId)
   const [selectedId, setSelectedId] = useState(initialTrackId)
   const track = tracks.find((item) => item.id === selectedId)
@@ -32,6 +35,7 @@ export function StudyTracks({ examId, progressState, initialTrackId, snapshots, 
     <p className="mt-2 text-sm text-muted">A prática mista reúne questões de provas e da bibliografia dos assuntos de cada etapa. Para usar as duas origens offline no aplicativo, baixe-as antes com internet. “Estudado” registra sua leitura; acertos são medidos separadamente.</p>
     <div className="mt-3 text-sm text-muted" role="status">{syncStatus === 'local' ? 'Progresso salvo neste dispositivo. Entre em uma conta para sincronizar entre aparelhos.' : syncStatus === 'offline' ? 'Sem internet. Suas alterações ficam no dispositivo e serão sincronizadas ao reconectar.' : syncStatus === 'syncing' ? 'Sincronizando progresso das trilhas…' : syncStatus === 'synced' ? 'Progresso das trilhas sincronizado com sua conta.' : 'Não foi possível sincronizar as trilhas. Suas alterações locais foram mantidas.'}{syncStatus === 'error' && <button type="button" className="ml-2 font-bold text-sea" onClick={retrySync}>Tentar novamente</button>}</div>
     {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+    {mapsError && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{mapsError}</p>}
     {!ready && !error && <p role="status" className="mt-4">Carregando seu progresso…</p>}
     {!track ? <div className="mt-5 grid gap-4 md:grid-cols-2">{tracks.map((item) => <button key={item.id} type="button" className="rounded-xl border border-line bg-white p-5 text-left hover:border-sea" onClick={() => setSelectedId(item.id)}>
       <h3 className="font-display text-lg font-extrabold">{item.title}</h3><p className="mt-2 text-sm text-muted">{item.description}</p>
@@ -49,6 +53,7 @@ export function StudyTracks({ examId, progressState, initialTrackId, snapshots, 
           <h3 className="mt-2 font-display text-lg font-extrabold">{step.title}</h3>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6">{step.goals.map((goal) => <li key={goal}>{goal}</li>)}</ul>
           <p className="mt-4 text-xs font-bold uppercase text-muted">Referências para esta etapa</p><ul className="mt-2 space-y-1 text-sm text-muted">{step.references.map((reference) => <li key={reference}>{reference}</li>)}</ul>
+          {mapResources && <StepMindMaps {...mapResources} track={track} step={step} />}
           <p className="mt-4 text-sm text-muted">Prática registrada: {attempted.length} questões · {correct} acertos{attempted.length ? ` · ${Math.round(correct / attempted.length * 100)}% de aproveitamento` : ''}.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {status !== 'completed' && <button type="button" className={button} disabled={!ready || saving} onClick={() => void setStatus(track.id, step.id, status === 'studying' ? 'completed' : 'studying')}>{status === 'studying' ? 'Marcar como estudado' : 'Começar estudo'}</button>}

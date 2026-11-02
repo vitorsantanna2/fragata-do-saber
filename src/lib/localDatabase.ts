@@ -20,6 +20,7 @@ export async function readCachedMindMaps() {
   return (result.values ?? []).map((row) => ({
     ...row,
     sort_order: Number(row.sort_order),
+    track_steps: JSON.parse(row.track_steps ?? '[]'),
   })) as CachedMindMap[]
 }
 
@@ -27,14 +28,15 @@ export async function cacheMindMaps(rows: Omit<CachedMindMap, 'local_path'>[]) {
   const database = await getLocalDatabase()
   if (!database) return
   const statements = rows.map((row) => ({
-    statement: `INSERT INTO mind_maps (id, title, subject, description, storage_path, content_type, sort_order, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    statement: `INSERT INTO mind_maps (id, title, subject, description, storage_path, content_type, sort_order, updated_at, track_steps)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET title = excluded.title, subject = excluded.subject,
       description = excluded.description, storage_path = excluded.storage_path,
       content_type = excluded.content_type, sort_order = excluded.sort_order,
-      local_path = CASE WHEN mind_maps.storage_path != excluded.storage_path OR mind_maps.updated_at != excluded.updated_at THEN NULL ELSE mind_maps.local_path END,
+      local_path = CASE WHEN mind_maps.storage_path != excluded.storage_path OR mind_maps.content_type != excluded.content_type THEN NULL ELSE mind_maps.local_path END,
+      track_steps = excluded.track_steps,
       updated_at = excluded.updated_at`,
-    values: [row.id, row.title, row.subject, row.description, row.storage_path, row.content_type, row.sort_order, row.updated_at],
+    values: [row.id, row.title, row.subject, row.description, row.storage_path, row.content_type, row.sort_order, row.updated_at, JSON.stringify(row.track_steps ?? [])],
   }))
   if (statements.length) await database.executeSet(statements, true)
 }

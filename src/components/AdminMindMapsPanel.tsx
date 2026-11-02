@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { adminSupabase } from '../lib/adminSupabase'
+import { studyTracks, trackProgressKey } from '../lib/studyTracks'
 
 type MapRecord = {
+  track_steps?: string[]
   id: string
   title: string
   subject: string
@@ -14,7 +16,7 @@ type MapRecord = {
 }
 
 type MapDraft = Omit<MapRecord, 'id' | 'updated_at'> & { id: string | null; file: File | null }
-const columns = 'id,title,subject,description,storage_path,content_type,sort_order,is_published,updated_at'
+const columns = '*'
 const acceptedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp']
 
 function blankDraft(): MapDraft {
@@ -65,7 +67,7 @@ export default function AdminMindMapsPanel() {
       const payload = {
         title: draft.title.trim(), subject: draft.subject.trim(), description: draft.description?.trim() || null,
         storage_path: uploadedPath, content_type: draft.file?.type ?? draft.content_type,
-        sort_order: Number(draft.sort_order) || 0, is_published: publish,
+        sort_order: Number(draft.sort_order) || 0, is_published: publish, track_steps: draft.track_steps ?? [],
       }
       const result = draft.id
         ? await adminSupabase.from('mind_maps').update(payload).eq('id', draft.id).select(columns).single()
@@ -75,7 +77,10 @@ export default function AdminMindMapsPanel() {
       setNotice(publish ? 'Mapa salvo e publicado.' : 'Rascunho salvo; ainda não aparece para os estudantes.')
       await refresh()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar o mapa mental.')
+      const code = cause && typeof cause === 'object' && 'code' in cause ? cause.code : null
+      setError(code === 'PGRST204' || code === '42703'
+        ? 'Atualize o catálogo executando supabase/supabase_mind_map_tracks_setup.sql no SQL Editor do Supabase antes de salvar os vínculos.'
+        : cause instanceof Error ? cause.message : 'Não foi possível salvar o mapa mental.')
     } finally { setBusy(false) }
   }
 
@@ -93,6 +98,10 @@ export default function AdminMindMapsPanel() {
         <label className="block text-sm font-bold">Título<input required className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} /></label>
         <label className="block text-sm font-bold">Matéria<input required className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} /></label>
         <label className="block text-sm font-bold">Descrição<textarea className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" rows={3} value={draft.description ?? ''} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></label>
+        <fieldset className="rounded-lg border border-line p-3"><legend className="px-1 text-sm font-bold">Etapas relacionadas</legend><p className="mb-3 text-xs text-muted">Selecione as etapas onde este mapa deve aparecer. Sem vínculo, a matéria é comparada aos assuntos da etapa.</p>{studyTracks.map((track) => <div key={track.id} className="mt-3"><p className="text-xs font-bold text-sea">{track.title}</p>{track.steps.map((step) => {
+          const key = trackProgressKey(track.id, step.id)
+          return <label key={key} className="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={(draft.track_steps ?? []).includes(key)} onChange={(event) => setDraft({ ...draft, track_steps: event.target.checked ? [...(draft.track_steps ?? []), key] : (draft.track_steps ?? []).filter((item) => item !== key) })} />{step.title}</label>
+        })}</div>)}</fieldset>
         <label className="block text-sm font-bold">Arquivo PDF ou imagem (até 25 MB)<input ref={inputRef} className="mt-1 block w-full rounded-lg border border-line p-2 text-sm" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" onChange={(e) => setDraft({ ...draft, file: e.target.files?.[0] ?? null })} /></label>
         <p className="text-xs text-muted">{draft.file ? `Novo arquivo: ${draft.file.name}` : draft.storage_path ? `Arquivo atual: ${draft.storage_path}` : 'Nenhum arquivo enviado.'}</p>
         <label className="block text-sm font-bold">Ordem de exibição<input className="mt-1 block w-full rounded-lg border border-line px-3 py-2.5 font-medium" type="number" value={draft.sort_order} onChange={(e) => setDraft({ ...draft, sort_order: Number(e.target.value) })} /></label>

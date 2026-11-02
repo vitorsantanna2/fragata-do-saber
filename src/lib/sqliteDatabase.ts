@@ -229,6 +229,10 @@ async function openDatabase() {
     )
   `)
   await database.execute(`CREATE INDEX IF NOT EXISTS mind_maps_subject_order_idx ON mind_maps (subject, sort_order, title)`)
+  const mapColumns = await database.query('PRAGMA table_info(mind_maps)')
+  if (!(mapColumns.values ?? []).some((column) => column.name === 'track_steps')) {
+    await database.execute("ALTER TABLE mind_maps ADD COLUMN track_steps TEXT NOT NULL DEFAULT '[]'")
+  }
 
   return database
 }

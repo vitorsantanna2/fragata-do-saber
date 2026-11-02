@@ -20,6 +20,7 @@ export type CachedQuestionRow = {
 }
 
 export type CachedMindMap = {
+  track_steps?: string[]
   id: string
   title: string
   subject: string

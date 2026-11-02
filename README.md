@@ -215,3 +215,11 @@ Respostas, favoritos, revisões, histórico e simulados em andamento usam `study
 Os registros antigos sem sufixo (`study_progress_v1` e `offensive_state_v1`) permanecem no armazenamento como backup, mas não são atribuídos automaticamente a uma conta, pois não identificam o proprietário. O progresso já sincronizado será recuperado ao entrar na conta com internet. Dados exclusivamente locais do formato antigo exigem recuperação explícita após identificar a conta correta. Esta alteração não exige SQL e não remove possíveis misturas que já tenham sido enviadas ao servidor anteriormente.
 
 Na área de foco, **Provas Antigas** mantém apenas questões de provas. **Simulador de Questões** reúne todas as questões de provas e da bibliografia do CP-T, sem o recorte por etapa das trilhas. Os simulados sorteiam questões desse conjunto, respeitando os filtros escolhidos antes de iniciar. O identificador interno `bibliography-questions` foi mantido para compatibilidade com o histórico e a retomada de simulados; essa área agora carrega as duas origens. Não é necessária alteração de SQL.
+
+### Mapas mentais nas etapas das trilhas
+
+Execute `supabase/supabase_mind_map_tracks_setup.sql` após o setup de mapas mentais. No painel administrativo, abra **Mapas mentais**, edite um mapa e marque uma ou mais **Etapas relacionadas**. Salve e publique. As associações usam as chaves estáveis `trilha/etapa` (por exemplo, `cpt-2026-infra/so`). As mesmas políticas de acesso do catálogo continuam valendo.
+
+Dentro de cada etapa, o aluno vê os mapas relacionados e pode abri-los ou baixá-los no aplicativo. A leitura e o download não marcam automaticamente a etapa como estudada. Ao fechar uma imagem, permanece na trilha; PDFs baixados no Android usam o leitor nativo. Os vínculos ficam no cache SQLite para uso offline. Atualizar apenas título, descrição ou vínculos preserva o arquivo baixado; substituir o arquivo deve usar um novo `storage_path`, como já faz o editor administrativo.
+
+Mapas sem vínculos explícitos são associados por correspondência exata da matéria com o título/assuntos da etapa, ignorando acentos e maiúsculas. A matéria genérica “Informática” não coloca o mesmo mapa em todas as etapas. O catálogo continua legível antes da migração, mas salvar vínculos no administrador exige executar o novo SQL. Não foi feita atribuição manual de mapas no banco remoto.

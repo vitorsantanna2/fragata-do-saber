@@ -87,7 +87,7 @@ export function MindMapViewer({ map, url, onClose }: MindMapViewerProps) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink/95 p-1" role="dialog" aria-modal="true" aria-label={map.title} onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <button className="absolute top-1 right-1 z-10 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold" type="button" onClick={onClose}>×</button>
+      <button className="absolute top-1 right-1 z-10 rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold" type="button" aria-label="Fechar mapa" onClick={onClose}>×</button>
       <div className="relative max-w-[95vw] max-h-[95vh] overflow-auto bg-white rounded-lg shadow-2xl">
         {isPdf ? (
           <embed src={url} type="application/pdf" className="max-w-[90vw] max-h-[90vh] block mx-auto" />
