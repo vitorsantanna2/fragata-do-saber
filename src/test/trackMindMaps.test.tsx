@@ -13,10 +13,10 @@ const map: MindMap = { id: 'map-so', title: 'Resumo de processos', subject: 'Inf
 afterEach(cleanup)
 
 describe('mind maps within study steps', () => {
-  it('keeps maps linked to old Java and Python steps available in the merged step', () => {
+  it.each([['programacao', ['java', 'python']], ['engenharia-rest', ['engenharia', 'apis']]] as const)('keeps old map links available in the %s step', (target, previous) => {
     const programmingTrack = studyTracks.find((item) => item.id === 'cpt-2026-dev')!
-    const programming = programmingTrack.steps.find((item) => item.id === 'programacao')!
-    for (const id of ['java', 'python']) {
+    const programming = programmingTrack.steps.find((item) => item.id === target)!
+    for (const id of previous) {
       expect(matchesStepMindMap({ subject: 'Informática', track_steps: [`cpt-2026-dev/${id}`] }, programmingTrack, programming)).toBe(true)
     }
   })

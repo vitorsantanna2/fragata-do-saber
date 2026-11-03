@@ -23,6 +23,14 @@ beforeEach(() => { localStorage.clear(); storage.native = false; vi.clearAllMock
 afterEach(cleanup)
 
 describe('trilhas CP-T', () => {
+  it('combines software engineering and REST practice in a single step', () => {
+    const development = studyTracks.find((item) => item.id === 'cpt-2026-dev')!
+    const engineering = development.steps.find((item) => item.id === 'engenharia-rest')!
+    expect(development.steps.some((item) => item.id === 'apis' || item.id === 'engenharia')).toBe(false)
+    expect(matchesTrackStep({ ...question, topic: 'Engenharia de Software' }, engineering)).toBe(true)
+    expect(matchesTrackStep({ ...question, topic: 'APIs REST' }, engineering)).toBe(true)
+    expect(matchesTrackStep({ ...question, topic: 'Serviços web' }, engineering)).toBe(true)
+  })
   it('combines Java and Python under the programming topic used in the database', () => {
     const programming = studyTracks.find((item) => item.id === 'cpt-2026-dev')!.steps.find((item) => item.id === 'programacao')!
     expect(matchesTrackStep({ ...question, topic: 'Linguagem de Programação' }, programming)).toBe(true)
@@ -46,7 +54,7 @@ describe('trilhas CP-T', () => {
     expect(parseTrackProgress({ [key]: 'completed', unknown: 'completed' })).toEqual({ [key]: 'completed' })
     expect(parseTrackProgress({ [key]: 'wrong' })).toEqual({})
     expect(parseTrackProgress(null)).toEqual({})
-    expect(new Set(studyTracks.flatMap((item) => item.steps.map((entry) => trackProgressKey(item.id, entry.id)))).size).toBe(16)
+    expect(new Set(studyTracks.flatMap((item) => item.steps.map((entry) => trackProgressKey(item.id, entry.id)))).size).toBe(15)
   })
 
   it('merges previous Linux progress and keeps questions from both subjects in the unified step', () => {

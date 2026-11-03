@@ -1,9 +1,10 @@
-import { parseTrackProgress, studyTracks, trackProgressKey, programmingStepKey, previousProgrammingKeys, type TrackProgress, type TrackStatus } from './studyTracks'
+import { parseTrackProgress, studyTracks, trackProgressKey, mergedTrackSteps, type TrackProgress, type TrackStatus } from './studyTracks'
 
 export type TrackEntry = { status: TrackStatus | 'not-started'; updatedAt: string }
 export type TrackEntries = Record<string, TrackEntry>
 const legacyDate = '1970-01-01T00:00:00.000Z'
 const knownKeys = new Set(studyTracks.flatMap((track) => track.steps.map((step) => trackProgressKey(track.id, step.id))))
+const previousKeys = new Set(mergedTrackSteps.flatMap((group) => group.previousKeys))
 
 export function parseTrackEntries(value: unknown): TrackEntries {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
@@ -14,19 +15,21 @@ export function parseTrackEntries(value: unknown): TrackEntries {
   if (!data.entries || typeof data.entries !== 'object' || Array.isArray(data.entries)) return {}
   const entries: TrackEntries = {}
   for (const [key, raw] of Object.entries(data.entries)) {
-    if ((!knownKeys.has(key) && !previousProgrammingKeys.includes(key)) || !raw || typeof raw !== 'object') continue
+    if ((!knownKeys.has(key) && !previousKeys.has(key)) || !raw || typeof raw !== 'object') continue
     const entry = raw as TrackEntry
     if (!['studying', 'completed', 'not-started'].includes(entry.status) || typeof entry.updatedAt !== 'string' || !Number.isFinite(Date.parse(entry.updatedAt))) continue
     entries[key] = { status: entry.status, updatedAt: new Date(entry.updatedAt).toISOString() }
   }
-  const previous = previousProgrammingKeys.map((key) => entries[key])
-  const latest = Math.max(...previous.map((entry) => entry ? Date.parse(entry.updatedAt) : Number.NEGATIVE_INFINITY))
-  if (Number.isFinite(latest) && (!entries[programmingStepKey] || Date.parse(entries[programmingStepKey].updatedAt) < latest)) {
-    const status = previous.every((entry) => entry?.status === 'completed') ? 'completed'
-      : previous.some((entry) => entry && entry.status !== 'not-started') ? 'studying' : 'not-started'
-    entries[programmingStepKey] = { status, updatedAt: new Date(latest + 1).toISOString() }
+  for (const group of mergedTrackSteps) {
+    const previous = group.previousKeys.map((key) => entries[key])
+    const latest = Math.max(...previous.map((entry) => entry ? Date.parse(entry.updatedAt) : Number.NEGATIVE_INFINITY))
+    if (Number.isFinite(latest) && (!entries[group.key] || Date.parse(entries[group.key].updatedAt) < latest)) {
+      const status = previous.every((entry) => entry?.status === 'completed') ? 'completed'
+        : previous.some((entry) => entry && entry.status !== 'not-started') ? 'studying' : 'not-started'
+      entries[group.key] = { status, updatedAt: new Date(latest + 1).toISOString() }
+    }
+    for (const key of group.previousKeys) delete entries[key]
   }
-  for (const key of previousProgrammingKeys) delete entries[key]
   return entries
 }
 

@@ -20,7 +20,11 @@ export type TrackProgress = Record<string, TrackStatus>
 export const trackProgressKey = (trackId: string, stepId: string) => `${trackId}/${stepId}`
 export const programmingStepKey = 'cpt-2026-dev/programacao'
 export const previousProgrammingKeys = ['cpt-2026-dev/python', 'cpt-2026-dev/java']
-export const canonicalTrackStepKey = (key: string) => previousProgrammingKeys.includes(key) ? programmingStepKey : key
+export const mergedTrackSteps = [
+  { key: programmingStepKey, previousKeys: previousProgrammingKeys },
+  { key: 'cpt-2026-dev/engenharia-rest', previousKeys: ['cpt-2026-dev/engenharia', 'cpt-2026-dev/apis'] },
+]
+export const canonicalTrackStepKey = (key: string) => mergedTrackSteps.find((group) => group.previousKeys.includes(key))?.key ?? key
 
 // IDs são persistentes: alterar a ordem ou o título não deve apagar o progresso.
 // Organização pedagógica da bibliografia enviada pelo usuário (CP-T/2026, pp. 113–114).
@@ -42,9 +46,8 @@ export const studyTracks: StudyTrack[] = [
     steps: [
       { id: 'algoritmos', title: 'Algoritmos e estruturas de dados', goals: ['Implemente buscas, ordenações, listas, pilhas, filas e árvores.', 'Compare custos de tempo e memória e simule percursos de árvores no papel.'], references: ['Borin — Estrutura de Dados, 1ª ed., 2020.', 'Szwarcfiter e Markenzon — Estruturas de Dados e seus Algoritmos, 3ª ed., 2010.'], topics: ['Algoritmos e Estrutura de Dados','Estrutura de dados', 'Estruturas de dados', 'Árvores binárias', 'Algoritmos / ordenação', 'Árvores / percursos'] },
       { id: 'programacao', title: 'Lógica de programação, Python e Java', goals: ['Pratique tipos, controle de fluxo, funções, coleções e manipulação de strings.', 'Resolva pequenos problemas em Python e explique o resultado de cada trecho de código.', 'Revise classes, herança, interfaces, exceções e polimorfismo em Java.', 'Compare identidade e igualdade de objetos e acompanhe estruturas de controle.'], references: ['Menezes — Introdução à Programação com Python, 3ª ed., 2019.', 'Deitel e Deitel — Java como Programar, 10ª ed., 2016.', 'Sebesta — Conceitos de Linguagens de Programação, 11ª ed., 2018.'], topics: ['Linguagem de Programação', 'Linguagens de programação', 'Python', 'Python / strings', 'Python / redes', 'Java', 'Java / orientação a objetos', 'Java / estruturas de controle', 'Java / comparação de objetos', 'Orientação a objetos / polimorfismo', 'Lógica e Python', 'Java e orientação a objetos'] },
-      { id: 'engenharia', title: 'Engenharia e qualidade de software', goals: ['Relacione requisitos, processos, arquitetura, manutenção e qualidade.', 'Compare níveis e técnicas de testes e produza exemplos de casos de teste.'], references: ['Pressman — Engenharia de Software, 9ª ed., 2021.', 'Sommerville — Engenharia de Software, 10ª ed., 2019.', 'Valente — Engenharia de Software Moderna, 2020.'], topics: ['Engenharia de Software', 'Testes de software', 'CMMI'] },
+      { id: 'engenharia-rest', title: 'Engenharia de software e APIs REST', goals: ['Relacione requisitos, processos, arquitetura, manutenção e qualidade.', 'Compare níveis e técnicas de testes e produza exemplos de casos de teste.', 'Projete recursos, rotas e operações HTTP para um serviço simples.', 'Revise códigos de resposta, contratos, idempotência e tratamento de erros.'], references: ['Pressman — Engenharia de Software, 9ª ed., 2021.', 'Sommerville — Engenharia de Software, 10ª ed., 2019.', 'Valente — Engenharia de Software Moderna, 2020.', 'Saudate — APIs REST: Seus Serviços Prontos para o Mundo Real, 2021.'], topics: ['Engenharia de Software', 'Testes de software', 'CMMI', 'APIs REST', 'REST', 'Serviços web', 'Engenharia e qualidade de software'] },
       { id: 'uml', title: 'UML e padrões de projeto', goals: ['Modele um pequeno sistema com diagramas de classes, casos de uso e sequência.', 'Compare padrões de projeto pelo problema que resolvem e suas consequências.'], references: ['Booch, Rumbaugh e Jacobson — UML: Guia do Usuário, 2ª ed., 2012.', 'Guedes — UML 2: Uma Abordagem Prática, 3ª ed., 2018.', 'Guerra — Design Patterns com Java, 2014.'], topics: ['UML', 'Modelagem UML / classes', 'Padrões de Projeto', 'Gerenciamento de Projetos'] },
-      { id: 'apis', title: 'APIs REST', goals: ['Projete recursos, rotas e operações HTTP para um serviço simples.', 'Revise códigos de resposta, contratos, idempotência e tratamento de erros.'], references: ['Saudate — APIs REST: Seus Serviços Prontos para o Mundo Real, 2021.'], topics: ['APIs REST', 'REST', 'Serviços web'] },
     ],
   },
   {
@@ -76,8 +79,10 @@ export function matchesTrackStep(question: { exam: string; subject: string; topi
 export function parseTrackProgress(value: unknown): TrackProgress {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
   let previous = value as Record<string, unknown>
-  if (previous[programmingStepKey] === undefined && previousProgrammingKeys.some((key) => previous[key] === 'studying' || previous[key] === 'completed')) {
-    previous = { ...previous, [programmingStepKey]: previousProgrammingKeys.every((key) => previous[key] === 'completed') ? 'completed' : 'studying' }
+  for (const group of mergedTrackSteps) {
+    if (previous[group.key] === undefined && group.previousKeys.some((key) => previous[key] === 'studying' || previous[key] === 'completed')) {
+      previous = { ...previous, [group.key]: group.previousKeys.every((key) => previous[key] === 'completed') ? 'completed' : 'studying' }
+    }
   }
   const linuxKey = trackProgressKey('cpt-2026-infra', 'linux')
   const soKey = trackProgressKey('cpt-2026-infra', 'so')
