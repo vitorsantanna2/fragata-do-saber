@@ -17,6 +17,7 @@ describe('mind maps within study steps', () => {
     ['cpt-2026-dev', 'programacao', ['java', 'python']],
     ['cpt-2026-dev', 'engenharia-rest', ['engenharia', 'apis']],
     ['cpt-2026-dados', 'relacional-transacoes', ['relacional', 'transacoes']],
+    ['cpt-2026-gestao', 'governanca-servicos', ['governanca', 'servicos']],
   ] as const)('keeps old map links available in %s/%s', (trackId, target, previous) => {
     const programmingTrack = studyTracks.find((item) => item.id === trackId)!
     const programming = programmingTrack.steps.find((item) => item.id === target)!

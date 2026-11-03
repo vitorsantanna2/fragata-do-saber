@@ -38,6 +38,7 @@ describe('synchronization of track progress', () => {
     ['cpt-2026-dev', 'python', 'java', 'programacao'],
     ['cpt-2026-dev', 'engenharia', 'apis', 'engenharia-rest'],
     ['cpt-2026-dados', 'relacional', 'transacoes', 'relacional-transacoes'],
+    ['cpt-2026-gestao', 'governanca', 'servicos', 'governanca-servicos'],
   ])('migrates merged steps in %s: %s/%s into %s', (track, first, second, target) => {
     const python = `${track}/${first}`, java = `${track}/${second}`, merged = `${track}/${target}`
     expect(parseTrackEntries({ [python]: 'completed', [java]: 'completed' })[merged].status).toBe('completed')

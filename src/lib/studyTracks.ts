@@ -24,6 +24,7 @@ export const mergedTrackSteps = [
   { key: programmingStepKey, previousKeys: previousProgrammingKeys },
   { key: 'cpt-2026-dev/engenharia-rest', previousKeys: ['cpt-2026-dev/engenharia', 'cpt-2026-dev/apis'] },
   { key: 'cpt-2026-dados/relacional-transacoes', previousKeys: ['cpt-2026-dados/relacional', 'cpt-2026-dados/transacoes'] },
+  { key: 'cpt-2026-gestao/governanca-servicos', previousKeys: ['cpt-2026-gestao/governanca', 'cpt-2026-gestao/servicos'] },
 ]
 export const canonicalTrackStepKey = (key: string) => mergedTrackSteps.find((group) => group.previousKeys.includes(key))?.key ?? key
 
@@ -64,8 +65,7 @@ export const studyTracks: StudyTrack[] = [
     id: 'cpt-2026-gestao', examId: 'cp-t-informatica', title: 'Governança, serviços e projetos',
     description: 'Conecte a estratégia de TI à gestão dos serviços e dos projetos.',
     steps: [
-      { id: 'governanca', title: 'Governança de TI', goals: ['Relacione estratégia, responsabilidades, indicadores e processos de TI.', 'Compare governança e gestão e revise os conceitos de COBIT apresentados na referência.'], references: ['Fernandes e Abreu — Implantando a Governança de TI, 4ª ed., 2014.'], topics: ['Governança de TI', 'COBIT 5', 'Estruturas organizacionais'] },
-      { id: 'servicos', title: 'Gerenciamento de serviços', goals: ['Mapeie os processos de serviços e suas relações conforme a edição da referência.', 'Compare incidentes, problemas, mudanças e níveis de serviço com exemplos.'], references: ['Fernandes e Abreu — Implantando a Governança de TI, 4ª ed., 2014.'], topics: ['ITIL / gerenciamento de serviços', 'Gerenciamento de serviços', 'ITIL'] },
+      { id: 'governanca-servicos', title: 'Governança de TI e gerenciamento de serviços', goals: ['Relacione estratégia, responsabilidades, indicadores e processos de TI.', 'Compare governança e gestão e revise os conceitos de COBIT apresentados na referência.', 'Mapeie os processos de serviços e suas relações conforme a edição da referência.', 'Compare incidentes, problemas, mudanças e níveis de serviço com exemplos.'], references: ['Fernandes e Abreu — Implantando a Governança de TI, 4ª ed., 2014.'], topics: ['Governança de TI', 'COBIT 5', 'Estruturas organizacionais', 'ITIL / gerenciamento de serviços', 'Gerenciamento de serviços', 'ITIL'] },
       { id: 'projetos', title: 'Gerenciamento de projetos', goals: ['Revise escopo, cronograma, custos, riscos, comunicação e partes interessadas.', 'Calcule caminho crítico e folgas e analise situações de negociação.'], references: ['Heldman — Gerência de Projetos: Guia para o Exame Oficial do PMI, 7ª ed., 2015.'], topics: ['Gerenciamento de projetos', 'Caminho crítico', 'Gerenciamento de projetos / negociação', 'Gerenciamento de projetos / caminho crítico'] },
     ],
   },

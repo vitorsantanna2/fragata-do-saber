@@ -23,6 +23,14 @@ beforeEach(() => { localStorage.clear(); storage.native = false; vi.clearAllMock
 afterEach(cleanup)
 
 describe('trilhas CP-T', () => {
+  it('combines governance and service management topics in a single step', () => {
+    const management = studyTracks.find((item) => item.id === 'cpt-2026-gestao')!
+    const governance = management.steps.find((item) => item.id === 'governanca-servicos')!
+    expect(management.steps.some((item) => item.id === 'governanca' || item.id === 'servicos')).toBe(false)
+    for (const topic of ['Governança de TI', 'COBIT 5', 'Estruturas organizacionais', 'ITIL / gerenciamento de serviços', 'Gerenciamento de serviços', 'ITIL']) {
+      expect(matchesTrackStep({ ...question, topic }, governance)).toBe(true)
+    }
+  })
   it('combines relational modeling, SQL, transactions and recovery in a single step', () => {
     const dataTrack = studyTracks.find((item) => item.id === 'cpt-2026-dados')!
     const database = dataTrack.steps.find((item) => item.id === 'relacional-transacoes')!
@@ -62,7 +70,7 @@ describe('trilhas CP-T', () => {
     expect(parseTrackProgress({ [key]: 'completed', unknown: 'completed' })).toEqual({ [key]: 'completed' })
     expect(parseTrackProgress({ [key]: 'wrong' })).toEqual({})
     expect(parseTrackProgress(null)).toEqual({})
-    expect(new Set(studyTracks.flatMap((item) => item.steps.map((entry) => trackProgressKey(item.id, entry.id)))).size).toBe(14)
+    expect(new Set(studyTracks.flatMap((item) => item.steps.map((entry) => trackProgressKey(item.id, entry.id)))).size).toBe(13)
   })
 
   it('merges previous Linux progress and keeps questions from both subjects in the unified step', () => {
