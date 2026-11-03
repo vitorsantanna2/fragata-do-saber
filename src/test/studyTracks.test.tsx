@@ -23,6 +23,14 @@ beforeEach(() => { localStorage.clear(); storage.native = false; vi.clearAllMock
 afterEach(cleanup)
 
 describe('trilhas CP-T', () => {
+  it.each(['java', 'python'])('includes the programming-language topic used in the database in the %s step', (id) => {
+    const programming = studyTracks.find((item) => item.id === 'cpt-2026-dev')!.steps.find((item) => item.id === id)!
+    expect(matchesTrackStep({ ...question, topic: 'Linguagem de Programação' }, programming)).toBe(true)
+    expect(matchesTrackStep({ ...question, topic: 'Linguagens de programação' }, programming)).toBe(true)
+    expect(matchesTrackStep({ ...question, topic: 'linguagem de programacao' }, programming)).toBe(true)
+    expect(matchesTrackStep({ ...question, topic: 'Redes de computadores' }, programming)).toBe(false)
+    expect(matchesTrackStep({ ...question, exam: 'EA-HSG', topic: 'Linguagem de Programação' }, programming)).toBe(false)
+  })
   it('matches exact normalized bank topics only within the contest and specialty', () => {
     expect(matchesTrackStep({ ...question, topic: 'Memoria cache' }, step)).toBe(true)
     expect(matchesTrackStep({ ...question, exam: 'EA-HSG' }, step)).toBe(false)
