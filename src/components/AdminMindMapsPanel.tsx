@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { adminSupabase } from '../lib/adminSupabase'
-import { studyTracks, trackProgressKey } from '../lib/studyTracks'
+import { canonicalTrackStepKey, studyTracks, trackProgressKey } from '../lib/studyTracks'
 
 type MapRecord = {
   track_steps?: string[]
@@ -44,7 +44,7 @@ export default function AdminMindMapsPanel() {
   useEffect(() => { void refresh() }, [])
 
   function editMap(map: MapRecord) {
-    setDraft({ ...map, file: null })
+    setDraft({ ...map, track_steps: [...new Set((map.track_steps ?? []).map(canonicalTrackStepKey))], file: null })
     setError('')
     setNotice('')
   }

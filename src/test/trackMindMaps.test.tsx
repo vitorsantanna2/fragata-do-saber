@@ -13,6 +13,13 @@ const map: MindMap = { id: 'map-so', title: 'Resumo de processos', subject: 'Inf
 afterEach(cleanup)
 
 describe('mind maps within study steps', () => {
+  it('keeps maps linked to old Java and Python steps available in the merged step', () => {
+    const programmingTrack = studyTracks.find((item) => item.id === 'cpt-2026-dev')!
+    const programming = programmingTrack.steps.find((item) => item.id === 'programacao')!
+    for (const id of ['java', 'python']) {
+      expect(matchesStepMindMap({ subject: 'Informática', track_steps: [`cpt-2026-dev/${id}`] }, programmingTrack, programming)).toBe(true)
+    }
+  })
   it('uses explicit links and exact legacy subjects without guessing by title', () => {
     expect(matchesStepMindMap(map, track, step)).toBe(true)
     expect(matchesStepMindMap({ ...map, track_steps: ['cpt-2026-infra/redes'], subject: 'Linux' }, track, step)).toBe(false)

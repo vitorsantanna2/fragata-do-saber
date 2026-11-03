@@ -34,6 +34,18 @@ beforeEach(() => {
 })
 
 describe('synchronization of track progress', () => {
+  it('migrates the merged programming step and preserves a later reopening', () => {
+    const python = 'cpt-2026-dev/python', java = 'cpt-2026-dev/java', merged = 'cpt-2026-dev/programacao'
+    expect(parseTrackEntries({ [python]: 'completed', [java]: 'completed' })[merged].status).toBe('completed')
+    const previous = { [python]: { status: 'completed', updatedAt: oldDate }, [java]: { status: 'studying', updatedAt: oldDate } }
+    const migrated = parseTrackEntries({ version: 2, entries: previous })
+    expect(migrated[merged].status).toBe('studying')
+    expect(migrated[python]).toBeUndefined()
+    expect(migrated[java]).toBeUndefined()
+    expect(parseTrackEntries({ version: 2, entries: { [python]: { status: 'completed', updatedAt: oldDate } } })[merged].status).toBe('studying')
+    const reopened = parseTrackEntries({ version: 2, entries: { ...previous, [merged]: { status: 'not-started', updatedAt: newDate } } })
+    expect(reopened[merged]).toEqual({ status: 'not-started', updatedAt: newDate })
+  })
   it('migrates legacy statuses without making them newer than existing cloud edits', () => {
     const migrated = parseTrackEntries({ [key]: 'completed', 'cpt-2026-infra/linux': 'studying' })
     expect(migrated[key]).toEqual({ status: 'studying', updatedAt: '1970-01-01T00:00:00.000Z' })

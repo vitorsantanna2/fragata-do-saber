@@ -49,7 +49,7 @@ import { useStudyFocus } from './hooks/useStudyFocus'
 import { scopeStudyData, type FocusResource } from './lib/studyFocus'
 import { ExamFocusHome } from './components/ExamFocusHome'
 import { StudyTracks } from './components/StudyTracks'
-import { studyTracks, type StudyTrack, type TrackStep } from './lib/studyTracks'
+import { canonicalTrackStepKey, trackProgressKey, studyTracks, type StudyTrack, type TrackStep } from './lib/studyTracks'
 import { ExamFocusBar } from './components/ExamFocusBar'
 
 const AdminQuestionsPanel = lazy(() => import('./components/AdminQuestionsPanel').then((mod) => ({ default: mod.default })))
@@ -585,7 +585,7 @@ function App() {
       const examChoice = examChoices.find((choice) => choice.id === savedSimulation.examId)
       if (examChoice) {
         const track = studyTracks.find((item) => item.examId === examChoice.id && item.id === savedSimulation.trackId)
-        const step = track?.steps.find((item) => item.id === savedSimulation.trackStepId)
+        const step = track?.steps.find((item) => trackProgressKey(track.id, item.id) === canonicalTrackStepKey(trackProgressKey(track.id, savedSimulation.trackStepId ?? '')))
         setTrackPractice(track && step ? { track, step } : null)
         if (track) setLastTrackId(track.id)
         skipSelectionReset.current = true
