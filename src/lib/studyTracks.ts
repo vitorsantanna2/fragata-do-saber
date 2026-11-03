@@ -23,6 +23,7 @@ export const previousProgrammingKeys = ['cpt-2026-dev/python', 'cpt-2026-dev/jav
 export const mergedTrackSteps = [
   { key: programmingStepKey, previousKeys: previousProgrammingKeys },
   { key: 'cpt-2026-dev/engenharia-rest', previousKeys: ['cpt-2026-dev/engenharia', 'cpt-2026-dev/apis'] },
+  { key: 'cpt-2026-dados/relacional-transacoes', previousKeys: ['cpt-2026-dados/relacional', 'cpt-2026-dados/transacoes'] },
 ]
 export const canonicalTrackStepKey = (key: string) => mergedTrackSteps.find((group) => group.previousKeys.includes(key))?.key ?? key
 
@@ -54,8 +55,7 @@ export const studyTracks: StudyTrack[] = [
     id: 'cpt-2026-dados', examId: 'cp-t-informatica', title: 'Banco de dados, análise e IA',
     description: 'Do modelo relacional à análise de dados e inteligência artificial.',
     steps: [
-      { id: 'relacional', title: 'Modelagem relacional e SQL', goals: ['Revise modelo relacional, chaves, dependências e normalização.', 'Resolva consultas com junções, agrupamentos, subconsultas e álgebra relacional.'], references: ['Date — Introdução a Sistemas de Bancos de Dados, Campus, 2004.', 'Elmasri e Navathe — Sistemas de Banco de Dados, 7ª ed., 2019.'], topics: ['Banco de dados', 'SQL / agregação', 'SQL / consultas', 'Álgebra relacional'] },
-      { id: 'transacoes', title: 'Transações e recuperação', goals: ['Explique as propriedades ACID e os problemas de concorrência.', 'Compare mecanismos de recuperação e pratique cenários de falhas.'], references: ['Date — Introdução a Sistemas de Bancos de Dados, Campus, 2004.', 'Elmasri e Navathe — Sistemas de Banco de Dados, 7ª ed., 2019.'], topics: ['Banco de dados / recuperação', 'Transações', 'Controle de concorrência'] },
+      { id: 'relacional-transacoes', title: 'Modelagem relacional, SQL, transações e recuperação', goals: ['Revise modelo relacional, chaves, dependências e normalização.', 'Resolva consultas com junções, agrupamentos, subconsultas e álgebra relacional.', 'Explique as propriedades ACID e os problemas de concorrência.', 'Compare mecanismos de recuperação e pratique cenários de falhas.'], references: ['Date — Introdução a Sistemas de Bancos de Dados, Campus, 2004.', 'Elmasri e Navathe — Sistemas de Banco de Dados, 7ª ed., 2019.'], topics: ['Banco de Dados', 'SQL / agregação', 'SQL / consultas', 'Álgebra relacional', 'Banco de dados / recuperação', 'Transações', 'Controle de concorrência', 'Modelagem relacional e SQL', 'Transações e recuperação'] },
       { id: 'dw', title: 'Data warehouse e Big Data', goals: ['Compare modelos transacionais e dimensionais, ETL e operações OLAP.', 'Classifique dados estruturados e não estruturados e relacione técnicas de Big Data.'], references: ['Machado — Tecnologia e Projeto de Data Warehouse, 6ª ed., 2013.', 'Marquesone — Big Data: Técnicas e Tecnologias para Extração de Valor dos Dados, 2017.'], topics: ['OLAP / Data Warehouse', 'Dados estruturados e não estruturados', 'Big Data', 'Gestão de metadados', 'DAMA-DMBOK / gestão de dados'] },
       { id: 'ia', title: 'Ciência de dados e inteligência artificial', goals: ['Revise preparação de dados, estatística e avaliação de modelos.', 'Diferencie busca, representação de conhecimento e aprendizado de máquina.', 'Explique o papel do gradiente descendente com um exemplo simples.'], references: ['Grus — Data Science do Zero, 2016.', 'Russell e Norvig — Inteligência Artificial, Elsevier, 2013.'], topics: ['Inteligência artificial', 'Ciência de dados', 'Aprendizado de máquina', 'Gradiente descendente'] },
     ],

@@ -13,11 +13,15 @@ const map: MindMap = { id: 'map-so', title: 'Resumo de processos', subject: 'Inf
 afterEach(cleanup)
 
 describe('mind maps within study steps', () => {
-  it.each([['programacao', ['java', 'python']], ['engenharia-rest', ['engenharia', 'apis']]] as const)('keeps old map links available in the %s step', (target, previous) => {
-    const programmingTrack = studyTracks.find((item) => item.id === 'cpt-2026-dev')!
+  it.each([
+    ['cpt-2026-dev', 'programacao', ['java', 'python']],
+    ['cpt-2026-dev', 'engenharia-rest', ['engenharia', 'apis']],
+    ['cpt-2026-dados', 'relacional-transacoes', ['relacional', 'transacoes']],
+  ] as const)('keeps old map links available in %s/%s', (trackId, target, previous) => {
+    const programmingTrack = studyTracks.find((item) => item.id === trackId)!
     const programming = programmingTrack.steps.find((item) => item.id === target)!
     for (const id of previous) {
-      expect(matchesStepMindMap({ subject: 'Informática', track_steps: [`cpt-2026-dev/${id}`] }, programmingTrack, programming)).toBe(true)
+      expect(matchesStepMindMap({ subject: 'Informática', track_steps: [`${trackId}/${id}`] }, programmingTrack, programming)).toBe(true)
     }
   })
   it('uses explicit links and exact legacy subjects without guessing by title', () => {

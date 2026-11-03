@@ -202,7 +202,7 @@ O domínio do site é configurado em `public/CNAME`: [fragatadosaber.online](htt
 
 ### Trilhas de estudo do CP-T/2026
 
-No foco **Quadro Técnico – Informática**, abra **Trilhas de estudo**. O catálogo em `src/lib/studyTracks.ts` organiza a bibliografia fornecida (páginas 113–114) em quatro trilhas e 15 etapas. A ordem e os objetivos são sugestões pedagógicas; não constituem uma transcrição nem uma garantia de cobertura completa do programa do edital. A citação incompleta “BRASIL. Ministério da Economia.” não foi complementada por suposição.
+No foco **Quadro Técnico – Informática**, abra **Trilhas de estudo**. O catálogo em `src/lib/studyTracks.ts` organiza a bibliografia fornecida (páginas 113–114) em quatro trilhas e 14 etapas. A ordem e os objetivos são sugestões pedagógicas; não constituem uma transcrição nem uma garantia de cobertura completa do programa do edital. A citação incompleta “BRASIL. Ministério da Economia.” não foi complementada por suposição.
 
 Cada etapa apresenta objetivos, referências, marcação de leitura e um atalho de prática mista, reunindo questões de provas e da bibliografia. O vínculo com questões usa correspondência exata de tópicos normalizados, limitada ao CP-T/Informática; novos rótulos do banco devem ser incluídos em `topics`. Etapas sem questões correspondentes continuam disponíveis para estudo. Os resultados de prática não marcam automaticamente o conteúdo como estudado.
 

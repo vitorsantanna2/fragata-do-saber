@@ -34,8 +34,12 @@ beforeEach(() => {
 })
 
 describe('synchronization of track progress', () => {
-  it.each([['python', 'java', 'programacao'], ['engenharia', 'apis', 'engenharia-rest']])('migrates the merged %s/%s steps and preserves a later reopening', (first, second, target) => {
-    const python = `cpt-2026-dev/${first}`, java = `cpt-2026-dev/${second}`, merged = `cpt-2026-dev/${target}`
+  it.each([
+    ['cpt-2026-dev', 'python', 'java', 'programacao'],
+    ['cpt-2026-dev', 'engenharia', 'apis', 'engenharia-rest'],
+    ['cpt-2026-dados', 'relacional', 'transacoes', 'relacional-transacoes'],
+  ])('migrates merged steps in %s: %s/%s into %s', (track, first, second, target) => {
+    const python = `${track}/${first}`, java = `${track}/${second}`, merged = `${track}/${target}`
     expect(parseTrackEntries({ [python]: 'completed', [java]: 'completed' })[merged].status).toBe('completed')
     const previous = { [python]: { status: 'completed', updatedAt: oldDate }, [java]: { status: 'studying', updatedAt: oldDate } }
     const migrated = parseTrackEntries({ version: 2, entries: previous })
