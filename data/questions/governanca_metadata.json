@@ -1,0 +1,1642 @@
+[
+  {
+    "chapter": 1,
+    "title": "Governança de TI",
+    "start": 28,
+    "end": 45,
+    "sections": [
+      {
+        "section": "1.1",
+        "title": "Os fatores motivadores da Governança de TI",
+        "page": 28,
+        "end": 34
+      },
+      {
+        "section": "1.2",
+        "title": "O que é a Governança de TI",
+        "page": 34,
+        "end": 36
+      },
+      {
+        "section": "1.3",
+        "title": "Objetivos da Governança de TI",
+        "page": 36,
+        "end": 38
+      },
+      {
+        "section": "1.4",
+        "title": "Componentes da Governança de TI",
+        "page": 38,
+        "end": 45
+      },
+      {
+        "section": "1.4.1",
+        "title": "Os componentes da etapa de Alinhamento Estratégico e Compliance",
+        "page": 39,
+        "end": 42
+      },
+      {
+        "section": "1.4.2",
+        "title": "Decisão, Compromisso, Priorização e Alocação de Recursos",
+        "page": 42,
+        "end": 43
+      },
+      {
+        "section": "1.4.3",
+        "title": "Estrutura, Processos, Organização e Gestão",
+        "page": 43,
+        "end": 45
+      },
+      {
+        "section": "1.4.4",
+        "title": "O componente da etapa de Gestão do Valor e do Desempenho da TI",
+        "page": 45,
+        "end": 45
+      }
+    ]
+  },
+  {
+    "chapter": 2,
+    "title": "Governança Corporativa e Regulamentações de Compliance",
+    "start": 46,
+    "end": 59,
+    "sections": [
+      {
+        "section": "2.1",
+        "title": "Governança Corporativa e a ligação com a Governança de TI",
+        "page": 46,
+        "end": 50
+      },
+      {
+        "section": "2.2",
+        "title": "Entendendo as implicações do Sarbanes-Oxley Act",
+        "page": 50,
+        "end": 56
+      },
+      {
+        "section": "2.2.1",
+        "title": "O que é o Sarbanes-Oxley Act e qual a sua finalidade",
+        "page": 50,
+        "end": 53
+      },
+      {
+        "section": "2.2.2",
+        "title": "Requisitos do SOX que afetam a TI",
+        "page": 53,
+        "end": 55
+      },
+      {
+        "section": "2.2.3",
+        "title": "Impacto do SOX na Governança de TI",
+        "page": 55,
+        "end": 56
+      },
+      {
+        "section": "2.3",
+        "title": "Entendendo as implicações do Acordo da Basileia II",
+        "page": 56,
+        "end": 58
+      },
+      {
+        "section": "2.3.1",
+        "title": "O que é o Acordo da Basileia II",
+        "page": 56,
+        "end": 57
+      },
+      {
+        "section": "2.3.2",
+        "title": "Implicações do Acordo da Basileia II sobre a TI",
+        "page": 57,
+        "end": 58
+      },
+      {
+        "section": "2.4",
+        "title": "O impacto da Resolução 3380 do Banco Central do Brasil",
+        "page": 58,
+        "end": 59
+      }
+    ]
+  },
+  {
+    "chapter": 3,
+    "title": "O Modelo de Governança de TI",
+    "start": 60,
+    "end": 210,
+    "sections": [
+      {
+        "section": "3.1",
+        "title": "Visão geral do modelo de Governança de TI",
+        "page": 61,
+        "end": 67
+      },
+      {
+        "section": "3.2",
+        "title": "O alinhamento estratégico de TI",
+        "page": 67,
+        "end": 145
+      },
+      {
+        "section": "3.2.1",
+        "title": "O que é o alinhamento estratégico",
+        "page": 67,
+        "end": 71
+      },
+      {
+        "section": "3.2.2",
+        "title": "O Plano de Tecnologia da Informação",
+        "page": 71,
+        "end": 140
+      },
+      {
+        "section": "3.2.3",
+        "title": "Elaboração do mapa estratégico e do Balanced Scorecard (BSC)",
+        "page": 140,
+        "end": 145
+      },
+      {
+        "section": "3.3",
+        "title": "Mecanismos de decisão em TI",
+        "page": 145,
+        "end": 147
+      },
+      {
+        "section": "3.4",
+        "title": "A entrega de valor",
+        "page": 147,
+        "end": 162
+      },
+      {
+        "section": "3.4.1",
+        "title": "Gerenciamento do portfólio de TI",
+        "page": 147,
+        "end": 149
+      },
+      {
+        "section": "3.4.2",
+        "title": "Operações de serviços de TI",
+        "page": 149,
+        "end": 155
+      },
+      {
+        "section": "3.4.3",
+        "title": "O relacionamento com os usuários e/ou clientes",
+        "page": 155,
+        "end": 158
+      },
+      {
+        "section": "3.4.4",
+        "title": "O relacionamento com os fornecedores",
+        "page": 158,
+        "end": 162
+      },
+      {
+        "section": "3.5",
+        "title": "Gerenciamento de recursos",
+        "page": 162,
+        "end": 164
+      },
+      {
+        "section": "3.6",
+        "title": "A gestão do desempenho",
+        "page": 162,
+        "end": 195
+      },
+      {
+        "section": "3.6.1",
+        "title": "Medições dos resultados da TI",
+        "page": 164,
+        "end": 174
+      },
+      {
+        "section": "3.6.2",
+        "title": "Medições dos resultados para o negócio",
+        "page": 174,
+        "end": 176
+      },
+      {
+        "section": "3.6.3",
+        "title": "Implantação de sistema de gerenciamento de desempenho",
+        "page": 176,
+        "end": 192
+      },
+      {
+        "section": "3.6.4",
+        "title": "Gestão do desempenho da TI",
+        "page": 192,
+        "end": 195
+      },
+      {
+        "section": "3.7",
+        "title": "A comunicação",
+        "page": 195,
+        "end": 201
+      },
+      {
+        "section": "3.8",
+        "title": "A gestão da mudança organizacional",
+        "page": 201,
+        "end": 205
+      },
+      {
+        "section": "3.9",
+        "title": "Avaliação independente",
+        "page": 205,
+        "end": 206
+      },
+      {
+        "section": "3.10",
+        "title": "Riscos e compliance",
+        "page": 206,
+        "end": 210
+      },
+      {
+        "section": "3.10.1",
+        "title": "Gestão de riscos",
+        "page": 206,
+        "end": 209
+      },
+      {
+        "section": "3.10.2",
+        "title": "Compliance",
+        "page": 209,
+        "end": 210
+      }
+    ]
+  },
+  {
+    "chapter": 4,
+    "title": "Os Papéis da Governança de TI na Organização",
+    "start": 211,
+    "end": 214,
+    "sections": []
+  },
+  {
+    "chapter": 5,
+    "title": "Modelos de Melhores Práticas e o Modelo de Governança de TI",
+    "start": 215,
+    "end": 217,
+    "sections": []
+  },
+  {
+    "chapter": 6,
+    "title": "Modelos Abrangentes de Governança de TI",
+    "start": 218,
+    "end": 245,
+    "sections": [
+      {
+        "section": "6.1",
+        "title": "ISO/IEC 38500 – Governança corporativa de tecnologia da informação",
+        "page": 218,
+        "end": 224
+      },
+      {
+        "section": "6.1.1",
+        "title": "Aplicação",
+        "page": 218,
+        "end": 219
+      },
+      {
+        "section": "6.1.2",
+        "title": "Objetivos",
+        "page": 219,
+        "end": 223
+      },
+      {
+        "section": "6.1.3",
+        "title": "Estrutura da norma",
+        "page": 219,
+        "end": 223
+      },
+      {
+        "section": "6.1.4",
+        "title": "Benefícios com o uso da norma",
+        "page": 223,
+        "end": 224
+      },
+      {
+        "section": "6.1.5",
+        "title": "Considerações sobre a norma",
+        "page": 224,
+        "end": 226
+      },
+      {
+        "section": "6.2",
+        "title": "CobiT",
+        "page": 224,
+        "end": 244
+      },
+      {
+        "section": "6.2.1",
+        "title": "Histórico do Modelo",
+        "page": 224,
+        "end": 226
+      },
+      {
+        "section": "6.2.2",
+        "title": "Objetivos do modelo",
+        "page": 226,
+        "end": 227
+      },
+      {
+        "section": "6.2.3",
+        "title": "Estrutura do modelo – Os princípios do CobiT 5",
+        "page": 227,
+        "end": 233
+      },
+      {
+        "section": "6.2.4",
+        "title": "O modelo de referência de processos do CobiT 5",
+        "page": 233,
+        "end": 236
+      },
+      {
+        "section": "6.2.5",
+        "title": "Diretrizes de implementação",
+        "page": 236,
+        "end": 237
+      },
+      {
+        "section": "6.2.6",
+        "title": "O modelo de capacidade de processos",
+        "page": 237,
+        "end": 239
+      },
+      {
+        "section": "6.2.7",
+        "title": "A família de produtos do CobiT 5",
+        "page": 239,
+        "end": 240
+      },
+      {
+        "section": "6.2.8",
+        "title": "Aplicabilidade do modelo",
+        "page": 240,
+        "end": 242
+      },
+      {
+        "section": "6.2.9",
+        "title": "Benefícios do modelo",
+        "page": 242,
+        "end": 243
+      },
+      {
+        "section": "6.2.10",
+        "title": "Certificações relacionadas",
+        "page": 243,
+        "end": 244
+      },
+      {
+        "section": "6.3",
+        "title": "As certificações da ISACA",
+        "page": 244,
+        "end": 245
+      }
+    ]
+  },
+  {
+    "chapter": 7,
+    "title": "Modelos para Gerenciamento de Serviços de TI",
+    "start": 246,
+    "end": 322,
+    "sections": [
+      {
+        "section": "7.1",
+        "title": "ITIL",
+        "page": 246,
+        "end": 285
+      },
+      {
+        "section": "7.1.1",
+        "title": "Histórico do modelo",
+        "page": 246,
+        "end": 248
+      },
+      {
+        "section": "7.1.2",
+        "title": "Objetivos do modelo",
+        "page": 248,
+        "end": 249
+      },
+      {
+        "section": "7.1.3",
+        "title": "Estrutura do modelo",
+        "page": 249,
+        "end": 279
+      },
+      {
+        "section": "7.1.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 279,
+        "end": 281
+      },
+      {
+        "section": "7.1.5",
+        "title": "Benefícios do modelo",
+        "page": 281,
+        "end": 283
+      },
+      {
+        "section": "7.1.6",
+        "title": "Certificações relacionadas",
+        "page": 283,
+        "end": 285
+      },
+      {
+        "section": "7.2",
+        "title": "ISO/IEC 20000",
+        "page": 285,
+        "end": 299
+      },
+      {
+        "section": "7.2.1",
+        "title": "Histórico do modelo",
+        "page": 285,
+        "end": 286
+      },
+      {
+        "section": "7.2.2",
+        "title": "Objetivos do modelo",
+        "page": 286,
+        "end": 293
+      },
+      {
+        "section": "7.2.3",
+        "title": "Estrutura do modelo",
+        "page": 286,
+        "end": 293
+      },
+      {
+        "section": "7.2.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 293,
+        "end": 294
+      },
+      {
+        "section": "7.2.5",
+        "title": "Benefícios do modelo",
+        "page": 294,
+        "end": 296
+      },
+      {
+        "section": "7.2.6",
+        "title": "Certificações relacionadas",
+        "page": 296,
+        "end": 299
+      },
+      {
+        "section": "7.3",
+        "title": "CMMI for Services",
+        "page": 299,
+        "end": 303
+      },
+      {
+        "section": "7.4",
+        "title": "MR-MPS Serviços",
+        "page": 303,
+        "end": 316
+      },
+      {
+        "section": "7.4.1",
+        "title": "Histórico do modelo",
+        "page": 303,
+        "end": 304
+      },
+      {
+        "section": "7.4.2",
+        "title": "Objetivos do modelo",
+        "page": 304,
+        "end": 314
+      },
+      {
+        "section": "7.4.3",
+        "title": "Estrutura do modelo",
+        "page": 304,
+        "end": 314
+      },
+      {
+        "section": "7.4.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 314,
+        "end": 315
+      },
+      {
+        "section": "7.4.5",
+        "title": "Certificações relacionadas",
+        "page": 315,
+        "end": 316
+      },
+      {
+        "section": "7.5",
+        "title": "USMBOKTM",
+        "page": 316,
+        "end": 320
+      },
+      {
+        "section": "7.5.1",
+        "title": "Objetivos do modelo",
+        "page": 316,
+        "end": 319
+      },
+      {
+        "section": "7.5.2",
+        "title": "Estrutura do modelo",
+        "page": 316,
+        "end": 319
+      },
+      {
+        "section": "7.5.3",
+        "title": "Aplicabilidade e benefícios do modelo",
+        "page": 319,
+        "end": 320
+      },
+      {
+        "section": "7.5.4",
+        "title": "Certificações relacionadas",
+        "page": 320,
+        "end": 322
+      },
+      {
+        "section": "7.6",
+        "title": "Microsoft Operations Framework (MOF) – uma breve visão",
+        "page": 320,
+        "end": 322
+      }
+    ]
+  },
+  {
+    "chapter": 8,
+    "title": "Modelos para Processos de Software",
+    "start": 323,
+    "end": 364,
+    "sections": [
+      {
+        "section": "8.1",
+        "title": "CMMI",
+        "page": 323,
+        "end": 340
+      },
+      {
+        "section": "8.1.1",
+        "title": "Histórico do modelo",
+        "page": 323,
+        "end": 325
+      },
+      {
+        "section": "8.1.2",
+        "title": "Objetivos do modelo",
+        "page": 325,
+        "end": 336
+      },
+      {
+        "section": "8.1.3",
+        "title": "Estrutura do modelo",
+        "page": 325,
+        "end": 336
+      },
+      {
+        "section": "8.1.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 336,
+        "end": 338
+      },
+      {
+        "section": "8.1.5",
+        "title": "Benefícios do modelo",
+        "page": 336,
+        "end": 338
+      },
+      {
+        "section": "8.1.6",
+        "title": "Certificações relacionadas",
+        "page": 338,
+        "end": 340
+      },
+      {
+        "section": "8.2",
+        "title": "MR-MPS-SW",
+        "page": 340,
+        "end": 353
+      },
+      {
+        "section": "8.2.1",
+        "title": "Histórico do modelo",
+        "page": 340,
+        "end": 342
+      },
+      {
+        "section": "8.2.2",
+        "title": "Objetivos do modelo",
+        "page": 342,
+        "end": 351
+      },
+      {
+        "section": "8.2.3",
+        "title": "Estrutura do modelo",
+        "page": 342,
+        "end": 351
+      },
+      {
+        "section": "8.2.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 351,
+        "end": 352
+      },
+      {
+        "section": "8.2.5",
+        "title": "Benefícios do modelo",
+        "page": 352,
+        "end": 353
+      },
+      {
+        "section": "8.2.6",
+        "title": "Certificações relacionadas",
+        "page": 352,
+        "end": 353
+      },
+      {
+        "section": "8.3",
+        "title": "ISO/IEC 12207",
+        "page": 353,
+        "end": 357
+      },
+      {
+        "section": "8.3.1",
+        "title": "Visão geral do modelo",
+        "page": 353,
+        "end": 357
+      },
+      {
+        "section": "8.3.2",
+        "title": "Aplicabilidade do modelo",
+        "page": 357,
+        "end": 361
+      },
+      {
+        "section": "8.4",
+        "title": "ISO/IEC 9126",
+        "page": 357,
+        "end": 361
+      },
+      {
+        "section": "8.4.1",
+        "title": "Visão geral do modelo",
+        "page": 357,
+        "end": 361
+      },
+      {
+        "section": "8.4.2",
+        "title": "Aplicabilidade do modelo",
+        "page": 361,
+        "end": 364
+      },
+      {
+        "section": "8.5",
+        "title": "IBM RUP – uma breve visão",
+        "page": 361,
+        "end": 364
+      },
+      {
+        "section": "8.6",
+        "title": "MSF – uma breve visão",
+        "page": 364,
+        "end": 364
+      }
+    ]
+  },
+  {
+    "chapter": 9,
+    "title": "Modelos para Gerenciamento de Projetos",
+    "start": 365,
+    "end": 414,
+    "sections": [
+      {
+        "section": "9.1",
+        "title": "PMBOK",
+        "page": 365,
+        "end": 380
+      },
+      {
+        "section": "9.1.1",
+        "title": "Histórico do modelo",
+        "page": 365,
+        "end": 367
+      },
+      {
+        "section": "9.1.2",
+        "title": "Objetivos do modelo",
+        "page": 365,
+        "end": 367
+      },
+      {
+        "section": "9.1.3",
+        "title": "Estrutura do modelo",
+        "page": 367,
+        "end": 378
+      },
+      {
+        "section": "9.1.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 378,
+        "end": 379
+      },
+      {
+        "section": "9.1.5",
+        "title": "Benefícios do modelo",
+        "page": 379,
+        "end": 380
+      },
+      {
+        "section": "9.1.6",
+        "title": "Certificações relacionadas",
+        "page": 379,
+        "end": 380
+      },
+      {
+        "section": "9.2",
+        "title": "Padrão para Gestão de Portfólio",
+        "page": 380,
+        "end": 387
+      },
+      {
+        "section": "9.2.1",
+        "title": "Histórico do modelo",
+        "page": 380,
+        "end": 381
+      },
+      {
+        "section": "9.2.2",
+        "title": "Objetivos do modelo",
+        "page": 380,
+        "end": 381
+      },
+      {
+        "section": "9.2.3",
+        "title": "Estrutura do modelo",
+        "page": 381,
+        "end": 386
+      },
+      {
+        "section": "9.2.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 386,
+        "end": 387
+      },
+      {
+        "section": "9.2.5",
+        "title": "Benefícios do modelo",
+        "page": 386,
+        "end": 387
+      },
+      {
+        "section": "9.2.6",
+        "title": "Certificações relacionadas",
+        "page": 387,
+        "end": 388
+      },
+      {
+        "section": "9.3",
+        "title": "Padrão para Gestão de Programas",
+        "page": 387,
+        "end": 396
+      },
+      {
+        "section": "9.3.1",
+        "title": "Histórico do modelo",
+        "page": 387,
+        "end": 388
+      },
+      {
+        "section": "9.3.2",
+        "title": "Objetivos do modelo",
+        "page": 388,
+        "end": 394
+      },
+      {
+        "section": "9.3.3",
+        "title": "Estrutura do modelo",
+        "page": 388,
+        "end": 394
+      },
+      {
+        "section": "9.3.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 394,
+        "end": 395
+      },
+      {
+        "section": "9.3.5",
+        "title": "Benefícios do modelo",
+        "page": 395,
+        "end": 396
+      },
+      {
+        "section": "9.3.6",
+        "title": "Certificações relacionadas",
+        "page": 395,
+        "end": 396
+      },
+      {
+        "section": "9.4",
+        "title": "Outros padrões do PMI",
+        "page": 396,
+        "end": 397
+      },
+      {
+        "section": "9.5",
+        "title": "PRINCE2",
+        "page": 397,
+        "end": 405
+      },
+      {
+        "section": "9.5.1",
+        "title": "Histórico do modelo",
+        "page": 397,
+        "end": 398
+      },
+      {
+        "section": "9.5.2",
+        "title": "Objetivos do modelo",
+        "page": 398,
+        "end": 403
+      },
+      {
+        "section": "9.5.3",
+        "title": "Estrutura do modelo",
+        "page": 398,
+        "end": 403
+      },
+      {
+        "section": "9.5.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 403,
+        "end": 404
+      },
+      {
+        "section": "9.5.5",
+        "title": "Benefícios do modelo",
+        "page": 404,
+        "end": 405
+      },
+      {
+        "section": "9.5.6",
+        "title": "Certificações relacionadas",
+        "page": 404,
+        "end": 405
+      },
+      {
+        "section": "9.6",
+        "title": "Scrum",
+        "page": 405,
+        "end": 414
+      },
+      {
+        "section": "9.6.1",
+        "title": "Histórico do modelo",
+        "page": 405,
+        "end": 406
+      },
+      {
+        "section": "9.6.2",
+        "title": "Objetivos do modelo",
+        "page": 406,
+        "end": 411
+      },
+      {
+        "section": "9.6.3",
+        "title": "Estrutura do modelo",
+        "page": 406,
+        "end": 411
+      },
+      {
+        "section": "9.6.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 411,
+        "end": 413
+      },
+      {
+        "section": "9.6.5",
+        "title": "Benefícios do modelo",
+        "page": 413,
+        "end": 414
+      },
+      {
+        "section": "9.6.6",
+        "title": "Certificações relacionadas",
+        "page": 414,
+        "end": 414
+      }
+    ]
+  },
+  {
+    "chapter": 10,
+    "title": "Modelos para Segurança da Informação – ISO/IEC 27001 e 27002",
+    "start": 415,
+    "end": 435,
+    "sections": [
+      {
+        "section": "10.1",
+        "title": "Histórico do modelo",
+        "page": 415,
+        "end": 416
+      },
+      {
+        "section": "10.2",
+        "title": "Objetivos do modelo",
+        "page": 416,
+        "end": 417
+      },
+      {
+        "section": "10.3",
+        "title": "Estrutura do modelo",
+        "page": 417,
+        "end": 431
+      },
+      {
+        "section": "10.3.1",
+        "title": "ISO/IEC 27001",
+        "page": 417,
+        "end": 421
+      },
+      {
+        "section": "10.3.2",
+        "title": "ISO/IEC 27002",
+        "page": 421,
+        "end": 431
+      },
+      {
+        "section": "10.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 431,
+        "end": 432
+      },
+      {
+        "section": "10.5",
+        "title": "Benefícios do modelo",
+        "page": 432,
+        "end": 433
+      },
+      {
+        "section": "10.6",
+        "title": "Certificações relacionadas",
+        "page": 433,
+        "end": 434
+      },
+      {
+        "section": "10.7",
+        "title": "Gestão da Continuidade do Negócio",
+        "page": 433,
+        "end": 434
+      },
+      {
+        "section": "10.8",
+        "title": "Outras normas ISO relativas à segurança da informação",
+        "page": 434,
+        "end": 435
+      }
+    ]
+  },
+  {
+    "chapter": 11,
+    "title": "Modelos para Gerenciamento de Sourcing",
+    "start": 436,
+    "end": 465,
+    "sections": [
+      {
+        "section": "11.1",
+        "title": "eSCM-SP",
+        "page": 436,
+        "end": 448
+      },
+      {
+        "section": "11.1.1",
+        "title": "Histórico do modelo",
+        "page": 436,
+        "end": 437
+      },
+      {
+        "section": "11.1.2",
+        "title": "Objetivos do modelo",
+        "page": 437,
+        "end": 445
+      },
+      {
+        "section": "11.1.3",
+        "title": "Estrutura do modelo",
+        "page": 437,
+        "end": 445
+      },
+      {
+        "section": "11.1.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 445,
+        "end": 446
+      },
+      {
+        "section": "11.1.5",
+        "title": "Benefícios do modelo",
+        "page": 446,
+        "end": 448
+      },
+      {
+        "section": "11.1.6",
+        "title": "Certificações relacionadas",
+        "page": 446,
+        "end": 448
+      },
+      {
+        "section": "11.2",
+        "title": "eSCM-CL",
+        "page": 448,
+        "end": 462
+      },
+      {
+        "section": "11.2.1",
+        "title": "Histórico do modelo",
+        "page": 448,
+        "end": 449
+      },
+      {
+        "section": "11.2.2",
+        "title": "Objetivos do modelo",
+        "page": 449,
+        "end": 461
+      },
+      {
+        "section": "11.2.3",
+        "title": "Estrutura do modelo",
+        "page": 449,
+        "end": 461
+      },
+      {
+        "section": "11.2.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 461,
+        "end": 462
+      },
+      {
+        "section": "11.2.5",
+        "title": "Benefícios do modelo",
+        "page": 461,
+        "end": 462
+      },
+      {
+        "section": "11.2.6",
+        "title": "Certificações relacionadas",
+        "page": 461,
+        "end": 462
+      },
+      {
+        "section": "11.3",
+        "title": "CMMI for Acquisition",
+        "page": 462,
+        "end": 465
+      }
+    ]
+  },
+  {
+    "chapter": 12,
+    "title": "Modelos para Disciplinas Complementares à Governança de TI",
+    "start": 466,
+    "end": 525,
+    "sections": [
+      {
+        "section": "12.1",
+        "title": "BPM CBOK®",
+        "page": 466,
+        "end": 483
+      },
+      {
+        "section": "12.1.1",
+        "title": "Histórico do modelo",
+        "page": 466,
+        "end": 467
+      },
+      {
+        "section": "12.1.2",
+        "title": "Objetivos do modelo",
+        "page": 467,
+        "end": 480
+      },
+      {
+        "section": "12.1.3",
+        "title": "Estrutura do modelo",
+        "page": 467,
+        "end": 480
+      },
+      {
+        "section": "12.1.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 480,
+        "end": 481
+      },
+      {
+        "section": "12.1.5",
+        "title": "Benefícios do modelo",
+        "page": 481,
+        "end": 482
+      },
+      {
+        "section": "12.1.6",
+        "title": "Certificações relacionadas",
+        "page": 482,
+        "end": 483
+      },
+      {
+        "section": "12.2",
+        "title": "BABOK®",
+        "page": 483,
+        "end": 494
+      },
+      {
+        "section": "12.2.1",
+        "title": "Histórico do modelo",
+        "page": 483,
+        "end": 484
+      },
+      {
+        "section": "12.2.2",
+        "title": "Objetivos do modelo",
+        "page": 483,
+        "end": 484
+      },
+      {
+        "section": "12.2.3",
+        "title": "Estrutura do modelo",
+        "page": 484,
+        "end": 491
+      },
+      {
+        "section": "12.2.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 491,
+        "end": 492
+      },
+      {
+        "section": "12.2.5",
+        "title": "Benefícios do modelo",
+        "page": 492,
+        "end": 493
+      },
+      {
+        "section": "12.2.6",
+        "title": "Certificações relacionadas",
+        "page": 493,
+        "end": 494
+      },
+      {
+        "section": "12.3",
+        "title": "Balanced Scorecard",
+        "page": 494,
+        "end": 502
+      },
+      {
+        "section": "12.3.1",
+        "title": "Histórico do modelo",
+        "page": 494,
+        "end": 495
+      },
+      {
+        "section": "12.3.2",
+        "title": "Objetivos do modelo",
+        "page": 495,
+        "end": 496
+      },
+      {
+        "section": "12.3.3",
+        "title": "Estrutura do modelo",
+        "page": 496,
+        "end": 499
+      },
+      {
+        "section": "12.3.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 499,
+        "end": 500
+      },
+      {
+        "section": "12.3.5",
+        "title": "Benefícios do modelo",
+        "page": 500,
+        "end": 501
+      },
+      {
+        "section": "12.3.6",
+        "title": "Certificações relacionadas",
+        "page": 501,
+        "end": 502
+      },
+      {
+        "section": "12.4",
+        "title": "Seis Sigma",
+        "page": 502,
+        "end": 512
+      },
+      {
+        "section": "12.4.1",
+        "title": "Histórico do modelo",
+        "page": 502,
+        "end": 503
+      },
+      {
+        "section": "12.4.2",
+        "title": "Objetivos do modelo",
+        "page": 503,
+        "end": 504
+      },
+      {
+        "section": "12.4.3",
+        "title": "Estrutura do modelo",
+        "page": 504,
+        "end": 510
+      },
+      {
+        "section": "12.4.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 510,
+        "end": 511
+      },
+      {
+        "section": "12.4.5",
+        "title": "Benefícios do modelo",
+        "page": 510,
+        "end": 511
+      },
+      {
+        "section": "12.4.6",
+        "title": "Certificações relacionadas",
+        "page": 511,
+        "end": 512
+      },
+      {
+        "section": "12.5",
+        "title": "TOGAF",
+        "page": 512,
+        "end": 517
+      },
+      {
+        "section": "12.5.1",
+        "title": "Histórico do modelo",
+        "page": 512,
+        "end": 513
+      },
+      {
+        "section": "12.5.2",
+        "title": "Objetivos do modelo",
+        "page": 512,
+        "end": 513
+      },
+      {
+        "section": "12.5.3",
+        "title": "Estrutura do modelo",
+        "page": 513,
+        "end": 514
+      },
+      {
+        "section": "12.5.4",
+        "title": "Aplicabilidade do modelo",
+        "page": 514,
+        "end": 515
+      },
+      {
+        "section": "12.5.5",
+        "title": "Benefícios do modelo",
+        "page": 515,
+        "end": 516
+      },
+      {
+        "section": "12.5.6",
+        "title": "Certificações relacionadas",
+        "page": 516,
+        "end": 517
+      },
+      {
+        "section": "12.6",
+        "title": "ISO 9001:2008",
+        "page": 517,
+        "end": 522
+      },
+      {
+        "section": "12.6.1",
+        "title": "Visão geral do modelo",
+        "page": 517,
+        "end": 521
+      },
+      {
+        "section": "12.6.2",
+        "title": "Aplicabilidade do modelo",
+        "page": 521,
+        "end": 522
+      },
+      {
+        "section": "12.7",
+        "title": "ISO 31000",
+        "page": 522,
+        "end": 525
+      },
+      {
+        "section": "12.7.1",
+        "title": "Visão geral do modelo",
+        "page": 522,
+        "end": 525
+      },
+      {
+        "section": "12.7.2",
+        "title": "Aplicabilidade do modelo",
+        "page": 525,
+        "end": 525
+      }
+    ]
+  },
+  {
+    "chapter": 13,
+    "title": "Extensões e Derivações do Conceito de Governança de TI",
+    "start": 526,
+    "end": 567,
+    "sections": [
+      {
+        "section": "13.1",
+        "title": "Governança de Processos",
+        "page": 526,
+        "end": 535
+      },
+      {
+        "section": "13.1.1",
+        "title": "Princípios e conceitos gerais",
+        "page": 526,
+        "end": 530
+      },
+      {
+        "section": "13.1.2",
+        "title": "Modelos de referência relacionados",
+        "page": 530,
+        "end": 533
+      },
+      {
+        "section": "13.1.3",
+        "title": "Aplicabilidade do conceito",
+        "page": 533,
+        "end": 534
+      },
+      {
+        "section": "13.1.4",
+        "title": "Certificações relacionadas",
+        "page": 534,
+        "end": 535
+      },
+      {
+        "section": "13.2",
+        "title": "Governança SOA",
+        "page": 535,
+        "end": 554
+      },
+      {
+        "section": "13.2.1",
+        "title": "Princípios e conceitos gerais",
+        "page": 535,
+        "end": 539
+      },
+      {
+        "section": "13.2.2",
+        "title": "Modelos de referência relacionados",
+        "page": 539,
+        "end": 549
+      },
+      {
+        "section": "13.2.3",
+        "title": "Aplicabilidade do conceito",
+        "page": 549,
+        "end": 553
+      },
+      {
+        "section": "13.2.4",
+        "title": "Certificações relacionadas",
+        "page": 553,
+        "end": 554
+      },
+      {
+        "section": "13.3",
+        "title": "Governança de Dados",
+        "page": 554,
+        "end": 567
+      },
+      {
+        "section": "13.3.1",
+        "title": "Princípios e conceitos gerais",
+        "page": 555,
+        "end": 558
+      },
+      {
+        "section": "13.3.2",
+        "title": "Modelos de referência relacionados",
+        "page": 558,
+        "end": 565
+      },
+      {
+        "section": "13.3.3",
+        "title": "Aplicabilidade do conceito",
+        "page": 565,
+        "end": 567
+      },
+      {
+        "section": "13.3.4",
+        "title": "Certificações relacionadas",
+        "page": 565,
+        "end": 567
+      }
+    ]
+  },
+  {
+    "chapter": 14,
+    "title": "Novas Tecnologias e a Governança de TI",
+    "start": 568,
+    "end": 591,
+    "sections": [
+      {
+        "section": "14.1",
+        "title": "Cloud Computing",
+        "page": 568,
+        "end": 578
+      },
+      {
+        "section": "14.1.1",
+        "title": "O que é Cloud Computing",
+        "page": 568,
+        "end": 571
+      },
+      {
+        "section": "14.1.2",
+        "title": "Perguntas dos executivos sobre computação em nuvem",
+        "page": 571,
+        "end": 572
+      },
+      {
+        "section": "14.1.3",
+        "title": "Principais riscos",
+        "page": 572,
+        "end": 574
+      },
+      {
+        "section": "14.1.4",
+        "title": "Processos de governança e de gestão que devem ser reforçados",
+        "page": 574,
+        "end": 578
+      },
+      {
+        "section": "14.2",
+        "title": "Big Data",
+        "page": 578,
+        "end": 583
+      },
+      {
+        "section": "14.2.1",
+        "title": "O que é Big Data",
+        "page": 578,
+        "end": 581
+      },
+      {
+        "section": "14.2.3",
+        "title": "Riscos principais",
+        "page": 581,
+        "end": 582
+      },
+      {
+        "section": "14.2.4",
+        "title": "Processos de governança e de gestão afetados",
+        "page": 582,
+        "end": 583
+      },
+      {
+        "section": "14.3",
+        "title": "Mídias sociais",
+        "page": 583,
+        "end": 587
+      },
+      {
+        "section": "14.3.1",
+        "title": "O que são mídias sociais",
+        "page": 583,
+        "end": 585
+      },
+      {
+        "section": "14.3.3",
+        "title": "Riscos principais",
+        "page": 585,
+        "end": 587
+      },
+      {
+        "section": "14.3.4",
+        "title": "Processos de governança e de gestão afetados",
+        "page": 587,
+        "end": 589
+      },
+      {
+        "section": "14.4",
+        "title": "BYOD",
+        "page": 587,
+        "end": 591
+      },
+      {
+        "section": "14.4.1",
+        "title": "O que é BYOD",
+        "page": 587,
+        "end": 589
+      },
+      {
+        "section": "14.4.2",
+        "title": "Perguntas dos executivos sobre BYOD e sua gestão",
+        "page": 589,
+        "end": 591
+      },
+      {
+        "section": "14.4.3",
+        "title": "Riscos principais",
+        "page": 589,
+        "end": 591
+      },
+      {
+        "section": "14.4.4",
+        "title": "Processos de governança e de gestão afetados",
+        "page": 591,
+        "end": 591
+      }
+    ]
+  },
+  {
+    "chapter": 15,
+    "title": "Governança de TI para Pequenas e Médias Empresas",
+    "start": 592,
+    "end": 599,
+    "sections": []
+  },
+  {
+    "chapter": 16,
+    "title": "Governança de TI no Governo",
+    "start": 600,
+    "end": 616,
+    "sections": [
+      {
+        "section": "16.1",
+        "title": "O modelo de Governança de TI no governo brasileiro",
+        "page": 600,
+        "end": 606
+      },
+      {
+        "section": "16.2",
+        "title": "O papel da Secretaria de Logística e Tecnologia da Informação",
+        "page": 606,
+        "end": 607
+      },
+      {
+        "section": "16.3",
+        "title": "O papel do Tribunal de Contas da União",
+        "page": 606,
+        "end": 607
+      },
+      {
+        "section": "16.4",
+        "title": "O papel do Departamento de Segurança da Informação e Comunicações do GSI",
+        "page": 607,
+        "end": 609
+      },
+      {
+        "section": "16.5",
+        "title": "Situação atual da Governança de TI no Governo Federal, na visão do TCU",
+        "page": 609,
+        "end": 613
+      },
+      {
+        "section": "16.6",
+        "title": "Governança de TI no Judiciário Brasileiro",
+        "page": 613,
+        "end": 616
+      }
+    ]
+  },
+  {
+    "chapter": 17,
+    "title": "Como Implantar a Governança de TI",
+    "start": 617,
+    "end": 632,
+    "sections": [
+      {
+        "section": "17.1",
+        "title": "Roteiro de implantação da Governança de TI",
+        "page": 618,
+        "end": 631
+      },
+      {
+        "section": "17.2",
+        "title": "Fatores críticos de sucesso para a implantação da Governança de TI",
+        "page": 631,
+        "end": 632
+      }
+    ]
+  },
+  {
+    "chapter": 18,
+    "title": "Estudos de Casos",
+    "start": 633,
+    "end": 637,
+    "sections": []
+  }
+]

@@ -78,3 +78,25 @@ export function recordOffensiveForDate(state: OffensiveState, today: string): Of
     offensiveLoggedToday: true,
   }
 }
+
+export function mergeOffensiveStates(local: OffensiveState, remote: OffensiveState, today: string): OffensiveState {
+  const localDate = normalizeOffensiveDate(local.lastOffensiveDate)
+  const remoteDate = normalizeOffensiveDate(remote.lastOffensiveDate)
+  const [older, newer] = (localDate ?? '') > (remoteDate ?? '') ? [remote, local] : [local, remote]
+  const olderDate = normalizeOffensiveDate(older.lastOffensiveDate)
+  const newerDate = normalizeOffensiveDate(newer.lastOffensiveDate)
+  const differentDays = olderDate !== null && newerDate !== null && olderDate !== newerDate
+  const consecutive = differentDays && olderDate === getPreviousOffensiveDate(new Date(`${newerDate}T12:00:00Z`))
+  const currentStreak = Math.max(
+    newer.currentStreak,
+    localDate === remoteDate ? older.currentStreak : 0,
+    consecutive ? older.currentStreak + 1 : 0,
+  )
+  return normalizeOffensiveStateForToday({
+    ...newer,
+    totalOffensives: Math.max(newer.totalOffensives, older.totalOffensives + (differentDays ? 1 : 0)),
+    currentStreak,
+    bestStreak: Math.max(local.bestStreak, remote.bestStreak, currentStreak),
+    lastOffensiveDate: newerDate,
+  }, today)
+}

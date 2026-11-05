@@ -6,6 +6,7 @@ import {
   normalizeOffensiveDate,
   normalizeOffensiveStateForToday,
   recordOffensiveForDate,
+  mergeOffensiveStates,
 } from '../lib/offensiveDates'
 import type { OffensiveState } from '../lib/localDatabase'
 
@@ -19,6 +20,21 @@ const initialState: OffensiveState = {
 }
 
 describe('offensive date calculations', () => {
+  it('joins consecutive activity recorded on devices with different histories', () => {
+    const yesterday = recordOffensiveForDate(initialState, '2026-11-03')
+    const today = recordOffensiveForDate(initialState, '2026-11-04')
+    for (const [local, remote] of [[yesterday, today], [today, yesterday]]) {
+      const merged = mergeOffensiveStates(local, remote, '2026-11-04')
+      expect(merged).toMatchObject({ totalOffensives: 2, currentStreak: 2, bestStreak: 2, offensiveLoggedToday: true })
+      expect(mergeOffensiveStates(merged, remote, '2026-11-04')).toEqual(merged)
+    }
+  })
+
+  it('preserves the strongest same-day history and expires missed days', () => {
+    const state = { ...initialState, totalOffensives: 5, currentStreak: 3, bestStreak: 4, lastOffensiveDate: '2026-11-02' }
+    expect(mergeOffensiveStates(state, { ...state, currentStreak: 1, totalOffensives: 1 }, '2026-11-04'))
+      .toMatchObject({ totalOffensives: 5, currentStreak: 0, bestStreak: 4, offensiveLoggedToday: false })
+  })
   it('counts account creation day through today using Sao Paulo calendar dates', () => {
     expect(getDaysAboard('2026-10-31T03:30:00.000Z', new Date('2026-11-01T02:30:00.000Z'))).toBe(1)
     expect(getDaysAboard('2026-10-31T03:30:00.000Z', new Date('2026-11-01T03:30:00.000Z'))).toBe(2)

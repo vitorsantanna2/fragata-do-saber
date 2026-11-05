@@ -1,0 +1,200 @@
+[
+  {
+    "chapter": 1,
+    "title": "Por que fazer a Modelagem?",
+    "start": 31,
+    "end": 44
+  },
+  {
+    "chapter": 2,
+    "title": "Introdução à UML",
+    "start": 46,
+    "end": 80
+  },
+  {
+    "chapter": 3,
+    "title": "Hello, World!",
+    "start": 82,
+    "end": 93
+  },
+  {
+    "chapter": 4,
+    "title": "Classes",
+    "start": 95,
+    "end": 111
+  },
+  {
+    "chapter": 5,
+    "title": "Relacionamentos",
+    "start": 113,
+    "end": 131
+  },
+  {
+    "chapter": 6,
+    "title": "Mecanismos",
+    "start": 133,
+    "end": 151
+  },
+  {
+    "chapter": 7,
+    "title": "Diagramas",
+    "start": 153,
+    "end": 173
+  },
+  {
+    "chapter": 8,
+    "title": "Diagramas de Classes",
+    "start": 175,
+    "end": 192
+  },
+  {
+    "chapter": 9,
+    "title": "Classes Avançadas",
+    "start": 194,
+    "end": 215
+  },
+  {
+    "chapter": 10,
+    "title": "Relacionamentos Avançados",
+    "start": 217,
+    "end": 241
+  },
+  {
+    "chapter": 11,
+    "title": "Interfaces, Tipos e Funções",
+    "start": 243,
+    "end": 257
+  },
+  {
+    "chapter": 12,
+    "title": "Pacotes",
+    "start": 259,
+    "end": 273
+  },
+  {
+    "chapter": 13,
+    "title": "Instâncias",
+    "start": 275,
+    "end": 287
+  },
+  {
+    "chapter": 14,
+    "title": "Diagramas de Objetos",
+    "start": 289,
+    "end": 298
+  },
+  {
+    "chapter": 15,
+    "title": "Componentes",
+    "start": 300,
+    "end": 319
+  },
+  {
+    "chapter": 16,
+    "title": "Interações",
+    "start": 321,
+    "end": 341
+  },
+  {
+    "chapter": 17,
+    "title": "Casos de Uso",
+    "start": 343,
+    "end": 361
+  },
+  {
+    "chapter": 18,
+    "title": "Diagramas de Casos de Uso",
+    "start": 363,
+    "end": 375
+  },
+  {
+    "chapter": 19,
+    "title": "Diagramas de Interação",
+    "start": 377,
+    "end": 400
+  },
+  {
+    "chapter": 20,
+    "title": "Diagramas de Atividades",
+    "start": 402,
+    "end": 428
+  },
+  {
+    "chapter": 21,
+    "title": "Eventos e Sinais",
+    "start": 430,
+    "end": 442
+  },
+  {
+    "chapter": 22,
+    "title": "Máquinas de Estados",
+    "start": 444,
+    "end": 475
+  },
+  {
+    "chapter": 23,
+    "title": "Processos e Threads",
+    "start": 477,
+    "end": 493
+  },
+  {
+    "chapter": 24,
+    "title": "Tempo e Espaço",
+    "start": 495,
+    "end": 505
+  },
+  {
+    "chapter": 25,
+    "title": "Diagramas de Estados",
+    "start": 507,
+    "end": 522
+  },
+  {
+    "chapter": 26,
+    "title": "Artefatos",
+    "start": 524,
+    "end": 537
+  },
+  {
+    "chapter": 27,
+    "title": "Implantação",
+    "start": 539,
+    "end": 548
+  },
+  {
+    "chapter": 28,
+    "title": "Colaborações",
+    "start": 550,
+    "end": 567
+  },
+  {
+    "chapter": 29,
+    "title": "Padrões e Frameworks",
+    "start": 569,
+    "end": 584
+  },
+  {
+    "chapter": 30,
+    "title": "Diagramas de Artefatos",
+    "start": 586,
+    "end": 604
+  },
+  {
+    "chapter": 31,
+    "title": "Diagramas de Implantação",
+    "start": 606,
+    "end": 620
+  },
+  {
+    "chapter": 32,
+    "title": "Sistemas e Modelos",
+    "start": 622,
+    "end": 635
+  },
+  {
+    "chapter": 33,
+    "title": "Aplicando a UML",
+    "start": 637,
+    "end": 641
+  }
+]

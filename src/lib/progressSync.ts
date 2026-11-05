@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import type { StudyProgress, StudyQuestionSnapshot, OffensiveState } from './localDatabase'
-import { getSaoPauloDateKey, normalizeOffensiveDate } from './offensiveDates'
+import { getSaoPauloDateKey, mergeOffensiveStates, normalizeOffensiveDate, normalizeOffensiveStateForToday } from './offensiveDates'
 import { mergeCompletedSimulations } from './simulationHistory'
 import { loadOfflineQuestionAnswers } from './questionAnswers'
 import { syncReviewSchedules } from './reviewSync'
@@ -294,74 +294,19 @@ export async function syncOffensiveState(state: OffensiveState, expectedUserId?:
   const accountCreatedAt = user.created_at
 
   const today = getSaoPauloDateKey()
-  const localDate = normalizeOffensiveDate(state.lastOffensiveDate)
-  const remoteDate = remoteRow ? normalizeOffensiveDate(remoteRow.last_offensive_date) : null
-
-  let next: OffensiveState = { ...state }
-  let shouldUpload = false
-
-  if (!remoteRow) {
-    next = {
-      ...state,
-      joinedAt: accountCreatedAt ?? state.joinedAt ?? now,
-      lastOffensiveDate: localDate,
-    }
-    if (normalizeOffensiveDate(next.lastOffensiveDate) === today && next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
-    if ((next.currentStreak ?? 0) < 1 && (next.totalOffensives ?? 0) >= 1) next.currentStreak = 1
-    if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-    shouldUpload = true
-  } else {
-    if (localDate === today && remoteDate !== today) {
-      next = {
-        ...state,
-        joinedAt: accountCreatedAt ?? remoteRow.joined_at,
-        lastOffensiveDate: localDate,
-      }
-      if (next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
-      if ((next.currentStreak ?? 0) < 1 && (next.totalOffensives ?? 0) >= 1) next.currentStreak = 1
-      if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-      shouldUpload = true
-    } else if (remoteDate === today && localDate !== today) {
-      next = {
-        totalOffensives: remoteRow.total_offensives,
-        currentStreak: remoteRow.current_streak,
-        bestStreak: remoteRow.best_streak,
-        lastOffensiveDate: remoteRow.last_offensive_date,
-        offensiveLoggedToday: true,
-        joinedAt: accountCreatedAt ?? remoteRow.joined_at,
-      }
-      if ((next.currentStreak ?? 0) < 1 && (next.totalOffensives ?? 0) >= 1) next.currentStreak = 1
-      if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-    } else {
-      const remoteUpdated = Date.parse(remoteRow.updated_at)
-      const localUpdated = Date.parse((localDate ?? accountCreatedAt ?? state.joinedAt ?? now) + 'T00:00:00-03:00') || Date.parse(remoteRow.updated_at)
-
-      if (remoteUpdated > localUpdated) {
-        next = {
-          totalOffensives: remoteRow.total_offensives,
-          currentStreak: remoteRow.current_streak,
-          bestStreak: remoteRow.best_streak,
-          lastOffensiveDate: remoteRow.last_offensive_date,
-          offensiveLoggedToday: remoteRow.offensive_logged_today,
-          joinedAt: accountCreatedAt ?? remoteRow.joined_at,
-        }
-        next.lastOffensiveDate = remoteDate
-        if (remoteDate === today && next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
-        if ((next.currentStreak ?? 0) < 1 && (next.totalOffensives ?? 0) >= 1) next.currentStreak = 1
-        if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-      } else {
-        next = {
-          ...state,
-          joinedAt: accountCreatedAt ?? remoteRow.joined_at,
-          lastOffensiveDate: localDate,
-        }
-        if (localDate === today && next.offensiveLoggedToday !== true) next.offensiveLoggedToday = true
-        if ((next.currentStreak ?? 0) < 1 && (next.totalOffensives ?? 0) >= 1) next.currentStreak = 1
-        if ((next.bestStreak ?? 0) < (next.currentStreak ?? 0)) next.bestStreak = next.currentStreak ?? 1
-        shouldUpload = true
-      }
-    }
-  }
+  const remoteState: OffensiveState | null = remoteRow ? {
+    totalOffensives: remoteRow.total_offensives,
+    currentStreak: remoteRow.current_streak,
+    bestStreak: remoteRow.best_streak,
+    lastOffensiveDate: remoteRow.last_offensive_date,
+    offensiveLoggedToday: remoteRow.offensive_logged_today,
+    joinedAt: remoteRow.joined_at,
+  } : null
+  let next = remoteState
+    ? mergeOffensiveStates(state, remoteState, today)
+    : normalizeOffensiveStateForToday(state, today)
+  next = { ...next, joinedAt: accountCreatedAt ?? next.joinedAt ?? now }
+  let shouldUpload = !remoteState || JSON.stringify(next) !== JSON.stringify(remoteState)
 
   if (accountCreatedAt && next.joinedAt !== accountCreatedAt) {
     next = { ...next, joinedAt: accountCreatedAt }

@@ -27,7 +27,7 @@ import {
   type CompletedSimulation,
   type OffensiveState,
 } from './lib/localDatabase'
-import { getDaysAboard } from './lib/offensiveDates'
+import { getDaysAboard, getSaoPauloDateKey, mergeOffensiveStates } from './lib/offensiveDates'
 import { Skeleton, SkeletonText } from './components/Skeleton'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ExamChoiceGrid } from './components/ExamChoiceGrid'
@@ -761,6 +761,9 @@ function App() {
   const recordCompletedOffensive = useCallback(async () => {
     const accountSession = accountSessionRef.current
     const accountCreatedAt = accountUser?.created_at ?? null
+    const localState = await registerOffensiveSimulation(accountCreatedAt, accountUser?.id ?? 'guest')
+    if (accountSessionRef.current !== accountSession) return
+    setOffensiveState(localState)
 
     if (supabase && accountUser && !accountUser.is_anonymous && isOnline) {
       try {
@@ -770,7 +773,7 @@ function App() {
 
         const row = Array.isArray(data) ? data[0] : data
         if (row) {
-          const syncedState: OffensiveState = {
+          const remoteState: OffensiveState = {
             totalOffensives: row.total_offensives,
             currentStreak: row.current_streak,
             bestStreak: row.best_streak,
@@ -778,6 +781,7 @@ function App() {
             offensiveLoggedToday: row.offensive_logged_today,
             joinedAt: accountCreatedAt ?? row.joined_at,
           }
+          const syncedState = mergeOffensiveStates(localState, remoteState, getSaoPauloDateKey())
           await saveOffensiveState(syncedState, accountUser.id)
           if (accountSessionRef.current !== accountSession) return
           setOffensiveState(syncedState)
@@ -788,8 +792,6 @@ function App() {
       }
     }
 
-    if (accountSessionRef.current !== accountSession) return
-    const localState = await registerOffensiveSimulation(accountCreatedAt, accountUser?.id ?? 'guest')
     if (accountSessionRef.current !== accountSession) return
     setOffensiveState(localState)
   }, [accountUser, isOnline, setOffensiveState])

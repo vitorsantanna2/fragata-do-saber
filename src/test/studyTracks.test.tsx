@@ -39,10 +39,16 @@ describe('trilhas CP-T', () => {
       expect(matchesTrackStep({ ...question, topic }, database)).toBe(true)
     }
   })
-  it('combines software engineering and REST practice in a single step', () => {
+  it('combines engineering, UML, design patterns and REST practice in a single step', () => {
     const development = studyTracks.find((item) => item.id === 'cpt-2026-dev')!
-    const engineering = development.steps.find((item) => item.id === 'engenharia-rest')!
-    expect(development.steps.some((item) => item.id === 'apis' || item.id === 'engenharia')).toBe(false)
+    const engineering = development.steps.find((item) => item.id === 'engenharia-software')!
+    expect(engineering.title).toBe('Engenharia de Software')
+    expect(development.steps.some((item) => ['apis', 'engenharia', 'engenharia-rest', 'uml'].includes(item.id))).toBe(false)
+    for (const topic of ['UML', 'Modelagem UML / classes', 'Padrões de Projeto']) {
+      expect(matchesTrackStep({ ...question, topic }, engineering)).toBe(true)
+    }
+    expect(engineering.references.some((reference) => reference.startsWith('Guedes'))).toBe(true)
+    expect(engineering.references.some((reference) => reference.startsWith('Guerra'))).toBe(true)
     expect(matchesTrackStep({ ...question, topic: 'Engenharia de Software' }, engineering)).toBe(true)
     expect(matchesTrackStep({ ...question, topic: 'APIs REST' }, engineering)).toBe(true)
     expect(matchesTrackStep({ ...question, topic: 'Serviços web' }, engineering)).toBe(true)
@@ -70,7 +76,7 @@ describe('trilhas CP-T', () => {
     expect(parseTrackProgress({ [key]: 'completed', unknown: 'completed' })).toEqual({ [key]: 'completed' })
     expect(parseTrackProgress({ [key]: 'wrong' })).toEqual({})
     expect(parseTrackProgress(null)).toEqual({})
-    expect(new Set(studyTracks.flatMap((item) => item.steps.map((entry) => trackProgressKey(item.id, entry.id)))).size).toBe(13)
+    expect(new Set(studyTracks.flatMap((item) => item.steps.map((entry) => trackProgressKey(item.id, entry.id)))).size).toBe(12)
   })
 
   it('merges previous Linux progress and keeps questions from both subjects in the unified step', () => {

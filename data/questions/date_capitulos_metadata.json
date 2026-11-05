@@ -1,0 +1,1299 @@
+[
+  {
+    "chapter": 2,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "2.1",
+        "page": 81
+      },
+      {
+        "title": "OS TRÊS NÍVEIS DA ARQUITETURA",
+        "section": "2.2",
+        "page": 82
+      },
+      {
+        "title": "O NÍVEL EXTERNO",
+        "section": "2.3",
+        "page": 87
+      },
+      {
+        "title": "O NÍVEL CONCEITUAL",
+        "section": "2.4",
+        "page": 91
+      },
+      {
+        "title": "O NÍVEL INTERNO",
+        "section": "2.5",
+        "page": 93
+      },
+      {
+        "title": "MAPEAMENTOS",
+        "section": "2.6",
+        "page": 95
+      },
+      {
+        "title": "O ADMINISTRADOR DO BANCO DE DADOS",
+        "section": "2.7",
+        "page": 97
+      },
+      {
+        "title": "O SISTEMA DE GERENCIAMENTO DE BANCOS DE",
+        "section": "2.8",
+        "page": 100
+      },
+      {
+        "title": "COMUNICAÇÕES DE DADOS",
+        "section": "2.9",
+        "page": 107
+      },
+      {
+        "title": "ARQUITETURA CLIENTE/SERVIDOR",
+        "section": "2.10",
+        "page": 108
+      },
+      {
+        "title": "UTILITÁRIOS",
+        "section": "2.11",
+        "page": 112
+      },
+      {
+        "title": "PROCESSAMENTO DISTRIBUÍDO",
+        "section": "2.12",
+        "page": 113
+      },
+      {
+        "title": "RESUMO",
+        "section": "2.13",
+        "page": 119
+      }
+    ],
+    "end": 124,
+    "start": 79
+  },
+  {
+    "chapter": 3,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "3.1",
+        "page": 127
+      },
+      {
+        "title": "UMA OLHADA INFORMAL DO MODELO",
+        "section": "3.2",
+        "page": 128
+      },
+      {
+        "title": "RELAÇÕES E RELVARS",
+        "section": "3.3",
+        "page": 135
+      },
+      {
+        "title": "O QUE SIGNIFICAM AS RELAÇÕES",
+        "section": "3.4",
+        "page": 139
+      },
+      {
+        "title": "OTIMIZAÇÃO",
+        "section": "3.5",
+        "page": 143
+      },
+      {
+        "title": "O CATÁLOGO",
+        "section": "3.6",
+        "page": 146
+      },
+      {
+        "title": "RELVARS BÁSICAS E VISÕES",
+        "section": "3.7",
+        "page": 148
+      },
+      {
+        "title": "TRANSAÇÕES",
+        "section": "3.8",
+        "page": 153
+      },
+      {
+        "title": "O BANCO DE DADOS DE FORNECEDORES E",
+        "section": "3.9",
+        "page": 155
+      },
+      {
+        "title": "RESUMO",
+        "section": "3.10",
+        "page": 159
+      }
+    ],
+    "end": 166,
+    "start": 125
+  },
+  {
+    "chapter": 4,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "4.1",
+        "page": 169
+      },
+      {
+        "title": "VISÃO GERAL",
+        "section": "4.2",
+        "page": 171
+      },
+      {
+        "title": "O CATÁLOGO",
+        "section": "4.3",
+        "page": 175
+      },
+      {
+        "title": "VISÕES",
+        "section": "4.4",
+        "page": 177
+      },
+      {
+        "title": "TRANSAÇÕES",
+        "section": "4.5",
+        "page": 179
+      },
+      {
+        "title": "SQL EMBUTIDA",
+        "section": "4.6",
+        "page": 180
+      },
+      {
+        "title": "SQL DINÂMICA E SQL/CLI",
+        "section": "4.7",
+        "page": 190
+      },
+      {
+        "title": "A SQL NÃO É PERFEITA",
+        "section": "4.8",
+        "page": 195
+      },
+      {
+        "title": "RESUMO",
+        "section": "4.9",
+        "page": 196
+      }
+    ],
+    "end": 210,
+    "start": 167
+  },
+  {
+    "chapter": 5,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "5.1",
+        "page": 213
+      },
+      {
+        "title": "VALORES VERSUS VARIÁVEIS",
+        "section": "5.2",
+        "page": 215
+      },
+      {
+        "title": "TIPOS VERSUS REPRESENTAÇÕES",
+        "section": "5.3",
+        "page": 218
+      },
+      {
+        "title": "DEFINIÇÃO DE TIPO",
+        "section": "5.4",
+        "page": 225
+      },
+      {
+        "title": "OPERADORES",
+        "section": "5.5",
+        "page": 229
+      },
+      {
+        "title": "GERADORES DE TIPOS",
+        "section": "5.6",
+        "page": 237
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "5.7",
+        "page": 240
+      },
+      {
+        "title": "RESUMO",
+        "section": "5.8",
+        "page": 251
+      }
+    ],
+    "end": 257,
+    "start": 211
+  },
+  {
+    "chapter": 6,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "6.1",
+        "page": 260
+      },
+      {
+        "title": "TUPLAS",
+        "section": "6.2",
+        "page": 261
+      },
+      {
+        "title": "TIPOS DE RELAÇÕES",
+        "section": "6.3",
+        "page": 267
+      },
+      {
+        "title": "VALORES DE RELAÇÕES",
+        "section": "6.4",
+        "page": 270
+      },
+      {
+        "title": "VARIÁVEIS DE RELAÇÃO",
+        "section": "6.5",
+        "page": 282
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "6.6",
+        "page": 289
+      },
+      {
+        "title": "RESUMO",
+        "section": "6.7",
+        "page": 298
+      }
+    ],
+    "end": 308,
+    "start": 258
+  },
+  {
+    "chapter": 7,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "7.1",
+        "page": 311
+      },
+      {
+        "title": "REVENDO O FECHAMENTO",
+        "section": "7.2",
+        "page": 315
+      },
+      {
+        "title": "A ÁLGEBRA ORIGINAL: SINTAXE",
+        "section": "7.3",
+        "page": 318
+      },
+      {
+        "title": "A ÁLGEBRA ORIGINAL: SEMÂNTICA",
+        "section": "7.4",
+        "page": 322
+      },
+      {
+        "title": "EXEMPLOS",
+        "section": "7.5",
+        "page": 337
+      },
+      {
+        "title": "PONTOS AVANÇADOS",
+        "section": "7.7",
+        "page": 344
+      },
+      {
+        "title": "OPERADORES ADICIONAIS",
+        "section": "7.8",
+        "page": 347
+      },
+      {
+        "title": "AGRUPAMENTO E DESAGRUPAMENTO",
+        "section": "7.9",
+        "page": 358
+      },
+      {
+        "title": "RESUMO",
+        "section": "7.10",
+        "page": 362
+      }
+    ],
+    "end": 371,
+    "start": 309
+  },
+  {
+    "chapter": 8,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "8.1",
+        "page": 374
+      },
+      {
+        "title": "CÁLCULO DE TUPLAS",
+        "section": "8.2",
+        "page": 377
+      },
+      {
+        "title": "EXEMPLOS",
+        "section": "8.3",
+        "page": 388
+      },
+      {
+        "title": "CÁLCULO VERSUS ÁLGEBRA",
+        "section": "8.4",
+        "page": 392
+      },
+      {
+        "title": "CAPACIDADES COMPUTACIONAIS",
+        "section": "8.5",
+        "page": 398
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "8.6",
+        "page": 400
+      },
+      {
+        "title": "CÁLCULO DE DOMÍNIOS",
+        "section": "8.7",
+        "page": 413
+      },
+      {
+        "title": "QUERY-BY-EXAMPLE",
+        "section": "8.8",
+        "page": 417
+      },
+      {
+        "title": "RESUMO",
+        "section": "8.9",
+        "page": 423
+      }
+    ],
+    "end": 431,
+    "start": 372
+  },
+  {
+    "chapter": 9,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "9.1",
+        "page": 434
+      },
+      {
+        "title": "OLHANDO MAIS DE PERTO",
+        "section": "9.2",
+        "page": 436
+      },
+      {
+        "title": "PREDICADOS E PROPOSIÇÕES",
+        "section": "9.3",
+        "page": 441
+      },
+      {
+        "title": "PREDICADOS DE RELVAR E PREDICADOS DE",
+        "section": "9.4",
+        "page": 443
+      },
+      {
+        "title": "VERIFICANDO AS RESTRIÇÕES",
+        "section": "9.5",
+        "page": 445
+      },
+      {
+        "title": "PREDICADOS INTERNOS E EXTERNOS",
+        "section": "9.6",
+        "page": 447
+      },
+      {
+        "title": "CORREÇÃO E CONSISTÊNCIA",
+        "section": "9.7",
+        "page": 450
+      },
+      {
+        "title": "INTEGRIDADE E VISÕES",
+        "section": "9.8",
+        "page": 452
+      },
+      {
+        "title": "ESQUEMA DE CLASSIFICAÇÃO DE RESTRIÇÕES",
+        "section": "9.9",
+        "page": 454
+      },
+      {
+        "title": "CHAVES",
+        "section": "9.10",
+        "page": 458
+      },
+      {
+        "title": "TRIGGERS (UM DESVIO)",
+        "section": "9.11",
+        "page": 470
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "9.12",
+        "page": 474
+      },
+      {
+        "title": "RESUMO",
+        "section": "9.13",
+        "page": 481
+      }
+    ],
+    "end": 498,
+    "start": 432
+  },
+  {
+    "chapter": 10,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "10.1",
+        "page": 501
+      },
+      {
+        "title": "PARA QUE SERVEM AS VISÕES?",
+        "section": "10.2",
+        "page": 506
+      },
+      {
+        "title": "BUSCA EM VISÕES",
+        "section": "10.3",
+        "page": 511
+      },
+      {
+        "title": "ATUALIZAÇÕES DE VISÕES",
+        "section": "10.4",
+        "page": 513
+      },
+      {
+        "title": "SNAPSHOTS (UM DESVIO)",
+        "section": "10.5",
+        "page": 535
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "10.6",
+        "page": 538
+      },
+      {
+        "title": "RESUMO",
+        "section": "10.7",
+        "page": 543
+      }
+    ],
+    "end": 555,
+    "start": 499
+  },
+  {
+    "chapter": 11,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "11.1",
+        "page": 558
+      },
+      {
+        "title": "DEFINIÇÕES BÁSICAS",
+        "section": "11.2",
+        "page": 560
+      },
+      {
+        "title": "DEPENDÊNCIAS TRIVIAIS E NÃO TRIVIAIS",
+        "section": "11.3",
+        "page": 564
+      },
+      {
+        "title": "FECHO DE UM CONJUNTO DE DEPENDÊNCIAS",
+        "section": "11.4",
+        "page": 565
+      },
+      {
+        "title": "FECHO DE UM CONJUNTO DE ATRIBUTOS",
+        "section": "11.5",
+        "page": 568
+      },
+      {
+        "title": "CONJUNTOS IRREDUTÍVEIS DE DEPENDÊNCIAS",
+        "section": "11.6",
+        "page": 571
+      },
+      {
+        "title": "RESUMO",
+        "section": "11.7",
+        "page": 575
+      }
+    ],
+    "end": 581,
+    "start": 556
+  },
+  {
+    "chapter": 12,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "12.1",
+        "page": 584
+      },
+      {
+        "title": "DECOMPOSIÇÃO SEM PERDAS E DEPENDÊNCIAS",
+        "section": "12.2",
+        "page": 590
+      },
+      {
+        "title": "PRIMEIRA, SEGUNDA E TERCEIRA FORMAS",
+        "section": "12.3",
+        "page": 595
+      },
+      {
+        "title": "PRESERVAÇÃO DE DEPENDÊNCIAS",
+        "section": "12.4",
+        "page": 605
+      },
+      {
+        "title": "FORMA NORMAL DE BOYCE/CODD (FNBC)",
+        "section": "12.5",
+        "page": 609
+      },
+      {
+        "title": "UMA OBSERVAÇÃO SOBRE ATRIBUTOS COM",
+        "section": "12.6",
+        "page": 617
+      },
+      {
+        "title": "RESUMO",
+        "section": "12.7",
+        "page": 620
+      }
+    ],
+    "end": 627,
+    "start": 582
+  },
+  {
+    "chapter": 13,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "13.1",
+        "page": 630
+      },
+      {
+        "title": "DEPENDÊNCIAS MULTIVALORADAS E QUARTA",
+        "section": "13.2",
+        "page": 631
+      },
+      {
+        "title": "DEPENDÊNCIAS DE JUNÇÃO E QUINTA FORMA",
+        "section": "13.3",
+        "page": 637
+      },
+      {
+        "title": "O PROCEDIMENTO DE NORMALIZAÇÃO EM",
+        "section": "13.4",
+        "page": 644
+      },
+      {
+        "title": "UMA OBSERVAÇÃO SOBRE",
+        "section": "13.5",
+        "page": 648
+      },
+      {
+        "title": "PROJETO ORTOGONAL (UM DESVIO)",
+        "section": "13.6",
+        "page": 652
+      },
+      {
+        "title": "OUTRAS FORMAS NORMAIS",
+        "section": "13.7",
+        "page": 657
+      },
+      {
+        "title": "RESUMO",
+        "section": "13.8",
+        "page": 660
+      }
+    ],
+    "end": 670,
+    "start": 628
+  },
+  {
+    "chapter": 14,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "14.1",
+        "page": 673
+      },
+      {
+        "title": "A ABORDAGEM GERAL",
+        "section": "14.2",
+        "page": 676
+      },
+      {
+        "title": "O MODELO E/R",
+        "section": "14.3",
+        "page": 680
+      },
+      {
+        "title": "DIAGRAMAS E/R",
+        "section": "14.4",
+        "page": 686
+      },
+      {
+        "title": "PROJETO DE BANCOS DE DADOS COM O",
+        "section": "14.5",
+        "page": 689
+      },
+      {
+        "title": "UMA BREVE ANÁLISE",
+        "section": "14.6",
+        "page": 696
+      },
+      {
+        "title": "RESUMO",
+        "section": "14.7",
+        "page": 700
+      }
+    ],
+    "end": 722,
+    "start": 671
+  },
+  {
+    "chapter": 15,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "15.1",
+        "page": 725
+      },
+      {
+        "title": "TRANSAÇÕES",
+        "section": "15.2",
+        "page": 727
+      },
+      {
+        "title": "RECUPERAÇÃO DE TRANSAÇÕES",
+        "section": "15.3",
+        "page": 733
+      },
+      {
+        "title": "RECUPERAÇÃO DO SISTEMA",
+        "section": "15.4",
+        "page": 737
+      },
+      {
+        "title": "RECUPERAÇÃO DA MÍDIA",
+        "section": "15.5",
+        "page": 741
+      },
+      {
+        "title": "COMMIT DE DUAS FASES",
+        "section": "15.6",
+        "page": 742
+      },
+      {
+        "title": "SAVEPOINTS (UM DESVIO)",
+        "section": "15.7",
+        "page": 745
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "15.8",
+        "page": 746
+      },
+      {
+        "title": "RESUMO",
+        "section": "15.9",
+        "page": 748
+      }
+    ],
+    "end": 756,
+    "start": 723
+  },
+  {
+    "chapter": 16,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "16.1",
+        "page": 759
+      },
+      {
+        "title": "TRÊS PROBLEMAS DE CONCORRÊNCIA",
+        "section": "16.2",
+        "page": 761
+      },
+      {
+        "title": "BLOQUEIO",
+        "section": "16.3",
+        "page": 766
+      },
+      {
+        "title": "UMA REVISÃO DOS TRÊS PROBLEMAS DE",
+        "section": "16.4",
+        "page": 769
+      },
+      {
+        "title": "IMPASSE (DEADLOCK)",
+        "section": "16.5",
+        "page": 772
+      },
+      {
+        "title": "SERIABILIDADE",
+        "section": "16.6",
+        "page": 775
+      },
+      {
+        "title": "REVENDO A RECUPERAÇÃO",
+        "section": "16.7",
+        "page": 779
+      },
+      {
+        "title": "NÍVEIS DE ISOLAMENTO",
+        "section": "16.8",
+        "page": 782
+      },
+      {
+        "title": "INTENÇÃO DE BLOQUEIO",
+        "section": "16.9",
+        "page": 786
+      },
+      {
+        "title": "OBJEÇÕES ÀS PROPRIEDADES ACID",
+        "section": "16.10",
+        "page": 790
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "16.11",
+        "page": 797
+      },
+      {
+        "title": "RESUMO",
+        "section": "16.12",
+        "page": 799
+      }
+    ],
+    "end": 815,
+    "start": 757
+  },
+  {
+    "chapter": 17,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "17.1",
+        "page": 818
+      },
+      {
+        "title": "CONTROLE DE ACESSO DISCRIMINATÓRIO",
+        "section": "17.2",
+        "page": 822
+      },
+      {
+        "title": "CONTROLE DE ACESSO MANDATÁRIO",
+        "section": "17.3",
+        "page": 830
+      },
+      {
+        "title": "BANCOS DE DADOS ESTATÍSTICOS",
+        "section": "17.4",
+        "page": 835
+      },
+      {
+        "title": "CRIPTOGRAFIA DE DADOS",
+        "section": "17.5",
+        "page": 843
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "17.6",
+        "page": 849
+      },
+      {
+        "title": "RESUMO",
+        "section": "17.7",
+        "page": 855
+      }
+    ],
+    "end": 861,
+    "start": 816
+  },
+  {
+    "chapter": 18,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "18.1",
+        "page": 864
+      },
+      {
+        "title": "UM EXEMPLO MOTIVADOR",
+        "section": "18.2",
+        "page": 867
+      },
+      {
+        "title": "VISÃO GERAL DO PROCESSAMENTO DE",
+        "section": "18.3",
+        "page": 870
+      },
+      {
+        "title": "TRANSFORMAÇÃO DE EXPRESSÕES",
+        "section": "18.4",
+        "page": 876
+      },
+      {
+        "title": "ESTATÍSTICAS DE BANCOS DE DADOS",
+        "section": "18.5",
+        "page": 884
+      },
+      {
+        "title": "UMA ESTRATÉGIA DE DIVIDIR E CONQUISTAR",
+        "section": "18.6",
+        "page": 886
+      },
+      {
+        "title": "IMPLEMENTAÇÃO DE OPERADORES",
+        "section": "18.7",
+        "page": 891
+      },
+      {
+        "title": "RESUMO",
+        "section": "18.8",
+        "page": 898
+      }
+    ],
+    "end": 926,
+    "start": 862
+  },
+  {
+    "chapter": 19,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "19.1",
+        "page": 929
+      },
+      {
+        "title": "VISÃO GERAL DA ABORDAGEM 3VL",
+        "section": "19.2",
+        "page": 932
+      },
+      {
+        "title": "CONSEQUÊNCIAS DO ESQUEMA ANTERIOR",
+        "section": "19.3",
+        "page": 939
+      },
+      {
+        "title": "NULLS E CHAVES",
+        "section": "19.4",
+        "page": 944
+      },
+      {
+        "title": "JUNÇÃO EXTERNA (UM DESVIO)",
+        "section": "19.5",
+        "page": 948
+      },
+      {
+        "title": "VALORES ESPECIAIS",
+        "section": "19.6",
+        "page": 952
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "19.7",
+        "page": 953
+      },
+      {
+        "title": "RESUMO",
+        "section": "19.8",
+        "page": 961
+      }
+    ],
+    "end": 970,
+    "start": 927
+  },
+  {
+    "chapter": 20,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "20.1",
+        "page": 973
+      },
+      {
+        "title": "HIERARQUIA DE TIPOS",
+        "section": "20.2",
+        "page": 979
+      },
+      {
+        "title": "POLIMORFISMO E POSSIBILIDADE DE",
+        "section": "20.3",
+        "page": 985
+      },
+      {
+        "title": "VARIÁVEIS E ATRIBUIÇÕES",
+        "section": "20.4",
+        "page": 990
+      },
+      {
+        "title": "ESPECIALIZAÇÃO POR RESTRIÇÃO",
+        "section": "20.5",
+        "page": 996
+      },
+      {
+        "title": "COMPARAÇÕES",
+        "section": "20.6",
+        "page": 1000
+      },
+      {
+        "title": "OPERADORES, VERSÕES E ASSINATURAS",
+        "section": "20.7",
+        "page": 1005
+      },
+      {
+        "title": "UM CÍRCULO É UMA ELIPSE?",
+        "section": "20.8",
+        "page": 1012
+      },
+      {
+        "title": "REVISÃO DA ESPECIALIZAÇÃO POR RESTRIÇÃO",
+        "section": "20.9",
+        "page": 1018
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "20.10",
+        "page": 1021
+      },
+      {
+        "title": "RESUMO",
+        "section": "20.11",
+        "page": 1028
+      }
+    ],
+    "end": 1037,
+    "start": 971
+  },
+  {
+    "chapter": 21,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "21.1",
+        "page": 1040
+      },
+      {
+        "title": "ALGUMAS QUESTÕES PRELIMINARES",
+        "section": "21.2",
+        "page": 1041
+      },
+      {
+        "title": "OS 12 OBJETIVOS",
+        "section": "21.3",
+        "page": 1047
+      },
+      {
+        "title": "PROBLEMAS DE SISTEMAS DISTRIBUÍDOS",
+        "section": "21.4",
+        "page": 1058
+      },
+      {
+        "title": "SISTEMAS CLIENTE/SERVIDOR",
+        "section": "21.5",
+        "page": 1074
+      },
+      {
+        "title": "INDEPENDÊNCIA DO SGBD",
+        "section": "21.6",
+        "page": 1079
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "21.7",
+        "page": 1086
+      },
+      {
+        "title": "RESUMO",
+        "section": "21.8",
+        "page": 1088
+      }
+    ],
+    "end": 1099,
+    "start": 1038
+  },
+  {
+    "chapter": 22,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "22.1",
+        "page": 1102
+      },
+      {
+        "title": "ASPECTOS DO APOIO À DECISÃO",
+        "section": "22.2",
+        "page": 1105
+      },
+      {
+        "title": "PROJETO DE BANCOS DE DADOS PARA APOIO À",
+        "section": "22.3",
+        "page": 1108
+      },
+      {
+        "title": "PREPARAÇÃO DE DADOS",
+        "section": "22.4",
+        "page": 1120
+      },
+      {
+        "title": "DATA WAREHOUSES E DATA MARTS",
+        "section": "22.5",
+        "page": 1124
+      },
+      {
+        "title": "PROCESSAMENTO ANALÍTICO ON-LINE (OLAP)",
+        "section": "22.6",
+        "page": 1133
+      },
+      {
+        "title": "MINERAÇÃO DE DADOS",
+        "section": "22.7",
+        "page": 1144
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "22.8",
+        "page": 1147
+      },
+      {
+        "title": "RESUMO",
+        "section": "22.9",
+        "page": 1148
+      }
+    ],
+    "end": 1156,
+    "start": 1100
+  },
+  {
+    "chapter": 23,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "23.1",
+        "page": 1159
+      },
+      {
+        "title": "QUAL É O PROBLEMA?",
+        "section": "23.2",
+        "page": 1165
+      },
+      {
+        "title": "INTERVALOS",
+        "section": "23.3",
+        "page": 1174
+      },
+      {
+        "title": "EMPACOTANDO E DESEMPACOTANDO",
+        "section": "23.4",
+        "page": 1182
+      },
+      {
+        "title": "GENERALIZANDO OS OPERADORES",
+        "section": "23.5",
+        "page": 1197
+      },
+      {
+        "title": "PROJETO DE BANCO DE DADOS",
+        "section": "23.6",
+        "page": 1204
+      },
+      {
+        "title": "RESTRIÇÕES DE INTEGRIDADE",
+        "section": "23.7",
+        "page": 1213
+      },
+      {
+        "title": "RESUMO",
+        "section": "23.8",
+        "page": 1221
+      }
+    ],
+    "end": 1226,
+    "start": 1157
+  },
+  {
+    "chapter": 24,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "24.1",
+        "page": 1229
+      },
+      {
+        "title": "VISÃO GERAL",
+        "section": "24.2",
+        "page": 1230
+      },
+      {
+        "title": "CÁLCULO PROPOSICIONAL",
+        "section": "24.3",
+        "page": 1234
+      },
+      {
+        "title": "CÁLCULO DE PREDICADOS",
+        "section": "24.4",
+        "page": 1241
+      },
+      {
+        "title": "UMA VISÃO DE BANCOS DE DADOS SEGUNDO A",
+        "section": "24.5",
+        "page": 1251
+      },
+      {
+        "title": "SISTEMAS DE BANCOS DE DADOS DEDUTIVOS",
+        "section": "24.6",
+        "page": 1256
+      },
+      {
+        "title": "PROCESSAMENTO DE CONSULTAS RECURSIVAS",
+        "section": "24.7",
+        "page": 1264
+      },
+      {
+        "title": "RESUMO",
+        "section": "24.8",
+        "page": 1272
+      }
+    ],
+    "end": 1284,
+    "start": 1227
+  },
+  {
+    "chapter": 25,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "25.1",
+        "page": 1287
+      },
+      {
+        "title": "OBJETOS, CLASSES, MÉTODOS E MENSAGENS",
+        "section": "25.2",
+        "page": 1294
+      },
+      {
+        "title": "EXAMINANDO MAIS DE PERTO",
+        "section": "25.3",
+        "page": 1300
+      },
+      {
+        "title": "UM EXEMPLO DO INÍCIO AO FIM",
+        "section": "25.4",
+        "page": 1312
+      },
+      {
+        "title": "QUESTÕES DIVERSAS",
+        "section": "25.5",
+        "page": 1326
+      },
+      {
+        "title": "RESUMO",
+        "section": "25.6",
+        "page": 1337
+      }
+    ],
+    "end": 1354,
+    "start": 1285
+  },
+  {
+    "chapter": 26,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "26.1",
+        "page": 1357
+      },
+      {
+        "title": "O PRIMEIRO GRANDE ERRO",
+        "section": "26.2",
+        "page": 1361
+      },
+      {
+        "title": "O SEGUNDO GRANDE ERRO",
+        "section": "26.3",
+        "page": 1372
+      },
+      {
+        "title": "QUESTÕES DE IMPLEMENTAÇÃO",
+        "section": "26.4",
+        "page": 1378
+      },
+      {
+        "title": "BENEFÍCIOS DA VERDADEIRA APROXIMAÇÃO",
+        "section": "26.5",
+        "page": 1382
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "26.6",
+        "page": 1385
+      },
+      {
+        "title": "RESUMO",
+        "section": "26.7",
+        "page": 1394
+      }
+    ],
+    "end": 1406,
+    "start": 1355
+  },
+  {
+    "chapter": 27,
+    "sections": [
+      {
+        "title": "INTRODUÇÃO",
+        "section": "27.1",
+        "page": 1409
+      },
+      {
+        "title": "A WEB E A INTERNET",
+        "section": "27.2",
+        "page": 1410
+      },
+      {
+        "title": "VISÃO GERAL DA XML",
+        "section": "27.3",
+        "page": 1413
+      },
+      {
+        "title": "DEFINIÇÃO DE DADOS DA XML",
+        "section": "27.4",
+        "page": 1427
+      },
+      {
+        "title": "MANIPULAÇÃO DE DADOS DA XML",
+        "section": "27.5",
+        "page": 1439
+      },
+      {
+        "title": "XML E BANCOS DE DADOS",
+        "section": "27.6",
+        "page": 1450
+      },
+      {
+        "title": "RECURSOS DE SQL",
+        "section": "27.7",
+        "page": 1455
+      },
+      {
+        "title": "RESUMO",
+        "section": "27.8",
+        "page": 1461
+      }
+    ],
+    "end": 1472,
+    "start": 1407
+  }
+]

@@ -1,0 +1,2343 @@
+[
+    {
+        "chapter":  1,
+        "title":  "Introdução à UML",
+        "start":  18,
+        "end":  48,
+        "sections":  [
+                         {
+                             "section":  "1.1",
+                             "title":  "Breve Histórico da UML",
+                             "page":  18,
+                             "end":  19
+                         },
+                         {
+                             "section":  "1.2",
+                             "title":  "Por que Modelar Software?",
+                             "page":  19,
+                             "end":  31
+                         },
+                         {
+                             "section":  "1.2.1",
+                             "title":  "Modelo de Software – Uma Definição",
+                             "page":  20,
+                             "end":  21
+                         },
+                         {
+                             "section":  "1.2.2",
+                             "title":  "Elicitação e Análise de Requisitos",
+                             "page":  21,
+                             "end":  25
+                         },
+                         {
+                             "section":  "1.2.3",
+                             "title":  "Prototipação",
+                             "page":  25,
+                             "end":  26
+                         },
+                         {
+                             "section":  "1.2.4",
+                             "title":  "Prazos e Custos",
+                             "page":  26,
+                             "end":  28
+                         },
+                         {
+                             "section":  "1.2.5",
+                             "title":  "Projeto",
+                             "page":  28,
+                             "end":  29
+                         },
+                         {
+                             "section":  "1.2.6",
+                             "title":  "Manutenção",
+                             "page":  29,
+                             "end":  30
+                         },
+                         {
+                             "section":  "1.2.7",
+                             "title":  "Documentação Histórica",
+                             "page":  30,
+                             "end":  31
+                         },
+                         {
+                             "section":  "1.3",
+                             "title":  "Por que Tantos Diagramas?",
+                             "page":  31,
+                             "end":  32
+                         },
+                         {
+                             "section":  "1.4",
+                             "title":  "Rápido Resumo dos Diagramas da UML",
+                             "page":  32,
+                             "end":  46
+                         },
+                         {
+                             "section":  "1.4.1",
+                             "title":  "Diagrama de Casos de Uso",
+                             "page":  32,
+                             "end":  34
+                         },
+                         {
+                             "section":  "1.4.2",
+                             "title":  "Diagrama de Classes",
+                             "page":  34,
+                             "end":  35
+                         },
+                         {
+                             "section":  "1.4.3",
+                             "title":  "Diagrama de Objetos",
+                             "page":  35,
+                             "end":  35
+                         },
+                         {
+                             "section":  "1.4.4",
+                             "title":  "Diagrama de Pacotes",
+                             "page":  35,
+                             "end":  37
+                         },
+                         {
+                             "section":  "1.4.5",
+                             "title":  "Diagrama de Sequência",
+                             "page":  37,
+                             "end":  37
+                         },
+                         {
+                             "section":  "1.4.6",
+                             "title":  "Diagrama de Comunicação",
+                             "page":  37,
+                             "end":  38
+                         },
+                         {
+                             "section":  "1.4.7",
+                             "title":  "Diagrama de Máquina de Estados",
+                             "page":  38,
+                             "end":  39
+                         },
+                         {
+                             "section":  "1.4.8",
+                             "title":  "Diagrama de Atividade",
+                             "page":  39,
+                             "end":  40
+                         },
+                         {
+                             "section":  "1.4.9",
+                             "title":  "Diagrama de Visão Geral de Interação",
+                             "page":  40,
+                             "end":  41
+                         },
+                         {
+                             "section":  "1.4.10",
+                             "title":  "Diagrama de Componentes",
+                             "page":  41,
+                             "end":  42
+                         },
+                         {
+                             "section":  "1.4.11",
+                             "title":  "Diagrama de Implantação",
+                             "page":  42,
+                             "end":  43
+                         },
+                         {
+                             "section":  "1.4.12",
+                             "title":  "Diagrama de Estrutura Composta",
+                             "page":  43,
+                             "end":  44
+                         },
+                         {
+                             "section":  "1.4.13",
+                             "title":  "Diagrama de Tempo ou de Temporização",
+                             "page":  44,
+                             "end":  45
+                         },
+                         {
+                             "section":  "1.4.14",
+                             "title":  "Diagrama de Perfil",
+                             "page":  45,
+                             "end":  45
+                         },
+                         {
+                             "section":  "1.4.15",
+                             "title":  "Síntese Geral dos Diagramas",
+                             "page":  45,
+                             "end":  46
+                         },
+                         {
+                             "section":  "1.5",
+                             "title":  "Ferramentas CASE Baseadas na Linguagem UML",
+                             "page":  46,
+                             "end":  48
+                         }
+                     ]
+    },
+    {
+        "chapter":  2,
+        "title":  "Orientação a Objetos",
+        "start":  49,
+        "end":  59,
+        "sections":  [
+                         {
+                             "section":  "2.1",
+                             "title":  "Classificação, Abstração e Instanciação",
+                             "page":  49,
+                             "end":  51
+                         },
+                         {
+                             "section":  "2.2",
+                             "title":  "Classes de Objetos",
+                             "page":  51,
+                             "end":  51
+                         },
+                         {
+                             "section":  "2.3",
+                             "title":  "Atributos ou Propriedades",
+                             "page":  51,
+                             "end":  53
+                         },
+                         {
+                             "section":  "2.4",
+                             "title":  "Operações, Métodos ou Comportamentos",
+                             "page":  53,
+                             "end":  53
+                         },
+                         {
+                             "section":  "2.5",
+                             "title":  "Visibilidade",
+                             "page":  53,
+                             "end":  55
+                         },
+                         {
+                             "section":  "2.6",
+                             "title":  "Herança",
+                             "page":  55,
+                             "end":  58
+                         },
+                         {
+                             "section":  "2.6.1",
+                             "title":  "Herança Múltipla",
+                             "page":  56,
+                             "end":  58
+                         },
+                         {
+                             "section":  "2.7",
+                             "title":  "Polimorfismo",
+                             "page":  58,
+                             "end":  59
+                         }
+                     ]
+    },
+    {
+        "chapter":  3,
+        "title":  "Diagrama de Casos de Uso",
+        "start":  60,
+        "end":  132,
+        "sections":  [
+                         {
+                             "section":  "3.1",
+                             "title":  "Atores",
+                             "page":  61,
+                             "end":  63
+                         },
+                         {
+                             "section":  "3.2",
+                             "title":  "Como Identificar os Atores?",
+                             "page":  63,
+                             "end":  63
+                         },
+                         {
+                             "section":  "3.3",
+                             "title":  "Casos de Uso",
+                             "page":  63,
+                             "end":  65
+                         },
+                         {
+                             "section":  "3.4",
+                             "title":  "Documentação de Casos de Uso",
+                             "page":  65,
+                             "end":  68
+                         },
+                         {
+                             "section":  "3.5",
+                             "title":  "Como Identificar os Casos de Uso?",
+                             "page":  68,
+                             "end":  69
+                         },
+                         {
+                             "section":  "3.6",
+                             "title":  "Associações",
+                             "page":  69,
+                             "end":  70
+                         },
+                         {
+                             "section":  "3.7",
+                             "title":  "Generalização/Especialização",
+                             "page":  70,
+                             "end":  74
+                         },
+                         {
+                             "section":  "3.8",
+                             "title":  "Inclusão",
+                             "page":  74,
+                             "end":  76
+                         },
+                         {
+                             "section":  "3.9",
+                             "title":  "Extensão",
+                             "page":  76,
+                             "end":  78
+                         },
+                         {
+                             "section":  "3.10",
+                             "title":  "Restrições em Associações de Extensão",
+                             "page":  78,
+                             "end":  79
+                         },
+                         {
+                             "section":  "3.11",
+                             "title":  "Pontos de Extensão",
+                             "page":  79,
+                             "end":  81
+                         },
+                         {
+                             "section":  "3.12",
+                             "title":  "Multiplicidade no Diagrama de Casos de Uso",
+                             "page":  81,
+                             "end":  81
+                         },
+                         {
+                             "section":  "3.13",
+                             "title":  "Estereótipos",
+                             "page":  81,
+                             "end":  82
+                         },
+                         {
+                             "section":  "3.14",
+                             "title":  "Fronteira de Sistema",
+                             "page":  82,
+                             "end":  83
+                         },
+                         {
+                             "section":  "3.15",
+                             "title":  "Exemplo de Diagrama de Casos de Uso – Sistema de Controle",
+                             "page":  83,
+                             "end":  86
+                         },
+                         {
+                             "section":  "3.16",
+                             "title":  "Documentação do Diagrama de Casos de Uso do Sistema de Controle",
+                             "page":  86,
+                             "end":  93
+                         },
+                         {
+                             "section":  "3.16.1",
+                             "title":  "Atores que Interagem com o Sistema",
+                             "page":  87,
+                             "end":  87
+                         },
+                         {
+                             "section":  "3.16.2",
+                             "title":  "Documentação do Caso de Uso Abrir Conta Especial",
+                             "page":  87,
+                             "end":  87
+                         },
+                         {
+                             "section":  "3.16.3",
+                             "title":  "Documentação do Caso de Uso Abrir Conta Poupança",
+                             "page":  87,
+                             "end":  88
+                         },
+                         {
+                             "section":  "3.16.4",
+                             "title":  "Documentação do Caso de Uso Gerenciar Clientes",
+                             "page":  88,
+                             "end":  89
+                         },
+                         {
+                             "section":  "3.16.5",
+                             "title":  "Documentação do Caso de Uso Realizar Depósito",
+                             "page":  89,
+                             "end":  90
+                         },
+                         {
+                             "section":  "3.16.6",
+                             "title":  "Documentação do Caso de Uso Emitir Saldo",
+                             "page":  90,
+                             "end":  90
+                         },
+                         {
+                             "section":  "3.16.7",
+                             "title":  "Documentação do Caso de Uso Emitir Extrato",
+                             "page":  90,
+                             "end":  91
+                         },
+                         {
+                             "section":  "3.16.8",
+                             "title":  "Documentação do Caso de Uso Realizar Saque",
+                             "page":  91,
+                             "end":  92
+                         },
+                         {
+                             "section":  "3.16.9",
+                             "title":  "Documentação do Caso de Uso Registrar Movimento",
+                             "page":  92,
+                             "end":  93
+                         },
+                         {
+                             "section":  "3.17",
+                             "title":  "Exemplo de Diagrama de Casos de Uso – Sistema de Telefone Celular",
+                             "page":  93,
+                             "end":  96
+                         },
+                         {
+                             "section":  "3.17.1",
+                             "title":  "Documentação do Caso de Uso Realizar Ligação",
+                             "page":  96,
+                             "end":  96
+                         },
+                         {
+                             "section":  "3.18",
+                             "title":  "Exemplo de Diagrama de Casos de Uso – Sistema de Biblioteca",
+                             "page":  96,
+                             "end":  100
+                         },
+                         {
+                             "section":  "3.18.1",
+                             "title":  "Documentação do Caso de Uso Locar Exemplares",
+                             "page":  99,
+                             "end":  100
+                         },
+                         {
+                             "section":  "3.19",
+                             "title":  "Exemplo de Diagrama de Casos de Uso – Sistema de Clínica",
+                             "page":  100,
+                             "end":  103
+                         },
+                         {
+                             "section":  "3.19.1",
+                             "title":  "Documentação do Caso de Uso Atender à Consulta",
+                             "page":  102,
+                             "end":  103
+                         },
+                         {
+                             "section":  "3.20",
+                             "title":  "Exemplo de Diagrama de Casos de Uso – Sistema de Controle de",
+                             "page":  103,
+                             "end":  108
+                         },
+                         {
+                             "section":  "3.20.1",
+                             "title":  "Documentação do Caso de Uso Gerenciar Processos",
+                             "page":  107,
+                             "end":  108
+                         },
+                         {
+                             "section":  "3.21",
+                             "title":  "Exercícios Propostos",
+                             "page":  108,
+                             "end":  112
+                         },
+                         {
+                             "section":  "3.21.1",
+                             "title":  "Sistema de Controle de Cinema",
+                             "page":  108,
+                             "end":  109
+                         },
+                         {
+                             "section":  "3.21.2",
+                             "title":  "Sistema de Controle de Clube Social",
+                             "page":  109,
+                             "end":  109
+                         },
+                         {
+                             "section":  "3.21.3",
+                             "title":  "Sistema de Locação de Veículos",
+                             "page":  109,
+                             "end":  110
+                         },
+                         {
+                             "section":  "3.21.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet",
+                             "page":  110,
+                             "end":  111
+                         },
+                         {
+                             "section":  "3.21.5",
+                             "title":  "Sistema de Controle de Hotelaria",
+                             "page":  111,
+                             "end":  112
+                         },
+                         {
+                             "section":  "3.21.6",
+                             "title":  "Sistema de Controle de Imobiliária",
+                             "page":  112,
+                             "end":  112
+                         },
+                         {
+                             "section":  "3.22",
+                             "title":  "Resolução dos Exercícios",
+                             "page":  112,
+                             "end":  132
+                         },
+                         {
+                             "section":  "3.22.1",
+                             "title":  "Resolução do Exercício Sistema de Controle de Cinema",
+                             "page":  112,
+                             "end":  115
+                         },
+                         {
+                             "section":  "3.22.2",
+                             "title":  "Resolução do Exercício Sistema de Controle de Clube Social",
+                             "page":  115,
+                             "end":  118
+                         },
+                         {
+                             "section":  "3.22.3",
+                             "title":  "Resolução do Exercício Sistema de Locação de Veículos",
+                             "page":  118,
+                             "end":  121
+                         },
+                         {
+                             "section":  "3.22.4",
+                             "title":  "Resolução do Exercício Sistema para Controle de Leilão Via",
+                             "page":  121,
+                             "end":  124
+                         },
+                         {
+                             "section":  "3.22.5",
+                             "title":  "Resolução do Exercício Sistema de Controle de Hotelaria",
+                             "page":  124,
+                             "end":  127
+                         },
+                         {
+                             "section":  "3.22.6",
+                             "title":  "Resolução do Exercício Sistema de Controle de Imobiliária",
+                             "page":  127,
+                             "end":  132
+                         }
+                     ]
+    },
+    {
+        "chapter":  4,
+        "title":  "Diagrama de Classes",
+        "start":  133,
+        "end":  252,
+        "sections":  [
+                         {
+                             "section":  "4.1",
+                             "title":  "Atributos e Métodos",
+                             "page":  134,
+                             "end":  140
+                         },
+                         {
+                             "section":  "4.2",
+                             "title":  "Relacionamentos ou Associações",
+                             "page":  140,
+                             "end":  156
+                         },
+                         {
+                             "section":  "4.2.1",
+                             "title":  "Associação Unária ou Reflexiva",
+                             "page":  140,
+                             "end":  143
+                         },
+                         {
+                             "section":  "4.2.2",
+                             "title":  "Associação Binária",
+                             "page":  143,
+                             "end":  145
+                         },
+                         {
+                             "section":  "4.2.3",
+                             "title":  "Associação Ternária ou N-ária",
+                             "page":  145,
+                             "end":  146
+                         },
+                         {
+                             "section":  "4.2.4",
+                             "title":  "Agregação",
+                             "page":  146,
+                             "end":  147
+                         },
+                         {
+                             "section":  "4.2.5",
+                             "title":  "Composição",
+                             "page":  147,
+                             "end":  149
+                         },
+                         {
+                             "section":  "4.2.6",
+                             "title":  "Generalização/Especialização",
+                             "page":  149,
+                             "end":  151
+                         },
+                         {
+                             "section":  "4.2.7",
+                             "title":  "Classe Associativa",
+                             "page":  151,
+                             "end":  153
+                         },
+                         {
+                             "section":  "4.2.8",
+                             "title":  "Associação Qualificada",
+                             "page":  153,
+                             "end":  153
+                         },
+                         {
+                             "section":  "4.2.9",
+                             "title":  "Dependência",
+                             "page":  153,
+                             "end":  154
+                         },
+                         {
+                             "section":  "4.2.10",
+                             "title":  "Realização",
+                             "page":  154,
+                             "end":  156
+                         },
+                         {
+                             "section":  "4.3",
+                             "title":  "Portas",
+                             "page":  156,
+                             "end":  157
+                         },
+                         {
+                             "section":  "4.4",
+                             "title":  "Interfaces",
+                             "page":  157,
+                             "end":  159
+                         },
+                         {
+                             "section":  "4.4.1",
+                             "title":  "Interfaces Fornecidas",
+                             "page":  157,
+                             "end":  158
+                         },
+                         {
+                             "section":  "4.4.2",
+                             "title":  "Interfaces Requeridas",
+                             "page":  158,
+                             "end":  159
+                         },
+                         {
+                             "section":  "4.5",
+                             "title":  "Restrições",
+                             "page":  159,
+                             "end":  170
+                         },
+                         {
+                             "section":  "4.5.1",
+                             "title":  "Restrições em OCL (Object Constraint Language)",
+                             "page":  161,
+                             "end":  170
+                         },
+                         {
+                             "section":  "4.6",
+                             "title":  "Estereótipos do Diagrama de Classes",
+                             "page":  170,
+                             "end":  182
+                         },
+                         {
+                             "section":  "4.6.1",
+                             "title":  "Estereótipo \u003c\u003cenumeration\u003e\u003e",
+                             "page":  171,
+                             "end":  171
+                         },
+                         {
+                             "section":  "4.6.2",
+                             "title":  "Estereótipos para Projeto Navegacional",
+                             "page":  171,
+                             "end":  174
+                         },
+                         {
+                             "section":  "4.6.3",
+                             "title":  "Estereótipo \u003c\u003cboundary\u003e\u003e",
+                             "page":  174,
+                             "end":  175
+                         },
+                         {
+                             "section":  "4.6.4",
+                             "title":  "Estereótipo \u003c\u003ccontrol\u003e\u003e",
+                             "page":  175,
+                             "end":  179
+                         },
+                         {
+                             "section":  "4.6.5",
+                             "title":  "Estereótipo \u003c\u003centity\u003e\u003e",
+                             "page":  179,
+                             "end":  182
+                         },
+                         {
+                             "section":  "4.7",
+                             "title":  "Exemplo de Diagrama de Classes (Modelo Conceitual) – Sistema de",
+                             "page":  182,
+                             "end":  187
+                         },
+                         {
+                             "section":  "4.8",
+                             "title":  "Como Identificar Classes",
+                             "page":  187,
+                             "end":  189
+                         },
+                         {
+                             "section":  "4.9",
+                             "title":  "Exemplo de Modelo de Domínio",
+                             "page":  189,
+                             "end":  195
+                         },
+                         {
+                             "section":  "4.10",
+                             "title":  "Exemplo de Diagrama de Classes – Sistema de Telefone Celular",
+                             "page":  195,
+                             "end":  200
+                         },
+                         {
+                             "section":  "4.11",
+                             "title":  "Exemplo de Diagrama de Classes – Sistema de Biblioteca",
+                             "page":  200,
+                             "end":  204
+                         },
+                         {
+                             "section":  "4.12",
+                             "title":  "Exemplo de Diagrama de Classes – Sistema de Clínica Veterinária",
+                             "page":  204,
+                             "end":  208
+                         },
+                         {
+                             "section":  "4.13",
+                             "title":  "Exemplo de Diagrama de Classes – Sistema de Controle de Advocacia",
+                             "page":  208,
+                             "end":  212
+                         },
+                         {
+                             "section":  "4.14",
+                             "title":  "Persistência",
+                             "page":  212,
+                             "end":  213
+                         },
+                         {
+                             "section":  "4.15",
+                             "title":  "Mapeamento de Classes em Tabelas",
+                             "page":  213,
+                             "end":  228
+                         },
+                         {
+                             "section":  "4.15.1",
+                             "title":  "Estereótipo Table",
+                             "page":  214,
+                             "end":  215
+                         },
+                         {
+                             "section":  "4.15.2",
+                             "title":  "Associações e Chaves Estrangeiras",
+                             "page":  215,
+                             "end":  228
+                         },
+                         {
+                             "section":  "4.16",
+                             "title":  "Padrão Repository",
+                             "page":  228,
+                             "end":  230
+                         },
+                         {
+                             "section":  "4.17",
+                             "title":  "Padrão DAO (Data Access Object)",
+                             "page":  230,
+                             "end":  233
+                         },
+                         {
+                             "section":  "4.18",
+                             "title":  "Exercícios Propostos",
+                             "page":  233,
+                             "end":  238
+                         },
+                         {
+                             "section":  "4.18.1",
+                             "title":  "Sistema de Controle de Cinema",
+                             "page":  233,
+                             "end":  234
+                         },
+                         {
+                             "section":  "4.18.2",
+                             "title":  "Sistema de Controle de Clube Social",
+                             "page":  234,
+                             "end":  235
+                         },
+                         {
+                             "section":  "4.18.3",
+                             "title":  "Sistema de Locação de Veículos",
+                             "page":  235,
+                             "end":  235
+                         },
+                         {
+                             "section":  "4.18.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet",
+                             "page":  235,
+                             "end":  235
+                         },
+                         {
+                             "section":  "4.18.5",
+                             "title":  "Sistema de Controle de Hotelaria",
+                             "page":  235,
+                             "end":  236
+                         },
+                         {
+                             "section":  "4.18.6",
+                             "title":  "Sistema de Controle de Imobiliária",
+                             "page":  236,
+                             "end":  238
+                         },
+                         {
+                             "section":  "4.19",
+                             "title":  "Solução dos Exercícios",
+                             "page":  238,
+                             "end":  252
+                         },
+                         {
+                             "section":  "4.19.1",
+                             "title":  "Sistema de Controle de Cinema",
+                             "page":  238,
+                             "end":  240
+                         },
+                         {
+                             "section":  "4.19.2",
+                             "title":  "Sistema de Controle de Clube Social",
+                             "page":  240,
+                             "end":  242
+                         },
+                         {
+                             "section":  "4.19.3",
+                             "title":  "Sistema de Locação de Veículos",
+                             "page":  242,
+                             "end":  243
+                         },
+                         {
+                             "section":  "4.19.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet",
+                             "page":  243,
+                             "end":  246
+                         },
+                         {
+                             "section":  "4.19.5",
+                             "title":  "Sistema de Controle de Hotelaria",
+                             "page":  246,
+                             "end":  249
+                         },
+                         {
+                             "section":  "4.19.6",
+                             "title":  "Sistema de Controle de Imobiliária",
+                             "page":  249,
+                             "end":  252
+                         }
+                     ]
+    },
+    {
+        "chapter":  5,
+        "title":  "Diagrama de Objetos",
+        "start":  253,
+        "end":  257,
+        "sections":  [
+                         {
+                             "section":  "5.1",
+                             "title":  "Objeto",
+                             "page":  253,
+                             "end":  254
+                         },
+                         {
+                             "section":  "5.2",
+                             "title":  "Vínculos",
+                             "page":  254,
+                             "end":  255
+                         },
+                         {
+                             "section":  "5.3",
+                             "title":  "Dependência com Estereótipo \u003c\u003cinstanceOf\u003e\u003e",
+                             "page":  255,
+                             "end":  256
+                         },
+                         {
+                             "section":  "5.4",
+                             "title":  "Exemplo de Diagrama de Objetos",
+                             "page":  256,
+                             "end":  257
+                         }
+                     ]
+    },
+    {
+        "chapter":  6,
+        "title":  "Diagrama de Pacotes",
+        "start":  258,
+        "end":  266,
+        "sections":  [
+                         {
+                             "section":  "6.1",
+                             "title":  "Pacotes",
+                             "page":  258,
+                             "end":  261
+                         },
+                         {
+                             "section":  "6.2",
+                             "title":  "Dependência",
+                             "page":  261,
+                             "end":  262
+                         },
+                         {
+                             "section":  "6.3",
+                             "title":  "Pacotes Contendo Pacotes",
+                             "page":  262,
+                             "end":  263
+                         },
+                         {
+                             "section":  "6.4",
+                             "title":  "Estereótipos Aplicados a Pacotes",
+                             "page":  263,
+                             "end":  264
+                         },
+                         {
+                             "section":  "6.5",
+                             "title":  "Representação de Camadas do Modelo por Meio de Pacotes",
+                             "page":  264,
+                             "end":  266
+                         }
+                     ]
+    },
+    {
+        "chapter":  7,
+        "title":  "Diagrama de Sequência",
+        "start":  267,
+        "end":  331,
+        "sections":  [
+                         {
+                             "section":  "7.1",
+                             "title":  "Atores",
+                             "page":  267,
+                             "end":  268
+                         },
+                         {
+                             "section":  "7.2",
+                             "title":  "Lifelines",
+                             "page":  268,
+                             "end":  269
+                         },
+                         {
+                             "section":  "7.3",
+                             "title":  "Mensagens ou Estímulos",
+                             "page":  269,
+                             "end":  279
+                         },
+                         {
+                             "section":  "7.3.1",
+                             "title":  "Mensagens entre Atores",
+                             "page":  270,
+                             "end":  271
+                         },
+                         {
+                             "section":  "7.3.2",
+                             "title":  "Mensagens entre Lifelines",
+                             "page":  271,
+                             "end":  272
+                         },
+                         {
+                             "section":  "7.3.3",
+                             "title":  "Mensagens de Retorno",
+                             "page":  272,
+                             "end":  273
+                         },
+                         {
+                             "section":  "7.3.4",
+                             "title":  "Mensagens Construtoras",
+                             "page":  273,
+                             "end":  274
+                         },
+                         {
+                             "section":  "7.3.5",
+                             "title":  "Mensagens Destrutoras",
+                             "page":  274,
+                             "end":  275
+                         },
+                         {
+                             "section":  "7.3.6",
+                             "title":  "Autochamadas ou Autodelegações",
+                             "page":  275,
+                             "end":  276
+                         },
+                         {
+                             "section":  "7.3.7",
+                             "title":  "Mensagens Assíncronas",
+                             "page":  276,
+                             "end":  276
+                         },
+                         {
+                             "section":  "7.3.8",
+                             "title":  "Restrição de Duração",
+                             "page":  276,
+                             "end":  278
+                         },
+                         {
+                             "section":  "7.3.9",
+                             "title":  "Mensagens Perdidas e Mensagens Encontradas",
+                             "page":  278,
+                             "end":  279
+                         },
+                         {
+                             "section":  "7.4",
+                             "title":  "Portas",
+                             "page":  279,
+                             "end":  280
+                         },
+                         {
+                             "section":  "7.5",
+                             "title":  "Fragmentos de Interação",
+                             "page":  280,
+                             "end":  282
+                         },
+                         {
+                             "section":  "7.6",
+                             "title":  "Usos de Interação (Ocorrências de Interação antes da UML 2.1.1)",
+                             "page":  282,
+                             "end":  286
+                         },
+                         {
+                             "section":  "7.7",
+                             "title":  "Portões (Gates)",
+                             "page":  286,
+                             "end":  286
+                         },
+                         {
+                             "section":  "7.8",
+                             "title":  "Fragmentos Combinados e Operadores de Interação",
+                             "page":  286,
+                             "end":  294
+                         },
+                         {
+                             "section":  "7.9",
+                             "title":  "Invariante de Estado (StateInvariant)",
+                             "page":  294,
+                             "end":  296
+                         },
+                         {
+                             "section":  "7.10",
+                             "title":  "Exemplos de Diagramas de Sequência para o Sistema de Controle",
+                             "page":  296,
+                             "end":  304
+                         },
+                         {
+                             "section":  "7.10.1",
+                             "title":  "Processo de Abertura de Conta Comum – Modelo Preliminar",
+                             "page":  296,
+                             "end":  298
+                         },
+                         {
+                             "section":  "7.10.2",
+                             "title":  "Processo de Abertura de Conta Comum – Modelo Detalhado",
+                             "page":  298,
+                             "end":  301
+                         },
+                         {
+                             "section":  "7.10.3",
+                             "title":  "Processo de Realizar Depósito",
+                             "page":  301,
+                             "end":  302
+                         },
+                         {
+                             "section":  "7.10.4",
+                             "title":  "Processo de Emissão de Extrato",
+                             "page":  302,
+                             "end":  304
+                         },
+                         {
+                             "section":  "7.11",
+                             "title":  "Padrões Repository e DAO",
+                             "page":  304,
+                             "end":  306
+                         },
+                         {
+                             "section":  "7.12",
+                             "title":  "Exemplo de Diagrama de Sequência – Processo de Realizar Ligação",
+                             "page":  306,
+                             "end":  307
+                         },
+                         {
+                             "section":  "7.13",
+                             "title":  "Exemplo de Diagrama de Sequência – Processo de Locação de",
+                             "page":  307,
+                             "end":  309
+                         },
+                         {
+                             "section":  "7.14",
+                             "title":  "Exemplo de Diagrama de Sequência – Processo de Atendimento de",
+                             "page":  309,
+                             "end":  310
+                         },
+                         {
+                             "section":  "7.15",
+                             "title":  "Exemplo de Diagrama de Sequência – Funcionalidade para",
+                             "page":  310,
+                             "end":  315
+                         },
+                         {
+                             "section":  "7.16",
+                             "title":  "Exercícios Propostos",
+                             "page":  315,
+                             "end":  318
+                         },
+                         {
+                             "section":  "7.16.1",
+                             "title":  "Sistema de Controle de Cinema – Processo de Venda de Ingressos",
+                             "page":  315,
+                             "end":  315
+                         },
+                         {
+                             "section":  "7.16.2",
+                             "title":  "Sistema de Controle de Clube Social – Processo de Pagamento de",
+                             "page":  315,
+                             "end":  316
+                         },
+                         {
+                             "section":  "7.16.3",
+                             "title":  "Sistema de Locação de Veículos – Processo de Locação de Veículo",
+                             "page":  316,
+                             "end":  316
+                         },
+                         {
+                             "section":  "7.16.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet – Processo de",
+                             "page":  316,
+                             "end":  317
+                         },
+                         {
+                             "section":  "7.16.5",
+                             "title":  "Sistema de Controle de Hotelaria – Processo de Pagamento de",
+                             "page":  317,
+                             "end":  317
+                         },
+                         {
+                             "section":  "7.16.6",
+                             "title":  "Sistema de Controle de Imobiliária – Processo de Venda de Imóvel",
+                             "page":  317,
+                             "end":  318
+                         },
+                         {
+                             "section":  "7.17",
+                             "title":  "Solução dos Exercícios",
+                             "page":  318,
+                             "end":  331
+                         },
+                         {
+                             "section":  "7.17.1",
+                             "title":  "Sistema de Controle de Cinema – Processo de Venda de Ingressos",
+                             "page":  318,
+                             "end":  320
+                         },
+                         {
+                             "section":  "7.17.2",
+                             "title":  "Sistema de Controle de Clube Social – Processo de Pagamento de",
+                             "page":  320,
+                             "end":  322
+                         },
+                         {
+                             "section":  "7.17.3",
+                             "title":  "Sistema de Locação de Veículos – Processo de Locação de Veículo",
+                             "page":  322,
+                             "end":  323
+                         },
+                         {
+                             "section":  "7.17.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet – Processo de",
+                             "page":  323,
+                             "end":  327
+                         },
+                         {
+                             "section":  "7.17.5",
+                             "title":  "Sistema de Controle de Hotelaria – Processo de Pagamento de",
+                             "page":  327,
+                             "end":  329
+                         },
+                         {
+                             "section":  "7.17.6",
+                             "title":  "Sistema de Controle de Imobiliária",
+                             "page":  329,
+                             "end":  331
+                         }
+                     ]
+    },
+    {
+        "chapter":  8,
+        "title":  "Diagrama de Comunicação",
+        "start":  332,
+        "end":  344,
+        "sections":  [
+                         {
+                             "section":  "8.1",
+                             "title":  "Lifelines",
+                             "page":  332,
+                             "end":  333
+                         },
+                         {
+                             "section":  "8.2",
+                             "title":  "Vínculos",
+                             "page":  333,
+                             "end":  334
+                         },
+                         {
+                             "section":  "8.3",
+                             "title":  "Mensagens",
+                             "page":  334,
+                             "end":  335
+                         },
+                         {
+                             "section":  "8.4",
+                             "title":  "Atores",
+                             "page":  335,
+                             "end":  335
+                         },
+                         {
+                             "section":  "8.5",
+                             "title":  "Autochamada",
+                             "page":  335,
+                             "end":  336
+                         },
+                         {
+                             "section":  "8.6",
+                             "title":  "Exemplo de diagrama de comunicação – Processo de Emissão de",
+                             "page":  336,
+                             "end":  337
+                         },
+                         {
+                             "section":  "8.7",
+                             "title":  "Condições de Guarda e Iterações",
+                             "page":  337,
+                             "end":  339
+                         },
+                         {
+                             "section":  "8.8",
+                             "title":  "Exercícios Propostos",
+                             "page":  339,
+                             "end":  339
+                         },
+                         {
+                             "section":  "8.9",
+                             "title":  "Solução dos Exercícios",
+                             "page":  339,
+                             "end":  344
+                         },
+                         {
+                             "section":  "8.9.1",
+                             "title":  "Sistema de Controle de Cinema – Processo de Venda de Ingressos",
+                             "page":  340,
+                             "end":  340
+                         },
+                         {
+                             "section":  "8.9.2",
+                             "title":  "Sistema de Controle de Clube Social – Processo de Pagamento de",
+                             "page":  340,
+                             "end":  341
+                         },
+                         {
+                             "section":  "8.9.3",
+                             "title":  "Sistema de Locação de Veículos – Processo de Locação de Veículo",
+                             "page":  341,
+                             "end":  342
+                         },
+                         {
+                             "section":  "8.9.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet – Processo de Realizar",
+                             "page":  342,
+                             "end":  343
+                         },
+                         {
+                             "section":  "8.9.5",
+                             "title":  "Sistema de Controle de Imobiliária – Processo de Venda de Imóvel",
+                             "page":  343,
+                             "end":  344
+                         }
+                     ]
+    },
+    {
+        "chapter":  9,
+        "title":  "Diagrama de Máquina de Estados",
+        "start":  345,
+        "end":  389,
+        "sections":  [
+                         {
+                             "section":  "9.1",
+                             "title":  "Estado",
+                             "page":  345,
+                             "end":  346
+                         },
+                         {
+                             "section":  "9.1.1",
+                             "title":  "Estado Simples",
+                             "page":  345,
+                             "end":  346
+                         },
+                         {
+                             "section":  "9.2",
+                             "title":  "Transições",
+                             "page":  346,
+                             "end":  347
+                         },
+                         {
+                             "section":  "9.3",
+                             "title":  "Estado Inicial",
+                             "page":  347,
+                             "end":  347
+                         },
+                         {
+                             "section":  "9.4",
+                             "title":  "Estado Final",
+                             "page":  347,
+                             "end":  348
+                         },
+                         {
+                             "section":  "9.5",
+                             "title":  "Exemplo de Diagrama de Máquina de Estados – Processo de Emissão",
+                             "page":  348,
+                             "end":  349
+                         },
+                         {
+                             "section":  "9.6",
+                             "title":  "Atividades internas",
+                             "page":  349,
+                             "end":  352
+                         },
+                         {
+                             "section":  "9.7",
+                             "title":  "Transições Internas",
+                             "page":  352,
+                             "end":  352
+                         },
+                         {
+                             "section":  "9.8",
+                             "title":  "Autotransições",
+                             "page":  352,
+                             "end":  353
+                         },
+                         {
+                             "section":  "9.9",
+                             "title":  "Pseudoestado de Escolha",
+                             "page":  353,
+                             "end":  355
+                         },
+                         {
+                             "section":  "9.10",
+                             "title":  "Barra de Bifurcação/União",
+                             "page":  355,
+                             "end":  357
+                         },
+                         {
+                             "section":  "9.11",
+                             "title":  "Estados Compostos",
+                             "page":  357,
+                             "end":  359
+                         },
+                         {
+                             "section":  "9.12",
+                             "title":  "Pseudoestado de História",
+                             "page":  359,
+                             "end":  360
+                         },
+                         {
+                             "section":  "9.13",
+                             "title":  "Estados Compostos Ortogonais",
+                             "page":  360,
+                             "end":  361
+                         },
+                         {
+                             "section":  "9.14",
+                             "title":  "Estado de Sincronismo",
+                             "page":  361,
+                             "end":  362
+                         },
+                         {
+                             "section":  "9.15",
+                             "title":  "Estado de Submáquina",
+                             "page":  362,
+                             "end":  363
+                         },
+                         {
+                             "section":  "9.16",
+                             "title":  "Pseudoestado de Junção",
+                             "page":  363,
+                             "end":  364
+                         },
+                         {
+                             "section":  "9.17",
+                             "title":  "Pseudoestado de Ponto de Entrada e Pseudoestado de Ponto de",
+                             "page":  364,
+                             "end":  366
+                         },
+                         {
+                             "section":  "9.18",
+                             "title":  "Pseudoestado de Término",
+                             "page":  366,
+                             "end":  367
+                         },
+                         {
+                             "section":  "9.19",
+                             "title":  "Exemplo de Diagrama de Máquina de Estados – Emitir Extrato",
+                             "page":  367,
+                             "end":  368
+                         },
+                         {
+                             "section":  "9.20",
+                             "title":  "Exemplo de Diagrama de Máquina de Estados – Realizar Depósito",
+                             "page":  368,
+                             "end":  370
+                         },
+                         {
+                             "section":  "9.21",
+                             "title":  "Exemplo de Diagrama de Máquina de Estados – Realizar Saque",
+                             "page":  370,
+                             "end":  371
+                         },
+                         {
+                             "section":  "9.22",
+                             "title":  "Exemplo de Diagrama de Máquina de Estados – Encerrar Conta",
+                             "page":  371,
+                             "end":  373
+                         },
+                         {
+                             "section":  "9.23",
+                             "title":  "Exercícios Propostos",
+                             "page":  373,
+                             "end":  376
+                         },
+                         {
+                             "section":  "9.23.1",
+                             "title":  "Sistema de Controle de Cinema – Processo de Venda de Ingressos",
+                             "page":  373,
+                             "end":  374
+                         },
+                         {
+                             "section":  "9.23.2",
+                             "title":  "Sistema de Controle de Clube Social – Processo de Pagamento de",
+                             "page":  374,
+                             "end":  374
+                         },
+                         {
+                             "section":  "9.23.3",
+                             "title":  "Sistema de Locação de Veículos – Processo de Locação de Veículo",
+                             "page":  374,
+                             "end":  375
+                         },
+                         {
+                             "section":  "9.23.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet – Processo de",
+                             "page":  375,
+                             "end":  375
+                         },
+                         {
+                             "section":  "9.23.5",
+                             "title":  "Sistema de Controle de Hotelaria – Processo de Pagamento de",
+                             "page":  375,
+                             "end":  376
+                         },
+                         {
+                             "section":  "9.23.6",
+                             "title":  "Sistema de Controle de Imobiliária – Processo de Venda de Imóvel",
+                             "page":  376,
+                             "end":  376
+                         },
+                         {
+                             "section":  "9.24",
+                             "title":  "Solução dos Exercícios",
+                             "page":  376,
+                             "end":  389
+                         },
+                         {
+                             "section":  "9.24.1",
+                             "title":  "Sistema de Controle de Cinema – Processo de Venda de Ingressos",
+                             "page":  376,
+                             "end":  378
+                         },
+                         {
+                             "section":  "9.24.2",
+                             "title":  "Sistema de Controle de Clube Social – Processo de Pagamento de",
+                             "page":  378,
+                             "end":  380
+                         },
+                         {
+                             "section":  "9.24.3",
+                             "title":  "Sistema de Locação de Veículos – Processo de Locação de Veículo",
+                             "page":  380,
+                             "end":  381
+                         },
+                         {
+                             "section":  "9.24.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet – Processo de",
+                             "page":  381,
+                             "end":  384
+                         },
+                         {
+                             "section":  "9.24.5",
+                             "title":  "Sistema de Controle de Hotelaria – Processo de Pagamento de",
+                             "page":  384,
+                             "end":  386
+                         },
+                         {
+                             "section":  "9.24.6",
+                             "title":  "Sistema de Controle de Imobiliária – Processo de Venda de Imóvel",
+                             "page":  386,
+                             "end":  389
+                         }
+                     ]
+    },
+    {
+        "chapter":  10,
+        "title":  "Diagrama de Atividade",
+        "start":  390,
+        "end":  439,
+        "sections":  [
+                         {
+                             "section":  "10.1",
+                             "title":  "Atividade",
+                             "page":  391,
+                             "end":  392
+                         },
+                         {
+                             "section":  "10.2",
+                             "title":  "Nó de Ação",
+                             "page":  392,
+                             "end":  392
+                         },
+                         {
+                             "section":  "10.3",
+                             "title":  "Fluxo de Controle",
+                             "page":  392,
+                             "end":  393
+                         },
+                         {
+                             "section":  "10.4",
+                             "title":  "Nó Inicial",
+                             "page":  393,
+                             "end":  393
+                         },
+                         {
+                             "section":  "10.5",
+                             "title":  "Nó de Final de Atividade",
+                             "page":  393,
+                             "end":  394
+                         },
+                         {
+                             "section":  "10.6",
+                             "title":  "Nó de Decisão",
+                             "page":  394,
+                             "end":  394
+                         },
+                         {
+                             "section":  "10.7",
+                             "title":  "Exemplo Simples de Diagrama de Atividade",
+                             "page":  394,
+                             "end":  396
+                         },
+                         {
+                             "section":  "10.8",
+                             "title":  "Nó de Bifurcação/União",
+                             "page":  396,
+                             "end":  396
+                         },
+                         {
+                             "section":  "10.9",
+                             "title":  "Final de Fluxo",
+                             "page":  396,
+                             "end":  397
+                         },
+                         {
+                             "section":  "10.10",
+                             "title":  "Fluxo de Objetos",
+                             "page":  397,
+                             "end":  397
+                         },
+                         {
+                             "section":  "10.11",
+                             "title":  "Nó de Objeto",
+                             "page":  397,
+                             "end":  398
+                         },
+                         {
+                             "section":  "10.12",
+                             "title":  "Alfinetes (Pins)",
+                             "page":  398,
+                             "end":  398
+                         },
+                         {
+                             "section":  "10.13",
+                             "title":  "Nó de Parâmetro de Atividade",
+                             "page":  398,
+                             "end":  401
+                         },
+                         {
+                             "section":  "10.14",
+                             "title":  "Nó de Buffer Central",
+                             "page":  401,
+                             "end":  402
+                         },
+                         {
+                             "section":  "10.15",
+                             "title":  "Nó de Repositório de Dados (Data Store Node)",
+                             "page":  402,
+                             "end":  402
+                         },
+                         {
+                             "section":  "10.16",
+                             "title":  "Exceções",
+                             "page":  402,
+                             "end":  403
+                         },
+                         {
+                             "section":  "10.17",
+                             "title":  "Ação de Envio de Sinal (Ação de Objeto de Envio na versão 2.0)",
+                             "page":  403,
+                             "end":  403
+                         },
+                         {
+                             "section":  "10.18",
+                             "title":  "Ação de Evento de Aceitação",
+                             "page":  403,
+                             "end":  404
+                         },
+                         {
+                             "section":  "10.19",
+                             "title":  "Ação de Evento de Tempo de Aceitação",
+                             "page":  404,
+                             "end":  405
+                         },
+                         {
+                             "section":  "10.20",
+                             "title":  "Ação de Chamada de Comportamento",
+                             "page":  405,
+                             "end":  407
+                         },
+                         {
+                             "section":  "10.21",
+                             "title":  "Ação de Chamada de Operação",
+                             "page":  407,
+                             "end":  407
+                         },
+                         {
+                             "section":  "10.22",
+                             "title":  "Partição de Atividade",
+                             "page":  407,
+                             "end":  409
+                         },
+                         {
+                             "section":  "10.23",
+                             "title":  "Região de Atividade Interrompível",
+                             "page":  409,
+                             "end":  410
+                         },
+                         {
+                             "section":  "10.24",
+                             "title":  "Nó de Atividade Estruturada",
+                             "page":  410,
+                             "end":  413
+                         },
+                         {
+                             "section":  "10.24.1",
+                             "title":  "Nós Condicionais",
+                             "page":  411,
+                             "end":  412
+                         },
+                         {
+                             "section":  "10.24.2",
+                             "title":  "Nós de Laço",
+                             "page":  412,
+                             "end":  413
+                         },
+                         {
+                             "section":  "10.25",
+                             "title":  "Região de Expansão",
+                             "page":  413,
+                             "end":  415
+                         },
+                         {
+                             "section":  "10.26",
+                             "title":  "Conectores",
+                             "page":  415,
+                             "end":  415
+                         },
+                         {
+                             "section":  "10.27",
+                             "title":  "Exemplo de Diagrama de Atividade – Emitir Extrato",
+                             "page":  415,
+                             "end":  418
+                         },
+                         {
+                             "section":  "10.28",
+                             "title":  "Exemplo de Diagrama de Atividade – Realizar Depósito",
+                             "page":  418,
+                             "end":  418
+                         },
+                         {
+                             "section":  "10.29",
+                             "title":  "Exemplo de Diagrama de Atividade – Realizar Saque",
+                             "page":  418,
+                             "end":  420
+                         },
+                         {
+                             "section":  "10.30",
+                             "title":  "Exercícios Propostos",
+                             "page":  420,
+                             "end":  423
+                         },
+                         {
+                             "section":  "10.30.1",
+                             "title":  "Sistema de Controle de Cinema – Processo de Venda de Ingressos",
+                             "page":  420,
+                             "end":  420
+                         },
+                         {
+                             "section":  "10.30.2",
+                             "title":  "Sistema de Controle de Clube Social – Processo de Pagamento de",
+                             "page":  420,
+                             "end":  421
+                         },
+                         {
+                             "section":  "10.30.3",
+                             "title":  "Sistema de Locação de Veículos – Processo de Locação de Veículo",
+                             "page":  421,
+                             "end":  421
+                         },
+                         {
+                             "section":  "10.30.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet – Processo de",
+                             "page":  421,
+                             "end":  422
+                         },
+                         {
+                             "section":  "10.30.5",
+                             "title":  "Sistema de Controle de Hotelaria – Processo de Pagamento de",
+                             "page":  422,
+                             "end":  422
+                         },
+                         {
+                             "section":  "10.30.6",
+                             "title":  "Sistema de Controle de Imobiliária – Processo de Venda de",
+                             "page":  422,
+                             "end":  423
+                         },
+                         {
+                             "section":  "10.31",
+                             "title":  "Solução dos Exercícios",
+                             "page":  423,
+                             "end":  439
+                         },
+                         {
+                             "section":  "10.31.1",
+                             "title":  "Sistema de Controle de Cinema – Processo de Venda de Ingressos",
+                             "page":  423,
+                             "end":  426
+                         },
+                         {
+                             "section":  "10.31.2",
+                             "title":  "Sistema de Controle de Clube Social – Processo de Pagamento de",
+                             "page":  426,
+                             "end":  428
+                         },
+                         {
+                             "section":  "10.31.3",
+                             "title":  "Sistema de Locação de Veículos – Processo de Locação de Veículo",
+                             "page":  428,
+                             "end":  431
+                         },
+                         {
+                             "section":  "10.31.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet – Processo de",
+                             "page":  431,
+                             "end":  434
+                         },
+                         {
+                             "section":  "10.31.5",
+                             "title":  "Sistema de Controle de Hotelaria – Processo de Pagamento de",
+                             "page":  434,
+                             "end":  436
+                         },
+                         {
+                             "section":  "10.31.6",
+                             "title":  "Sistema de Controle de Imobiliária – Processo de Venda de",
+                             "page":  436,
+                             "end":  439
+                         }
+                     ]
+    },
+    {
+        "chapter":  11,
+        "title":  "Diagrama de Visão Geral de Interação",
+        "start":  440,
+        "end":  450,
+        "sections":  [
+                         {
+                             "section":  "11.1",
+                             "title":  "Exemplo de Diagrama de Visão Geral de Interação – Processo Geral",
+                             "page":  443,
+                             "end":  445
+                         },
+                         {
+                             "section":  "11.2",
+                             "title":  "Exercícios Propostos",
+                             "page":  445,
+                             "end":  446
+                         },
+                         {
+                             "section":  "11.2.1",
+                             "title":  "Sistema de Controle de Clube Social – Processo Geral de Associação",
+                             "page":  445,
+                             "end":  445
+                         },
+                         {
+                             "section":  "11.2.2",
+                             "title":  "Sistema de Controle de Hotel – Processo Geral de Encerramento de",
+                             "page":  445,
+                             "end":  446
+                         },
+                         {
+                             "section":  "11.3",
+                             "title":  "Solução dos Exercícios",
+                             "page":  446,
+                             "end":  450
+                         },
+                         {
+                             "section":  "11.3.1",
+                             "title":  "Sistema de Controle de Clube Social – Processo Geral de Associação",
+                             "page":  446,
+                             "end":  448
+                         },
+                         {
+                             "section":  "11.3.2",
+                             "title":  "Sistema de Controle de Hotel – Processo Geral de Encerramento de",
+                             "page":  448,
+                             "end":  450
+                         }
+                     ]
+    },
+    {
+        "chapter":  12,
+        "title":  "Diagrama de Componentes",
+        "start":  451,
+        "end":  467,
+        "sections":  [
+                         {
+                             "section":  "12.1",
+                             "title":  "Componente",
+                             "page":  451,
+                             "end":  453
+                         },
+                         {
+                             "section":  "12.2",
+                             "title":  "Interfaces Fornecidas e Requeridas",
+                             "page":  453,
+                             "end":  454
+                         },
+                         {
+                             "section":  "12.3",
+                             "title":  "Classes e Componentes Internos",
+                             "page":  454,
+                             "end":  456
+                         },
+                         {
+                             "section":  "12.3.1",
+                             "title":  "Portas",
+                             "page":  455,
+                             "end":  456
+                         },
+                         {
+                             "section":  "12.4",
+                             "title":  "Exemplo de Diagrama de Componentes – Sistema de Controle",
+                             "page":  456,
+                             "end":  458
+                         },
+                         {
+                             "section":  "12.5",
+                             "title":  "Exercícios Propostos",
+                             "page":  458,
+                             "end":  461
+                         },
+                         {
+                             "section":  "12.5.1",
+                             "title":  "Sistema de Controle de Cinema",
+                             "page":  458,
+                             "end":  459
+                         },
+                         {
+                             "section":  "12.5.2",
+                             "title":  "Sistema de Controle de Clube Social",
+                             "page":  459,
+                             "end":  459
+                         },
+                         {
+                             "section":  "12.5.3",
+                             "title":  "Sistema de Locação de Veículos",
+                             "page":  459,
+                             "end":  459
+                         },
+                         {
+                             "section":  "12.5.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet",
+                             "page":  459,
+                             "end":  460
+                         },
+                         {
+                             "section":  "12.5.5",
+                             "title":  "Sistema de Controle de Hotelaria",
+                             "page":  460,
+                             "end":  460
+                         },
+                         {
+                             "section":  "12.5.6",
+                             "title":  "Sistema de Controle de Imobiliária",
+                             "page":  460,
+                             "end":  461
+                         },
+                         {
+                             "section":  "12.6",
+                             "title":  "Solução dos Exercícios",
+                             "page":  461,
+                             "end":  467
+                         },
+                         {
+                             "section":  "12.6.1",
+                             "title":  "Sistema de Controle de Cinema",
+                             "page":  461,
+                             "end":  462
+                         },
+                         {
+                             "section":  "12.6.2",
+                             "title":  "Sistema de Controle de Clube Social",
+                             "page":  462,
+                             "end":  462
+                         },
+                         {
+                             "section":  "12.6.3",
+                             "title":  "Sistema de Locação de Veículos",
+                             "page":  462,
+                             "end":  463
+                         },
+                         {
+                             "section":  "12.6.4",
+                             "title":  "Sistema para Controle de Leilão Via Internet",
+                             "page":  463,
+                             "end":  465
+                         },
+                         {
+                             "section":  "12.6.5",
+                             "title":  "Sistema de Controle de Hotelaria",
+                             "page":  465,
+                             "end":  466
+                         },
+                         {
+                             "section":  "12.6.6",
+                             "title":  "Sistema de Controle de Imobiliária            figura  12.13.",
+                             "page":  466,
+                             "end":  467
+                         }
+                     ]
+    },
+    {
+        "chapter":  13,
+        "title":  "Diagrama de Implantação",
+        "start":  468,
+        "end":  479,
+        "sections":  [
+                         {
+                             "section":  "13.1",
+                             "title":  "Nós",
+                             "page":  468,
+                             "end":  470
+                         },
+                         {
+                             "section":  "13.2",
+                             "title":  "Estereótipos",
+                             "page":  470,
+                             "end":  471
+                         },
+                         {
+                             "section":  "13.3",
+                             "title":  "Associações",
+                             "page":  471,
+                             "end":  472
+                         },
+                         {
+                             "section":  "13.4",
+                             "title":  "Exemplo de Diagrama de Implantação",
+                             "page":  472,
+                             "end":  473
+                         },
+                         {
+                             "section":  "13.5",
+                             "title":  "Artefatos",
+                             "page":  473,
+                             "end":  475
+                         },
+                         {
+                             "section":  "13.6",
+                             "title":  "Especificação de Implantação",
+                             "page":  475,
+                             "end":  475
+                         },
+                         {
+                             "section":  "13.7",
+                             "title":  "Exemplo de Diagrama de Implantação contendo Artefatos",
+                             "page":  475,
+                             "end":  477
+                         },
+                         {
+                             "section":  "13.8",
+                             "title":  "Nós Contendo Pacotes",
+                             "page":  477,
+                             "end":  477
+                         },
+                         {
+                             "section":  "13.9",
+                             "title":  "Exercícios Propostos",
+                             "page":  477,
+                             "end":  478
+                         },
+                         {
+                             "section":  "13.9.1",
+                             "title":  "Sistema para Controle de Leilão Via Internet",
+                             "page":  477,
+                             "end":  478
+                         },
+                         {
+                             "section":  "13.10",
+                             "title":  "Solução dos Exercícios",
+                             "page":  478,
+                             "end":  479
+                         },
+                         {
+                             "section":  "13.10.1",
+                             "title":  "Sistema para Controle de Leilão Via Internet",
+                             "page":  478,
+                             "end":  479
+                         }
+                     ]
+    },
+    {
+        "chapter":  14,
+        "title":  "Diagrama de Estrutura Composta",
+        "start":  480,
+        "end":  487,
+        "sections":  [
+                         {
+                             "section":  "14.1",
+                             "title":  "Colaborações",
+                             "page":  480,
+                             "end":  481
+                         },
+                         {
+                             "section":  "14.2",
+                             "title":  "Papéis",
+                             "page":  481,
+                             "end":  483
+                         },
+                         {
+                             "section":  "14.3",
+                             "title":  "Ocorrência de Colaboração",
+                             "page":  483,
+                             "end":  485
+                         },
+                         {
+                             "section":  "14.4",
+                             "title":  "Portas",
+                             "page":  485,
+                             "end":  485
+                         },
+                         {
+                             "section":  "14.5",
+                             "title":  "Propriedades e Partes",
+                             "page":  485,
+                             "end":  487
+                         }
+                     ]
+    },
+    {
+        "chapter":  15,
+        "title":  "Diagrama de Tempo ou de Temporização",
+        "start":  488,
+        "end":  489,
+        "sections":  [
+
+                     ]
+    },
+    {
+        "chapter":  16,
+        "title":  "Diagrama de Perfil",
+        "start":  490,
+        "end":  497,
+        "sections":  [
+                         {
+                             "section":  "16.1",
+                             "title":  "Conceitos Básicos: Modelos, Metamodelos e Metaclasses",
+                             "page":  490,
+                             "end":  494
+                         },
+                         {
+                             "section":  "16.1.1",
+                             "title":  "Metaclasse Classifier",
+                             "page":  492,
+                             "end":  493
+                         },
+                         {
+                             "section":  "16.1.2",
+                             "title":  "Metaclasse BehavioredClassifier",
+                             "page":  493,
+                             "end":  493
+                         },
+                         {
+                             "section":  "16.1.3",
+                             "title":  "Metaclasse NameSpace",
+                             "page":  493,
+                             "end":  493
+                         },
+                         {
+                             "section":  "16.1.4",
+                             "title":  "Metaclasse NamedElement",
+                             "page":  493,
+                             "end":  493
+                         },
+                         {
+                             "section":  "16.1.5",
+                             "title":  "Metaclasse DirectedRelationship",
+                             "page":  493,
+                             "end":  494
+                         },
+                         {
+                             "section":  "16.1.6",
+                             "title":  "Metaclasse Constraint",
+                             "page":  494,
+                             "end":  494
+                         },
+                         {
+                             "section":  "16.1.7",
+                             "title":  "Metaclasse RedefinableElement",
+                             "page":  494,
+                             "end":  494
+                         },
+                         {
+                             "section":  "16.2",
+                             "title":  "Criação de Perfis",
+                             "page":  494,
+                             "end":  495
+                         },
+                         {
+                             "section":  "16.3",
+                             "title":  "Estereótipos",
+                             "page":  495,
+                             "end":  495
+                         },
+                         {
+                             "section":  "16.4",
+                             "title":  "Extensão",
+                             "page":  495,
+                             "end":  497
+                         }
+                     ]
+    },
+    {
+        "chapter":  17,
+        "title":  "Estudo de Caso — Sistema de Pizzaria Online — PizzaNet",
+        "start":  498,
+        "end":  640,
+        "sections":  [
+                         {
+                             "section":  "17.1",
+                             "title":  "Descrição do Problema",
+                             "page":  498,
+                             "end":  503
+                         },
+                         {
+                             "section":  "17.2",
+                             "title":  "Solução do Problema",
+                             "page":  503,
+                             "end":  640
+                         },
+                         {
+                             "section":  "17.2.1",
+                             "title":  "Diagramas de Casos de Uso",
+                             "page":  503,
+                             "end":  510
+                         },
+                         {
+                             "section":  "17.2.2",
+                             "title":  "Documentação dos Diagramas de Casos de Uso da PizzaNet",
+                             "page":  510,
+                             "end":  521
+                         },
+                         {
+                             "section":  "17.2.3",
+                             "title":  "Diagrama de Classes – Modelo de Domínio",
+                             "page":  521,
+                             "end":  532
+                         },
+                         {
+                             "section":  "17.2.4",
+                             "title":  "Diagrama de Objetos",
+                             "page":  532,
+                             "end":  533
+                         },
+                         {
+                             "section":  "17.2.5",
+                             "title":  "Diagrama de Pacotes da PizzaNet",
+                             "page":  533,
+                             "end":  534
+                         },
+                         {
+                             "section":  "17.2.6",
+                             "title":  "Diagramas de Sequência da PizzaNet",
+                             "page":  534,
+                             "end":  561
+                         },
+                         {
+                             "section":  "17.2.7",
+                             "title":  "Diagrama de Comunicação Escolher Pizza",
+                             "page":  561,
+                             "end":  562
+                         },
+                         {
+                             "section":  "17.2.8",
+                             "title":  "Diagramas de Máquinas de Estados da PizzaNet",
+                             "page":  562,
+                             "end":  594
+                         },
+                         {
+                             "section":  "17.2.9",
+                             "title":  "Diagramas de Atividade da PizzaNet",
+                             "page":  594,
+                             "end":  634
+                         },
+                         {
+                             "section":  "17.2.10",
+                             "title":  "Diagrama de Visão Geral de Interação – Realizar Pedido",
+                             "page":  634,
+                             "end":  636
+                         },
+                         {
+                             "section":  "17.2.11",
+                             "title":  "Diagrama de Componentes da PizzaNet",
+                             "page":  636,
+                             "end":  638
+                         },
+                         {
+                             "section":  "17.2.12",
+                             "title":  "Diagrama de Implantação da PizzaNet",
+                             "page":  638,
+                             "end":  640
+                         }
+                     ]
+    },
+    {
+        "chapter":  18,
+        "title":  "A UML 2.5",
+        "start":  641,
+        "end":  647,
+        "sections":  [
+                         {
+                             "section":  "18.1",
+                             "title":  "Áreas Semânticas",
+                             "page":  641,
+                             "end":  642
+                         },
+                         {
+                             "section":  "18.2",
+                             "title":  "Conceitos Básicos: Modelos, Metamodelos e Metaclasses",
+                             "page":  642,
+                             "end":  642
+                         },
+                         {
+                             "section":  "18.3",
+                             "title":  "Estrutura Comum",
+                             "page":  642,
+                             "end":  644
+                         },
+                         {
+                             "section":  "18.3.1",
+                             "title":  "Raiz (Root)",
+                             "page":  642,
+                             "end":  644
+                         },
+                         {
+                             "section":  "18.3.1.1",
+                             "title":  "Metaclasse Element",
+                             "page":  643,
+                             "end":  644
+                         },
+                         {
+                             "section":  "18.3.1.2",
+                             "title":  "Metaclasse Comment",
+                             "page":  644,
+                             "end":  644
+                         },
+                         {
+                             "section":  "18.3.1.3",
+                             "title":  "Metaclasse Relationship",
+                             "page":  644,
+                             "end":  644
+                         },
+                         {
+                             "section":  "18.4",
+                             "title":  "Metaclasses Utilizadas para a Modelagem de Classes",
+                             "page":  644,
+                             "end":  647
+                         },
+                         {
+                             "section":  "18.4.1",
+                             "title":  "Metaclasse Classifier",
+                             "page":  646,
+                             "end":  646
+                         },
+                         {
+                             "section":  "18.4.2",
+                             "title":  "Metaclasse StructuredClassifier",
+                             "page":  646,
+                             "end":  646
+                         },
+                         {
+                             "section":  "18.4.3",
+                             "title":  "Metaclasse EncapsulatedClassifier",
+                             "page":  646,
+                             "end":  646
+                         },
+                         {
+                             "section":  "18.4.4",
+                             "title":  "Metaclasse BehavioredClassifier",
+                             "page":  646,
+                             "end":  647
+                         },
+                         {
+                             "section":  "18.4.5",
+                             "title":  "Metaclasse StructuralFeature",
+                             "page":  647,
+                             "end":  647
+                         },
+                         {
+                             "section":  "18.4.6",
+                             "title":  "Metaclasse BehavioralFeature",
+                             "page":  647,
+                             "end":  647
+                         },
+                         {
+                             "section":  "18.4.7",
+                             "title":  "Metaclasse Property",
+                             "page":  647,
+                             "end":  647
+                         },
+                         {
+                             "section":  "18.4.8",
+                             "title":  "Metaclasse Operation",
+                             "page":  647,
+                             "end":  647
+                         },
+                         {
+                             "section":  "18.4.9",
+                             "title":  "Metaclasse Reception",
+                             "page":  647,
+                             "end":  647
+                         },
+                         {
+                             "section":  "18.4.10",
+                             "title":  "Metaclasse Extension",
+                             "page":  647,
+                             "end":  647
+                         }
+                     ]
+    }
+]

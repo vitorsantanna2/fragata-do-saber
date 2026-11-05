@@ -53,6 +53,7 @@ export function OffensiveCounter({
           </div>
           <p className={`text-[10px] font-bold uppercase tracking-wide text-muted leading-tight`}>Ofensivas</p>
           <p className={`font-display ${bigSize} text-ink`}>{totalOffensives}</p>
+          <p className="text-[10px] text-muted text-center">Dias com simulado concluído</p>
         </article>
       </div>
       {!compact && (
@@ -69,11 +70,12 @@ export function OffensiveCounter({
           </article>
         </div>
       )}
-      {!offensiveLoggedToday && !compact && (
-        <p className="mt-3 text-sm leading-6 text-muted text-center">
-          Complete um simulado hoje para iniciar sua ofensiva de estudos.
-        </p>
-      )}
+      <p className={`mt-3 text-muted text-center ${compact ? 'text-[10px]' : 'text-sm leading-6'}`}>
+        {offensiveLoggedToday
+          ? 'Ofensiva de hoje registrada. Conclua um simulado amanhã para continuar a sequência.'
+          : 'Conclua um simulado hoje para registrar a ofensiva do dia.'}
+        {' '}Cada dia conta uma vez, mesmo com vários simulados.
+      </p>
     </section>
   )
 }

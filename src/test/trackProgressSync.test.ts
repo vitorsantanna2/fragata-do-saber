@@ -36,7 +36,7 @@ beforeEach(() => {
 describe('synchronization of track progress', () => {
   it.each([
     ['cpt-2026-dev', 'python', 'java', 'programacao'],
-    ['cpt-2026-dev', 'engenharia', 'apis', 'engenharia-rest'],
+    ['cpt-2026-dev', 'engenharia-rest', 'uml', 'engenharia-software'],
     ['cpt-2026-dados', 'relacional', 'transacoes', 'relacional-transacoes'],
     ['cpt-2026-gestao', 'governanca', 'servicos', 'governanca-servicos'],
   ])('migrates merged steps in %s: %s/%s into %s', (track, first, second, target) => {
@@ -51,6 +51,21 @@ describe('synchronization of track progress', () => {
     const reopened = parseTrackEntries({ version: 2, entries: { ...previous, [merged]: { status: 'not-started', updatedAt: newDate } } })
     expect(reopened[merged]).toEqual({ status: 'not-started', updatedAt: newDate })
   })
+  it('migrates earlier engineering/API progress through both unions without losing UML status', () => {
+    const target = 'cpt-2026-dev/engenharia-software'
+    const oldKeys = ['engenharia', 'apis', 'uml'].map((id) => `cpt-2026-dev/${id}`)
+    const legacy = Object.fromEntries(oldKeys.map((key) => [key, 'completed']))
+    expect(parseTrackEntries(legacy)[target].status).toBe('completed')
+    expect(parseTrackEntries({ 'cpt-2026-dev/uml': 'completed' })[target].status).toBe('studying')
+    const entries = Object.fromEntries(oldKeys.map((key) => [key, { status: 'completed', updatedAt: oldDate }]))
+    const migrated = parseTrackEntries({ version: 2, entries })
+    expect(Object.keys(migrated)).toEqual([target])
+    expect(migrated[target].status).toBe('completed')
+    expect(parseTrackEntries({ version: 2, entries: migrated })).toEqual(migrated)
+    const reopened = { status: 'not-started', updatedAt: newDate }
+    expect(parseTrackEntries({ version: 2, entries: { ...entries, [target]: reopened } })[target]).toEqual(reopened)
+  })
+
   it('migrates legacy statuses without making them newer than existing cloud edits', () => {
     const migrated = parseTrackEntries({ [key]: 'completed', 'cpt-2026-infra/linux': 'studying' })
     expect(migrated[key]).toEqual({ status: 'studying', updatedAt: '1970-01-01T00:00:00.000Z' })
