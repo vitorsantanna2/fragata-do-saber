@@ -1,0 +1,177 @@
+[
+  {
+    "chapter": 1,
+    "title": "Introdução",
+    "start": 29,
+    "sections": [],
+    "end": 45
+  },
+  {
+    "chapter": 2,
+    "title": "Curso Relâmpago de Python",
+    "start": 46,
+    "sections": [],
+    "end": 73
+  },
+  {
+    "chapter": 3,
+    "title": "Visualizando Dados",
+    "start": 74,
+    "sections": [],
+    "end": 88
+  },
+  {
+    "chapter": 4,
+    "title": "Álgebra Linear",
+    "start": 89,
+    "sections": [],
+    "end": 99
+  },
+  {
+    "chapter": 5,
+    "title": "Estatística",
+    "start": 100,
+    "sections": [],
+    "end": 117
+  },
+  {
+    "chapter": 6,
+    "title": "Probabilidade",
+    "start": 118,
+    "sections": [],
+    "end": 136
+  },
+  {
+    "chapter": 7,
+    "title": "Hipótese e Inferência",
+    "start": 137,
+    "sections": [],
+    "end": 156
+  },
+  {
+    "chapter": 8,
+    "title": "Gradiente Descendente",
+    "start": 157,
+    "sections": [],
+    "end": 170
+  },
+  {
+    "chapter": 9,
+    "title": "Obtendo Dados",
+    "start": 171,
+    "sections": [],
+    "end": 195
+  },
+  {
+    "chapter": 10,
+    "title": "Trabalhando com Dados",
+    "start": 196,
+    "sections": [],
+    "end": 221
+  },
+  {
+    "chapter": 11,
+    "title": "Aprendizado de Máquina",
+    "start": 222,
+    "sections": [],
+    "end": 237
+  },
+  {
+    "chapter": 12,
+    "title": "K–Vizinhos Mais Próximos",
+    "start": 238,
+    "sections": [],
+    "end": 253
+  },
+  {
+    "chapter": 13,
+    "title": "Naive Bayes",
+    "start": 254,
+    "sections": [],
+    "end": 265
+  },
+  {
+    "chapter": 14,
+    "title": "Regressão Linear Simples",
+    "start": 266,
+    "sections": [],
+    "end": 273
+  },
+  {
+    "chapter": 15,
+    "title": "Regressão Múltipla",
+    "start": 274,
+    "sections": [],
+    "end": 289
+  },
+  {
+    "chapter": 16,
+    "title": "Regressão Logística",
+    "start": 290,
+    "sections": [],
+    "end": 307
+  },
+  {
+    "chapter": 17,
+    "title": "Árvores de Decisão",
+    "start": 308,
+    "sections": [],
+    "end": 326
+  },
+  {
+    "chapter": 18,
+    "title": "Redes Neurais",
+    "start": 327,
+    "sections": [],
+    "end": 343
+  },
+  {
+    "chapter": 19,
+    "title": "Agrupamento",
+    "start": 344,
+    "sections": [],
+    "end": 363
+  },
+  {
+    "chapter": 20,
+    "title": "Processamento de Linguagem Natural",
+    "start": 364,
+    "sections": [],
+    "end": 384
+  },
+  {
+    "chapter": 21,
+    "title": "Análise de Rede",
+    "start": 385,
+    "sections": [],
+    "end": 400
+  },
+  {
+    "chapter": 22,
+    "title": "Sistemas Recomendadores",
+    "start": 401,
+    "sections": [],
+    "end": 413
+  },
+  {
+    "chapter": 23,
+    "title": "Bases de Dados e SQL",
+    "start": 414,
+    "sections": [],
+    "end": 433
+  },
+  {
+    "chapter": 24,
+    "title": "MapReduce",
+    "start": 434,
+    "sections": [],
+    "end": 446
+  },
+  {
+    "chapter": 25,
+    "title": "Vá em Frente e Pratique Data Science",
+    "start": 447,
+    "sections": [],
+    "end": 456
+  }
+]

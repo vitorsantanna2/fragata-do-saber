@@ -1,0 +1,72 @@
+[
+  {
+    "chapter": 1,
+    "title": "Entendendo Padrões de Projeto",
+    "start": 23,
+    "sections": [],
+    "end": 41
+  },
+  {
+    "chapter": 2,
+    "title": "Reuso Através de Herança",
+    "start": 42,
+    "sections": [],
+    "end": 65
+  },
+  {
+    "chapter": 3,
+    "title": "Delegando Comportamento com Composição",
+    "start": 66,
+    "sections": [],
+    "end": 97
+  },
+  {
+    "chapter": 4,
+    "title": "Composição Recursiva",
+    "start": 98,
+    "sections": [],
+    "end": 119
+  },
+  {
+    "chapter": 5,
+    "title": "Envolvendo Objetos",
+    "start": 120,
+    "sections": [],
+    "end": 141
+  },
+  {
+    "chapter": 6,
+    "title": "Estratégias de Criação de Objetos",
+    "start": 142,
+    "sections": [],
+    "end": 161
+  },
+  {
+    "chapter": 7,
+    "title": "Modularidade",
+    "start": 162,
+    "sections": [],
+    "end": 185
+  },
+  {
+    "chapter": 8,
+    "title": "Adicionando Operações",
+    "start": 186,
+    "sections": [],
+    "end": 219
+  },
+  {
+    "chapter": 9,
+    "title": "Gerenciando Muitos Objetos",
+    "start": 220,
+    "sections": [],
+    "end": 247
+  },
+  {
+    "chapter": 10,
+    "title": "Indo Além do Básico",
+    "start": 248,
+    "sections": [],
+    "end": 267
+  }
+]
