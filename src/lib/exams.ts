@@ -12,6 +12,15 @@ export const examGroups = ['Concursos', 'Cursos expeditos']
 
 export const examChoices: ExamChoice[] = [
   {
+    id: 'c-exp-suplinux',
+    group: 'Cursos expeditos',
+    title: 'C-Exp-SupLinux',
+    description: 'Curso Expedito de Supervisor Linux para Praças. Questões de estudo da apostila.',
+    exam: 'C-Exp-SupLinux',
+    subject: 'Linux',
+    image: 'suplinux.svg',
+  },
+  {
     id: 'ea-hsg',
     group: 'Concursos',
     title: 'EA-HSG',

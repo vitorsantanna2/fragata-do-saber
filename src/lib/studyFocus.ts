@@ -24,6 +24,10 @@ export function getFocusResources(exam: ExamChoice): FocusResourceInfo[] {
   const resources: FocusResourceInfo[] = [
     { id: 'exam-questions', title: 'Provas Antigas', description: 'Pratique questões de provas anteriores deste concurso e monte seus simulados.', icon: '✓' },
   ]
+  if (exam.id === 'c-exp-suplinux') resources.splice(0, 1, {
+    id: 'bibliography-questions', title: 'Questões da apostila',
+    description: 'Pratique os conteúdos do C-Exp-SupLinux e monte seus simulados.', icon: '▤',
+  })
   if (exam.id === 'cp-t-informatica') resources.push(
     { id: 'study-tracks', title: 'Trilhas de estudo', description: 'Estude a bibliografia do CP-T/2026 por etapas e acompanhe seu progresso.', icon: '↗' },
     { id: 'bibliography-questions', title: 'Simulador de Questões', description: 'Monte simulados com todo o banco do CP-T: provas antigas e questões da bibliografia misturadas.', icon: '▤' },

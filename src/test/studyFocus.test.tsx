@@ -29,6 +29,23 @@ const data = {
 afterEach(cleanup)
 
 describe('contest study focus', () => {
+  it('opens apostila practice for the Linux course using its own catalog scope', async () => {
+    const course = examChoices.find((exam) => exam.id === 'c-exp-suplinux')!
+    expect(course.exam).toBe('C-Exp-SupLinux')
+    expect(course.subject).toBe('Linux')
+    expect(course.group).toBe('Cursos expeditos')
+    const onSelect = vi.fn()
+    render(<ExamFocusHome exam={course} snapshots={{}} answers={{}} dueCount={0} publicAsset={(path) => `/${path}`} onSelect={onSelect} />)
+    await userEvent.setup().click(screen.getByRole('button', { name: /Questões da apostila/ }))
+    expect(onSelect).toHaveBeenCalledWith('bibliography-questions')
+    expect(screen.queryByRole('button', { name: /Provas Antigas/ })).toBeNull()
+    const scoped = scopeStudyData(course, {
+      ...data,
+      questionSnapshots: { ...snapshots, linux: { ...cptQuestion, exam: course.exam, subject: course.subject!, questionType: 'bibliography' } },
+      answers: { ...data.answers, linux: 1 },
+    })
+    expect(scoped.answers).toEqual({ linux: 1 })
+  })
   it('isolates questions, answers, review schedules and simulation history by contest and specialty', () => {
     const scoped = scopeStudyData(cpt, data)
     expect(Object.keys(scoped.questionSnapshots)).toEqual(['cpt'])

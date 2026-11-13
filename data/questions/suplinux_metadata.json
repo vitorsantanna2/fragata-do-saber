@@ -1,0 +1,100 @@
+[
+  {
+    "chapter": 1,
+    "title": "Introdução ao Linux",
+    "start": 8,
+    "end": 20,
+    "sections": []
+  },
+  {
+    "chapter": 2,
+    "title": "Instalação do Linux",
+    "start": 21,
+    "end": 24,
+    "sections": []
+  },
+  {
+    "chapter": 3,
+    "title": "Sistema de arquivos e estrutura de diretórios",
+    "start": 25,
+    "end": 33,
+    "sections": []
+  },
+  {
+    "chapter": 4,
+    "title": "Tipos de arquivos",
+    "start": 34,
+    "end": 37,
+    "sections": []
+  },
+  {
+    "chapter": 5,
+    "title": "Introdução ao shell",
+    "start": 38,
+    "end": 55,
+    "sections": []
+  },
+  {
+    "chapter": 6,
+    "title": "Permissões e propriedades de arquivos",
+    "start": 56,
+    "end": 63,
+    "sections": []
+  },
+  {
+    "chapter": 7,
+    "title": "Recursos do shell Bash",
+    "start": 64,
+    "end": 69,
+    "sections": []
+  },
+  {
+    "chapter": 8,
+    "title": "Edição de arquivos texto com o VI/VIM/Nano",
+    "start": 70,
+    "end": 76,
+    "sections": []
+  },
+  {
+    "chapter": 9,
+    "title": "Gerenciamento de pacotes",
+    "start": 77,
+    "end": 81,
+    "sections": []
+  },
+  {
+    "chapter": 10,
+    "title": "Webmin",
+    "start": 82,
+    "end": 83,
+    "sections": []
+  },
+  {
+    "chapter": 11,
+    "title": "Apache - servidor Web",
+    "start": 84,
+    "end": 85,
+    "sections": []
+  },
+  {
+    "chapter": 12,
+    "title": "Firewall",
+    "start": 86,
+    "end": 86,
+    "sections": []
+  },
+  {
+    "chapter": 13,
+    "title": "Estratégias de backup / RAID",
+    "start": 87,
+    "end": 92,
+    "sections": []
+  },
+  {
+    "chapter": 14,
+    "title": "Ferramentas de rede",
+    "start": 93,
+    "end": 96,
+    "sections": []
+  }
+]
